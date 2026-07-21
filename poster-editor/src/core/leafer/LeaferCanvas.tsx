@@ -20,6 +20,7 @@ export function LeaferCanvas() {
   const [menuPos, setMenuPos] = useState<{x: number, y: number} | null>(null)
   const nodeMapRef = useRef(new Map<string, any>())
   const guideGroupRef = useRef<Group | null>(null)
+  const gridOverlayGroupRef = useRef<Group | null>(null)
 
   const elements = useEditorStore((state) => state.elements)
   const mode = useEditorStore((state) => state.mode)
@@ -184,11 +185,19 @@ export function LeaferCanvas() {
   const ensureGuideGroup = (app: App) => {
     if (guideGroupRef.current && guideGroupRef.current.destroyed) guideGroupRef.current = null
     if (!guideGroupRef.current) {
-      const board = ensureBoard(app)
-      guideGroupRef.current = new Group({ id: '__guide_group__', zIndex: 100000 })
-      board.add(guideGroupRef.current)
+      guideGroupRef.current = new Group({ id: '__guide_group__', zIndex: 100000, hittable: false })
+      app.tree.add(guideGroupRef.current)
     }
     return guideGroupRef.current
+  }
+
+  const ensureGridOverlayGroup = (app: App) => {
+    if (gridOverlayGroupRef.current && gridOverlayGroupRef.current.destroyed) gridOverlayGroupRef.current = null
+    if (!gridOverlayGroupRef.current) {
+      gridOverlayGroupRef.current = new Group({ id: '__grid_overlay_group__', zIndex: -90000, hittable: false })
+      app.tree.add(gridOverlayGroupRef.current)
+    }
+    return gridOverlayGroupRef.current
   }
 
   // Bind canvas config changes to Leafer
@@ -206,118 +215,98 @@ export function LeaferCanvas() {
     } catch (e) {
       console.error('Board background sync error:', e)
     }
+
+    // Safe Margin, 3x3 Grid Overlay & Mesh Grid Renderer
     try {
-      if (app.interaction) {
-         if (app.interaction.config.move) app.interaction.config.move.disabled = canvasConfig.lockPan
-         else app.interaction.config.move = { disabled: canvasConfig.lockPan }
+      const gridOverlayGroup = ensureGridOverlayGroup(app)
+      gridOverlayGroup.removeAll()
 
-         if (canvasConfig.lockPan && app.interaction.config.wheel) app.interaction.config.wheel.moveSpeed = 0
-         else if (app.interaction.config.wheel) app.interaction.config.wheel.moveSpeed = 0.5
+      const { width: bW, height: bH, showGrid, showSafeMargin, showGridOverlay } = canvasConfig
+
+      // 1. Base 50px Canvas Grid Mesh (显示网格)
+      if (showGrid) {
+        const gridStep = 50
+        for (let x = gridStep; x < bW; x += gridStep) {
+          gridOverlayGroup.add(new Line({
+            id: `__grid_overlay_mesh_v_${x}__`,
+            points: [x, 0, x, bH],
+            stroke: 'rgba(148, 163, 184, 0.4)',
+            strokeWidth: 1,
+            dashPattern: [3, 3],
+            hittable: false,
+          }))
+        }
+        for (let y = gridStep; y < bH; y += gridStep) {
+          gridOverlayGroup.add(new Line({
+            id: `__grid_overlay_mesh_h_${y}__`,
+            points: [0, y, bW, y],
+            stroke: 'rgba(148, 163, 184, 0.4)',
+            strokeWidth: 1,
+            dashPattern: [3, 3],
+            hittable: false,
+          }))
+        }
       }
-    } catch {}
-     try {
-       if (app.interaction) {
-          if (app.interaction.config.zoom) app.interaction.config.zoom.disabled = canvasConfig.lockZoom
-          else app.interaction.config.zoom = { disabled: canvasConfig.lockZoom }
 
-          if (app.interaction.config.wheel) {
-              app.interaction.config.wheel.zoomMode = !canvasConfig.lockZoom
-              app.interaction.config.wheel.zoomSpeed = canvasConfig.lockZoom ? 0 : 0.5
-          }
-       }
-     } catch {}
+      // 2. Safe Bleed Margin 5% (显示 5% 出血安全边距)
+      if (showSafeMargin) {
+        const insetX = bW * 0.05
+        const insetY = bH * 0.05
+        gridOverlayGroup.add(new Rect({
+          id: '__grid_overlay_safe_margin__',
+          x: insetX,
+          y: insetY,
+          width: bW - insetX * 2,
+          height: bH - insetY * 2,
+          stroke: '#0284c7',
+          strokeWidth: 2,
+          dashPattern: [6, 6],
+          hittable: false,
+        }))
+      }
 
-     // Safe Margin, 3x3 Grid Overlay & Mesh Grid Renderer
-     try {
-       const guideGroup = ensureGuideGroup(app)
-       guideGroup.removeAll()
+      // 3. Rule of Thirds 3x3 Grid Overlay (显示三分构图辅助网格)
+      if (showGridOverlay) {
+        const stepX = bW / 3
+        const stepY = bH / 3
 
-       const { width: bW, height: bH, showGrid, showSafeMargin, showGridOverlay } = canvasConfig
-
-       // 1. Base 50px Canvas Grid Mesh (显示网格)
-       if (showGrid) {
-         const gridStep = 50
-         for (let x = gridStep; x < bW; x += gridStep) {
-           guideGroup.add(new Line({
-             id: `__grid_overlay_mesh_v_${x}__`,
-             points: [x, 0, x, bH],
-             stroke: 'rgba(148, 163, 184, 0.35)',
-             strokeWidth: 1,
-             dashPattern: [2, 2],
-             hittable: false,
-           }))
-         }
-         for (let y = gridStep; y < bH; y += gridStep) {
-           guideGroup.add(new Line({
-             id: `__grid_overlay_mesh_h_${y}__`,
-             points: [0, y, bW, y],
-             stroke: 'rgba(148, 163, 184, 0.35)',
-             strokeWidth: 1,
-             dashPattern: [2, 2],
-             hittable: false,
-           }))
-         }
-       }
-
-       // 2. Safe Bleed Margin 5% (显示 5% 出血安全边距)
-       if (showSafeMargin) {
-         const insetX = bW * 0.05
-         const insetY = bH * 0.05
-         guideGroup.add(new Rect({
-           id: '__grid_overlay_safe_margin__',
-           x: insetX,
-           y: insetY,
-           width: bW - insetX * 2,
-           height: bH - insetY * 2,
-           stroke: '#0284c7',
-           strokeWidth: 2,
-           dashPattern: [6, 6],
-           hittable: false,
-         }))
-       }
-
-       // 3. Rule of Thirds 3x3 Grid Overlay (显示三分构图辅助网格)
-       if (showGridOverlay) {
-         const stepX = bW / 3
-         const stepY = bH / 3
-
-         guideGroup.add(new Line({
-           id: '__grid_overlay_v1__',
-           points: [stepX, 0, stepX, bH],
-           stroke: '#9333ea',
-           strokeWidth: 2,
-           dashPattern: [4, 4],
-           hittable: false,
-         }))
-         guideGroup.add(new Line({
-           id: '__grid_overlay_v2__',
-           points: [stepX * 2, 0, stepX * 2, bH],
-           stroke: '#9333ea',
-           strokeWidth: 2,
-           dashPattern: [4, 4],
-           hittable: false,
-         }))
-         guideGroup.add(new Line({
-           id: '__grid_overlay_h1__',
-           points: [0, stepY, bW, stepY],
-           stroke: '#9333ea',
-           strokeWidth: 2,
-           dashPattern: [4, 4],
-           hittable: false,
-         }))
-         guideGroup.add(new Line({
-           id: '__grid_overlay_h2__',
-           points: [0, stepY * 2, bW, stepY * 2],
-           stroke: '#9333ea',
-           strokeWidth: 2,
-           dashPattern: [4, 4],
-           hittable: false,
-         }))
-       }
-     } catch (e) {
-       console.error('Grid overlay sync error:', e)
-     }
-   }, [canvasConfig])
+        gridOverlayGroup.add(new Line({
+          id: '__grid_overlay_v1__',
+          points: [stepX, 0, stepX, bH],
+          stroke: '#9333ea',
+          strokeWidth: 2,
+          dashPattern: [4, 4],
+          hittable: false,
+        }))
+        gridOverlayGroup.add(new Line({
+          id: '__grid_overlay_v2__',
+          points: [stepX * 2, 0, stepX * 2, bH],
+          stroke: '#9333ea',
+          strokeWidth: 2,
+          dashPattern: [4, 4],
+          hittable: false,
+        }))
+        gridOverlayGroup.add(new Line({
+          id: '__grid_overlay_h1__',
+          points: [0, stepY, bW, stepY],
+          stroke: '#9333ea',
+          strokeWidth: 2,
+          dashPattern: [4, 4],
+          hittable: false,
+        }))
+        gridOverlayGroup.add(new Line({
+          id: '__grid_overlay_h2__',
+          points: [0, stepY * 2, bW, stepY * 2],
+          stroke: '#9333ea',
+          strokeWidth: 2,
+          dashPattern: [4, 4],
+          hittable: false,
+        }))
+      }
+    } catch (e) {
+      console.error('Grid overlay sync error:', e)
+    }
+  }, [canvasConfig])
 
   // Global keyboard shortcuts
   const handleKeyboardDelete = async (ids: string[]) => {
