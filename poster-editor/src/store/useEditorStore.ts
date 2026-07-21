@@ -237,7 +237,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     setIsPreview: (val) => set({ isPreview: val, activeIds: [] }),
     mode: 'select',
     setMode: (mode) => set({ mode, activeIds: [] }),
-    sidebarTab: 'system',
+    sidebarTab: 'myScenes',
     setSidebarTab: (tab) => set({ sidebarTab: tab }),
 
     projectName: 'New Poster',

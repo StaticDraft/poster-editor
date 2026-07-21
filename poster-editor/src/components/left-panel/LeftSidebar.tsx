@@ -9,11 +9,11 @@ import { Input } from '@/components/ui/input'
 import { useEditorStore } from '@/store/useEditorStore'
 
 const ICON_NAV_KEYS = [
+  { icon: Monitor, labelKey: 'sidebar.nav.scenes', fallbackLabel: '页面', tab: 'myScenes' },
   { icon: LayoutTemplate, labelKey: 'sidebar.nav.templates', fallbackLabel: '模板', tab: 'templates' },
   { icon: Component, labelKey: 'sidebar.nav.components', fallbackLabel: '组件', tab: 'components' },
   { icon: ImageIcon, labelKey: 'sidebar.nav.assets', fallbackLabel: '素材', tab: 'system' },
   { icon: Layers, labelKey: 'sidebar.nav.layers', fallbackLabel: '图层', tab: 'structure' },
-  { icon: Monitor, labelKey: 'sidebar.nav.scenes', fallbackLabel: '页面', tab: 'myScenes' },
 ]
 
 export function LeftSidebar() {
