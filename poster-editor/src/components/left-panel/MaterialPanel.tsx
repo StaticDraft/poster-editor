@@ -1,8 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles } from 'lucide-react'
+import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
-import { getUserAssetsPaged, saveUserAsset, deleteUserAsset, type UserAsset } from '@/lib/assetDatabase'
+import {
+  getAssetFolders,
+  createAssetFolder,
+  deleteAssetFolder,
+  getUserAssetsPaged,
+  saveUserAsset,
+  deleteUserAsset,
+  type UserAsset,
+  type AssetFolder,
+} from '@/lib/assetDatabase'
 import { useFeedback } from '@/lib/feedback'
 
 // ─────────────────────────────────────────────────
@@ -144,6 +153,11 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ 'user-assets': true, 'text-nodes': true, 'basic-shapes': true, stickers: true, backgrounds: true, qrcodes: true })
   const feedback = useFeedback()
+  const [folders, setFolders] = useState<AssetFolder[]>([])
+  const [activeFolderId, setActiveFolderId] = useState<string>('folder-default')
+  const [showFolderInput, setShowFolderInput] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+
   const [userAssets, setUserAssets] = useState<UserAsset[]>([])
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -151,10 +165,26 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
 
-  const loadPageData = async (targetPage: number, replace = false) => {
+  const reloadFolders = async () => {
+    try {
+      const list = await getAssetFolders()
+      setFolders(list)
+      if (list.length > 0 && !list.some((f) => f.id === activeFolderId)) {
+        setActiveFolderId(list[0].id)
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  useEffect(() => {
+    reloadFolders()
+  }, [])
+
+  const loadPageData = async (folderId: string, targetPage: number, replace = false) => {
     try {
       setIsLoadingMore(true)
-      const res = await getUserAssetsPaged(targetPage, 12)
+      const res = await getUserAssetsPaged(folderId, targetPage, 8)
       setTotalCount(res.total)
       setHasMore(res.hasMore)
       setPage(targetPage)
@@ -171,28 +201,73 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   }
 
   useEffect(() => {
-    loadPageData(1, true)
-  }, [])
+    loadPageData(activeFolderId, 1, true)
+  }, [activeFolderId])
+
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) return
+    try {
+      const folder = await createAssetFolder(newFolderName.trim())
+      setNewFolderName('')
+      setShowFolderInput(false)
+      await reloadFolders()
+      setActiveFolderId(folder.id)
+      feedback.notify({
+        title: '目录创建成功',
+        description: `已新建素材分类目录「${folder.name}」`,
+        tone: 'success',
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleDeleteFolder = async (folder: AssetFolder, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const confirmed = await feedback.confirm({
+      title: '删除素材目录',
+      description: `确定要删除分类目录「${folder.name}」及其下的所有图片素材吗？`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+      tone: 'warning',
+    })
+    if (!confirmed) return
+    try {
+      await deleteAssetFolder(folder.id)
+      await reloadFolders()
+      feedback.notify({
+        title: '目录已删除',
+        tone: 'success',
+      })
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const handleScrollWaterfall = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
     if (scrollHeight - scrollTop - clientHeight < 40 && hasMore && !isLoadingMore) {
-      loadPageData(page + 1, false)
+      loadPageData(activeFolderId, page + 1, false)
     }
   }
 
-  const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>, targetFolderId?: string) => {
     const files = e.target.files
     if (!files || files.length === 0) return
+    const folderId = targetFolderId || activeFolderId
     setIsUploading(true)
     try {
       for (let i = 0; i < files.length; i++) {
-        await saveUserAsset(files[i])
+        await saveUserAsset(files[i], folderId)
       }
-      await loadPageData(1, true)
+      if (activeFolderId !== folderId) {
+        setActiveFolderId(folderId)
+      } else {
+        await loadPageData(folderId, 1, true)
+      }
       feedback.notify({
         title: '素材上传保存成功',
-        description: '已生成压缩缩略图并存入素材数据库，可在面板中随时拖拽使用',
+        description: '已压缩存入选定素材目录，可在面板中随时拖拽使用',
         tone: 'success',
       })
     } catch (err) {
@@ -219,7 +294,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     if (!confirmed) return
     try {
       await deleteUserAsset(asset.id)
-      await loadPageData(1, true)
+      await loadPageData(activeFolderId, 1, true)
       feedback.notify({
         title: '素材已移除',
         tone: 'success',
@@ -261,110 +336,190 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
 
   return (
     <div className="flex flex-col w-full pb-4">
-      {/* IndexedDB User Asset Gallery Section */}
+      {/* IndexedDB User Asset Gallery Section with Folder Directories */}
       {(mode === 'assets' || !mode) && (
         <div className="mb-3 border-b border-border/60 pb-3">
-          <div className="flex items-center justify-between px-3 py-1.5 mb-2">
+          {/* Header & Create Folder */}
+          <div className="flex items-center justify-between px-3 py-1.5 mb-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>我的素材库 ({totalCount})</span>
+              <span>素材目录库</span>
             </div>
-            <label className="cursor-pointer">
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleUploadAsset}
-                disabled={isUploading}
-              />
-              <span className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded shadow-sm transition-colors">
-                <Upload className="w-3 h-3" />
-                {isUploading ? '压缩处理中...' : '上传新素材'}
-              </span>
-            </label>
+            <button
+              type="button"
+              onClick={() => setShowFolderInput((prev) => !prev)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors"
+            >
+              <FolderPlus className="w-3 h-3" />
+              新建目录
+            </button>
           </div>
 
-          {userAssets.length === 0 ? (
-            <div className="mx-2 p-3 text-center border border-dashed border-border rounded-lg bg-muted/20 text-muted-foreground text-[11px]">
-              暂无自定义素材，点击右上角上传图片，将自动压缩生成缩略图并存入本地数据库
-            </div>
-          ) : (
-            <div
-              onScroll={handleScrollWaterfall}
-              className="px-2 max-h-[260px] overflow-y-auto pr-1 flex flex-col gap-2"
-            >
-              {/* Waterfall 2-Column Masonry Layout */}
-              <div className="columns-2 gap-1.5 space-y-1.5">
-                {userAssets.map((asset) => (
-                  <div
-                    key={asset.id}
-                    draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData(
-                        'application/json',
-                        JSON.stringify({
-                          type: 'Image',
-                          url: asset.url, // Original HD image for canvas
-                          width: asset.width || 300,
-                          height: asset.height || 300,
-                          isMaterial: true,
-                        })
-                      )
-                    }}
-                    onClick={() => {
-                      useEditorStore.getState().addNode({
-                        id: `image-${Date.now()}`,
-                        type: 'Image',
-                        url: asset.url,
-                        x: 100,
-                        y: 100,
-                        width: asset.width || 300,
-                        height: asset.height || 300,
-                      })
-                      feedback.notify({
-                        title: '添加素材成功',
-                        tone: 'success',
-                      })
-                    }}
-                    className="group relative break-inside-avoid flex flex-col items-center justify-center p-1 bg-card border border-border hover:border-blue-500 rounded-md cursor-grab active:cursor-grabbing hover:shadow-md transition-all overflow-hidden mb-1.5"
-                    title={`${asset.name} (${asset.width}x${asset.height}) - 拖拽至画布使用`}
-                  >
-                    <img
-                      src={asset.thumbnailUrl} // Compressed thumbnail for fast performance
-                      alt={asset.name}
-                      className="w-full h-auto object-cover rounded"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
-                      <button
-                        type="button"
-                        onClick={(e) => handleDeleteAsset(asset, e)}
-                        className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow"
-                        title="从数据库删除素材"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[9px] text-white text-center py-0.5 truncate px-1 pointer-events-none font-mono">
-                      {asset.width}x{asset.height}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Waterfall Pagination Status */}
-              {isLoadingMore && (
-                <div className="text-center text-[10px] text-blue-400 py-1 font-mono animate-pulse">
-                  正在加载下一页素材数据库记录...
-                </div>
-              )}
-              {!hasMore && userAssets.length > 0 && (
-                <div className="text-center text-[10px] text-muted-foreground/60 py-1 font-mono">
-                  已加载全部 {totalCount} 个素材
-                </div>
-              )}
+          {/* New Folder Inline Form */}
+          {showFolderInput && (
+            <div className="mx-2 mb-2 p-2 bg-muted/40 border border-border rounded-md flex items-center gap-1.5 animate-in fade-in-0">
+              <input
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                placeholder="目录名称 (如: 促销标志)"
+                className="flex-1 h-7 bg-background border border-border text-xs rounded px-2 focus:outline-none focus:border-emerald-500"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+              />
+              <button
+                type="button"
+                onClick={handleCreateFolder}
+                className="px-2.5 h-7 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded"
+              >
+                确定
+              </button>
             </div>
           )}
+
+          {/* Foldable Folder Directories */}
+          <div className="space-y-1 px-1">
+            {folders.map((folder) => {
+              const isExpanded = expanded[folder.id] ?? (folder.id === activeFolderId)
+              const isActive = folder.id === activeFolderId
+
+              return (
+                <div key={folder.id} className="border border-border/60 rounded-md overflow-hidden bg-card/60">
+                  {/* Folder Header Bar */}
+                  <div
+                    onClick={() => {
+                      setActiveFolderId(folder.id)
+                      toggle(folder.id)
+                    }}
+                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs font-bold cursor-pointer transition-colors ${
+                      isActive ? 'bg-blue-600/10 text-blue-400 border-b border-blue-500/20' : 'text-foreground hover:bg-muted'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-[10px] text-muted-foreground">{isExpanded ? '▼' : '▶'}</span>
+                      {isExpanded ? <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" /> : <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                      <span className="truncate max-w-[110px]">{folder.name}</span>
+                      {isActive && <span className="text-[10px] font-mono text-muted-foreground">({totalCount})</span>}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {/* Upload Button Dedicated to this Folder */}
+                      <label className="cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => handleUploadAsset(e, folder.id)}
+                          disabled={isUploading}
+                        />
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded shadow-xs transition-colors">
+                          <Upload className="w-2.5 h-2.5" />
+                          上传图片
+                        </span>
+                      </label>
+
+                      {folder.id !== 'folder-default' && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteFolder(folder, e)}
+                          className="p-1 text-muted-foreground hover:text-red-400 transition-colors"
+                          title="删除目录及其全部素材"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Folder Asset Grid (Expanded View) */}
+                  {isExpanded && isActive && (
+                    <div className="p-2 bg-muted/10">
+                      {userAssets.length === 0 ? (
+                        <div className="p-3 text-center border border-dashed border-border/50 rounded bg-background/50 text-muted-foreground text-[10px]">
+                          目录下暂无图片，点击右侧「上传图片」保存新素材
+                        </div>
+                      ) : (
+                        <div
+                          onScroll={handleScrollWaterfall}
+                          className="max-h-[220px] overflow-y-auto pr-0.5 flex flex-col gap-1.5"
+                        >
+                          {/* Masonry Waterfall Grid */}
+                          <div className="columns-2 gap-1.5 space-y-1.5">
+                            {userAssets.map((asset) => (
+                              <div
+                                key={asset.id}
+                                draggable
+                                onDragStart={(e) => {
+                                  e.dataTransfer.setData(
+                                    'application/json',
+                                    JSON.stringify({
+                                      type: 'Image',
+                                      url: asset.url,
+                                      width: asset.width || 300,
+                                      height: asset.height || 300,
+                                      isMaterial: true,
+                                    })
+                                  )
+                                }}
+                                onClick={() => {
+                                  useEditorStore.getState().addNode({
+                                    id: `image-${Date.now()}`,
+                                    type: 'Image',
+                                    url: asset.url,
+                                    x: 100,
+                                    y: 100,
+                                    width: asset.width || 300,
+                                    height: asset.height || 300,
+                                  })
+                                  feedback.notify({
+                                    title: '添加素材成功',
+                                    tone: 'success',
+                                  })
+                                }}
+                                className="group relative break-inside-avoid flex flex-col items-center justify-center p-1 bg-card border border-border hover:border-blue-500 rounded cursor-grab active:cursor-grabbing hover:shadow-md transition-all overflow-hidden mb-1.5"
+                                title={`${asset.name} (${asset.width}x${asset.height}) - 拖拽至画布使用`}
+                              >
+                                <img
+                                  src={asset.thumbnailUrl}
+                                  alt={asset.name}
+                                  className="w-full h-auto object-cover rounded"
+                                />
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDeleteAsset(asset, e)}
+                                    className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow"
+                                    title="从数据库删除素材"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                                <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5 truncate px-0.5 pointer-events-none font-mono">
+                                  {asset.width}x{asset.height}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Pagination Status */}
+                          {isLoadingMore && (
+                            <div className="text-center text-[10px] text-blue-400 py-1 font-mono animate-pulse">
+                              正在加载下一页...
+                            </div>
+                          )}
+                          {!hasMore && userAssets.length > 0 && (
+                            <div className="text-center text-[9px] text-muted-foreground/60 py-0.5 font-mono">
+                              已加载全部 {totalCount} 个素材
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
       {filtered.length === 0 && (
