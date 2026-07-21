@@ -30,6 +30,8 @@ import {
   Command,
   ChevronDown,
   MoreHorizontal,
+  Palette,
+  Scaling,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
@@ -40,6 +42,8 @@ import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack
 import { ExportModal } from '@/components/feedback/ExportModal'
 import { TemplateModal } from '@/components/feedback/TemplateModal'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
+import { COLOR_PALETTES, type ColorPalette } from '@/lib/colorPalettes'
+import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
 
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
@@ -156,6 +160,54 @@ export function TopToolbar() {
     setIsDark(nextTheme)
   }
 
+  const handleApplyPalette = (palette: ColorPalette) => {
+    const state = useEditorStore.getState()
+    state.setCanvasConfig({ bgColor: palette.bg })
+    const updates = state.elements
+      .map((el) => {
+        if (el.type === 'Text') {
+          const isHeading = ((el as any).fontSize || (el.props as any)?.fontSize || 24) > 36
+          return {
+            id: el.id,
+            attrs: {
+              fill: isHeading ? palette.primary : palette.secondary,
+            },
+          }
+        }
+        if (['Rect', 'Circle', 'Star', 'Polygon'].includes(el.type)) {
+          return {
+            id: el.id,
+            attrs: {
+              fill: palette.accent,
+              stroke: palette.primary,
+            },
+          }
+        }
+        return null
+      })
+      .filter(Boolean) as Array<{ id: string; attrs: any }>
+
+    state.batchUpdateNodes(updates)
+    feedback.notify({
+      title: `已套用「${palette.name}」配色方案`,
+      description: '全画布图元色彩已自动融合重绘',
+      tone: 'success',
+    })
+  }
+
+  const handleApplyCanvasPreset = (preset: CanvasPreset) => {
+    const state = useEditorStore.getState()
+    state.setCanvasConfig({ width: preset.width, height: preset.height })
+    setTimeout(() => {
+      state.zoomFit()
+    }, 50)
+    feedback.notify({
+      title: `画幅已切换至「${preset.name}」`,
+      description: `规格: ${preset.width} x ${preset.height} px (${preset.ratio})`,
+      tone: 'success',
+    })
+  }
+
   const toggleLanguage = () => {
     i18n.changeLanguage(i18n.language.startsWith('zh') ? 'en' : 'zh')
   }
@@ -257,6 +309,87 @@ export function TopToolbar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-1.5 shrink-0">
+        {/* Killer Feature 1: One-Click AI Color Palette Switcher */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold shrink-0"
+              title="一键套用专业海报配色方案"
+            >
+              <Palette className="w-3.5 h-3.5 mr-1" />
+              一键配色
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2 bg-card border border-border shadow-2xl z-50">
+            <div className="text-xs font-bold text-foreground mb-2 px-1 flex items-center justify-between">
+              <span>海报配色灵感方案</span>
+              <span className="text-[10px] text-muted-foreground font-mono">6 款经典调色</span>
+            </div>
+            <div className="space-y-1.5">
+              {COLOR_PALETTES.map((pal) => (
+                <button
+                  key={pal.id}
+                  onClick={() => handleApplyPalette(pal)}
+                  className="w-full p-1.5 rounded-lg border border-border/60 hover:border-amber-500 bg-muted/20 hover:bg-muted transition-all flex items-center justify-between group"
+                >
+                  <span className="text-xs font-bold text-foreground group-hover:text-amber-400">{pal.name}</span>
+                  <div className="flex items-center gap-1">
+                    {pal.swatches.map((color, idx) => (
+                      <span
+                        key={idx}
+                        className="w-3 h-3 rounded-full border border-black/20 shadow-xs"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* Killer Feature 2: One-Click Canvas Preset Resizer */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-semibold shrink-0"
+              title="一键适配小红书、公众号、手机海报尺寸"
+            >
+              <Scaling className="w-3.5 h-3.5 mr-1" />
+              画幅规格
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2 bg-card border border-border shadow-2xl z-50">
+            <div className="text-xs font-bold text-foreground mb-2 px-1 flex items-center justify-between">
+              <span>多终端海报尺寸规格</span>
+              <span className="text-[10px] text-muted-foreground font-mono">一键无损适配</span>
+            </div>
+            <div className="space-y-1 max-h-[260px] overflow-y-auto pr-0.5">
+              {CANVAS_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => handleApplyCanvasPreset(preset)}
+                  className="w-full p-2 rounded-lg border border-border/60 hover:border-cyan-500 bg-muted/20 hover:bg-muted transition-all flex flex-col text-left group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-foreground group-hover:text-cyan-400">{preset.name}</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-card border border-border text-muted-foreground">
+                      {preset.ratio}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground truncate mt-0.5">
+                    {preset.description} ({preset.width}x{preset.height})
+                  </span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <Button
           variant="outline"
           size="sm"
