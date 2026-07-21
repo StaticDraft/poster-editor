@@ -16,15 +16,22 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignVerticalJustifyStart,
+  AlignVerticalJustifyCenter,
+  AlignVerticalJustifyEnd,
   AlignHorizontalSpaceAround,
   AlignVerticalSpaceAround,
   Group,
   Ungroup,
   Image as ImageIcon,
-  FolderOpen
+  FolderOpen,
+  MoreHorizontal,
+  ChevronDown,
+  FileJson,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
@@ -135,17 +142,13 @@ export function TopToolbar() {
     const app = useEditorStore.getState()._leaferApp
     if (!app) return
     try {
-      // High-resolution Retina export with 2x scaling
       await app.tree.export(`${useEditorStore.getState().projectName || 'my_poster'}.png`, { screenshot: true, scale: 2 })
-      
-      // Gorgeous canvas-confetti particle spray
       const confetti = (await import('canvas-confetti')).default
       confetti({
         particleCount: 150,
         spread: 90,
         origin: { y: 0.6 }
       })
-      
       feedback.notify({
         title: tr('toolbar.exportImageSuccess', '海报导出成功'),
         description: tr('toolbar.exportImageSuccessDesc', '超清 PNG 图片已下载分发'),
@@ -175,127 +178,187 @@ export function TopToolbar() {
   }
 
   return (
-    <div className="flex w-full items-center justify-between bg-card text-card-foreground shadow-sm px-1 py-1.5 border-b border-border">
-      <div className="font-bold flex items-center gap-3 tracking-tight">
-        <div className="flex items-center justify-center bg-gradient-to-tr from-rose-500 via-pink-500 to-violet-600 text-white w-8 h-8 rounded-lg shadow-md">
-          <span className="font-extrabold text-sm">Pd</span>
+    <div className="flex w-full h-11 shrink-0 items-center justify-between bg-card text-card-foreground shadow-sm px-3 border-b border-border overflow-x-auto no-scrollbar">
+      {/* Brand logo & title */}
+      <div className="font-bold flex items-center gap-2 tracking-tight shrink-0">
+        <div className="flex items-center justify-center bg-gradient-to-tr from-rose-500 via-pink-500 to-violet-600 text-white w-7 h-7 rounded-lg shadow-md shrink-0">
+          <span className="font-extrabold text-xs">Pd</span>
         </div>
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted-foreground mr-4">
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted-foreground mr-2 hidden sm:inline text-xs">
           {t('header.title')}
         </span>
       </div>
 
       {/* Zoom controls */}
-      <div className="flex items-center gap-0.5 bg-muted/30 px-1 py-0.5 rounded-lg border border-border">
+      <div className="flex items-center gap-0.5 bg-muted/30 px-1 py-0.5 rounded-lg border border-border shrink-0">
         <Button variant="ghost" size="icon" className="w-7 h-7" title={t('toolbar.zoomOut')} onClick={() => useEditorStore.getState().zoomOut()}>
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
-        <button onClick={() => useEditorStore.getState().zoomReset()} className="text-[11px] font-mono text-muted-foreground hover:text-foreground px-2 min-w-[46px] text-center">
+        <button onClick={() => useEditorStore.getState().zoomReset()} className="text-[11px] font-mono text-muted-foreground hover:text-foreground px-1.5 min-w-[42px] text-center">
           {t('toolbar.zoomReset')}
         </button>
         <Button variant="ghost" size="icon" className="w-7 h-7" title={t('toolbar.zoomIn')} onClick={() => useEditorStore.getState().zoomIn()}>
           <ZoomIn className="w-3.5 h-3.5" />
         </Button>
-        <div className="w-px h-4 bg-border mx-0.5" />
+        <div className="w-px h-3.5 bg-border mx-0.5" />
         <Button variant="ghost" size="icon" className="w-7 h-7" title={t('toolbar.zoomFit')} onClick={() => useEditorStore.getState().zoomFit()}>
           <Maximize2 className="w-3.5 h-3.5" />
         </Button>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={toggleLanguage} title={t('toolbar.lang')}>
-          <Languages className="w-4 h-4" />
+      {/* Right actions */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleLanguage} title={t('toolbar.lang')}>
+          <Languages className="w-3.5 h-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={toggleTheme} title={t('toolbar.theme')}>
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleTheme} title={t('toolbar.theme')}>
+          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
         </Button>
 
-        <div className="w-px h-4 bg-border mx-1" />
+        <div className="w-px h-4 bg-border mx-0.5" />
 
-        <Button variant="outline" size="sm" onClick={undo} disabled={!canUndo}>
-          <Undo2 className="w-4 h-4 mr-1" /> {tr('toolbar.undo', '撤销')}
+        <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={undo} disabled={!canUndo}>
+          <Undo2 className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.undo', '撤销')}
         </Button>
-        <Button variant="outline" size="sm" onClick={redo} disabled={!canRedo}>
-          <Redo2 className="w-4 h-4 mr-1" /> {tr('toolbar.redo', '重做')}
+        <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={redo} disabled={!canRedo}>
+          <Redo2 className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.redo', '重做')}
         </Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Button variant="ghost" size="icon" onClick={handleGroup} disabled={activeIds.length < 2} title={tr('toolbar.group', '编组')}>
-          <Group className="w-4 h-4" />
+
+        <div className="w-px h-4 bg-border mx-0.5" />
+
+        {/* Group / Ungroup */}
+        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={handleGroup} disabled={activeIds.length < 2} title={tr('toolbar.group', '编组')}>
+          <Group className="w-3.5 h-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleUngroup} disabled={activeIds.length === 0} title={tr('toolbar.ungroup', '解组')}>
-          <Ungroup className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={handleUngroup} disabled={activeIds.length === 0} title={tr('toolbar.ungroup', '解组')}>
+          <Ungroup className="w-3.5 h-3.5" />
         </Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Button variant="ghost" size="icon" onClick={() => alignNodes('left')} disabled={activeIds.length < 2} title={tr('toolbar.alignLeft', '左对齐')}><AlignLeft className="w-4 h-4 text-blue-500" /></Button>
-        <Button variant="ghost" size="icon" onClick={() => alignNodes('center')} disabled={activeIds.length < 2} title={tr('toolbar.alignCenter', '居中对齐')}><AlignCenter className="w-4 h-4 text-blue-500" /></Button>
-        <Button variant="ghost" size="icon" onClick={() => alignNodes('right')} disabled={activeIds.length < 2} title={tr('toolbar.alignRight', '右对齐')}><AlignRight className="w-4 h-4 text-blue-500" /></Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Button variant="ghost" size="icon" onClick={() => alignNodes('distribute-x')} disabled={activeIds.length < 3} title={tr('toolbar.distributeX', '水平分布')}><AlignHorizontalSpaceAround className="w-4 h-4 text-emerald-500" /></Button>
-        <Button variant="ghost" size="icon" onClick={() => alignNodes('distribute-y')} disabled={activeIds.length < 3} title={tr('toolbar.distributeY', '垂直分布')}><AlignVerticalSpaceAround className="w-4 h-4 text-emerald-500" /></Button>
-        <div className="w-px h-4 bg-border mx-1" />
-        <Button variant="outline" size="sm" onClick={handleClearCanvas}>
-          <Trash2 className="w-4 h-4 mr-1 text-destructive" /> {tr('toolbar.clear', '清空设计')}
-        </Button>
-        <div className="w-px h-4 bg-border mx-1" />
+
+        {/* Align & Distribute Popover */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs px-2"
+              disabled={activeIds.length < 2}
+            >
+              <AlignLeft className="w-3.5 h-3.5 mr-1 text-blue-500" />
+              <span className="hidden md:inline">{tr('toolbar.align', '对齐分布')}</span>
+              <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2 bg-card border border-border shadow-xl z-50">
+            <div className="text-[10px] font-bold text-muted-foreground uppercase px-1 mb-1.5">{tr('toolbar.alignHeader', '图层对齐与分布')}</div>
+            <div className="grid grid-cols-3 gap-1 mb-2">
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('left')}><AlignLeft className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.left', '左对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('center')}><AlignCenter className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.center', '居中')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('right')}><AlignRight className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.right', '右对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('top')}><AlignVerticalJustifyStart className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.top', '顶对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('middle')}><AlignVerticalJustifyCenter className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.middle', '垂直居中')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('bottom')}><AlignVerticalJustifyEnd className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.bottom', '底对齐')}</Button>
+            </div>
+            <div className="border-t border-border pt-1.5 grid grid-cols-2 gap-1">
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('distribute-x')} disabled={activeIds.length < 3}><AlignHorizontalSpaceAround className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />{tr('toolbar.distributeX', '水平分布')}</Button>
+              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('distribute-y')} disabled={activeIds.length < 3}><AlignVerticalSpaceAround className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />{tr('toolbar.distributeY', '垂直分布')}</Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <div className="w-px h-4 bg-border mx-0.5" />
+
+        {/* Primary Action Buttons */}
         <Button
           variant="outline"
           size="sm"
+          className="h-7 text-xs px-2 border-blue-500/30 hover:bg-blue-500/10"
           onClick={handleSaveScene}
-          className="border-blue-500/30 hover:bg-blue-500/10"
         >
-          <Save className="w-4 h-4 mr-1 text-blue-500" /> {tr('canvasConfig.save', '存工程')}
+          <Save className="w-3.5 h-3.5 mr-1 text-blue-500" /> {tr('canvasConfig.save', '保存')}
         </Button>
         <Button
           variant="outline"
           size="sm"
+          className="h-7 text-xs px-2 border-green-500/30 hover:bg-green-500/10 text-green-600"
           onClick={handleStartPreview}
-          className="border-green-500/30 hover:bg-green-500/10 text-green-600"
         >
-          <Play className="w-4 h-4 mr-1 fill-current text-green-500" /> {tr('toolbar.startPreview', '预览')}
+          <Play className="w-3.5 h-3.5 mr-1 fill-current text-green-500" /> {tr('toolbar.startPreview', '预览')}
         </Button>
+
+        {/* Primary CTA: Export Image */}
         <Button
           variant="default"
           size="sm"
           onClick={handleExportPNG}
-          className="bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-md animate-pulse hover:animate-none"
+          className="h-7 text-xs px-2.5 bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-md shrink-0"
         >
-          <ImageIcon className="w-4 h-4 mr-1" /> {tr('toolbar.exportImage', '导出图片')}
+          <ImageIcon className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.exportImage', '导出图片')}
         </Button>
-        <Button variant="outline" size="sm" onClick={exportTemplatePackage} title={tr('toolbar.exportTemplateTitle', '导出工程模板包 (.poster)')}>
-          <Download className="w-4 h-4 mr-1" /> {tr('toolbar.exportTemplate', '导出模板')}
-        </Button>
-        <Button variant="outline" size="sm" onClick={handleExportJSON} title={tr('toolbar.exportJSONTitle', '导出图层 JSON')}>
-          <Download className="w-4 h-4 mr-1 text-slate-400" /> {tr('toolbar.exportJSON', 'JSON')}
-        </Button>
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            accept=".poster,.json"
-            className="hidden"
-            onChange={async (e) => {
-              const file = e.target.files?.[0]
-              if (!file) return
-              try {
-                const ok = await importTemplatePackage(file)
-                if (ok) {
-                  feedback.notify({
-                    title: tr('toolbar.importSuccess', '模板导入成功'),
-                    tone: 'success',
-                  })
-                }
-              } catch (err) {
-                feedback.notify({
-                  title: tr('toolbar.importFailed', '模板文件解析失败'),
-                  tone: 'error',
-                })
-              }
-              e.target.value = ''
-            }}
-          />
-          <Button variant="outline" size="sm" asChild>
-            <span><FolderOpen className="w-4 h-4 mr-1 text-amber-400" /> {tr('toolbar.importTemplate', '导入模板')}</span>
-          </Button>
-        </label>
+
+        {/* Secondary Operations Popover / More Menu */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="icon" className="w-7 h-7 shrink-0" title={tr('toolbar.more', '更多')}>
+              <MoreHorizontal className="w-3.5 h-3.5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-48 p-1.5 bg-card border border-border shadow-xl z-50">
+            <button
+              onClick={exportTemplatePackage}
+              className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-foreground rounded hover:bg-muted transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-400" />
+              {tr('toolbar.exportTemplate', '导出工程模板 (.poster)')}
+            </button>
+
+            <label className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-foreground rounded hover:bg-muted cursor-pointer transition-colors">
+              <input
+                type="file"
+                accept=".poster,.json"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  try {
+                    const ok = await importTemplatePackage(file)
+                    if (ok) {
+                      feedback.notify({
+                        title: tr('toolbar.importSuccess', '模板导入成功'),
+                        tone: 'success',
+                      })
+                    }
+                  } catch (err) {
+                    feedback.notify({
+                      title: tr('toolbar.importFailed', '模板文件解析失败'),
+                      tone: 'error',
+                    })
+                  }
+                  e.target.value = ''
+                }}
+              />
+              <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+              {tr('toolbar.importTemplate', '导入工程模板 (.poster)')}
+            </label>
+
+            <button
+              onClick={handleExportJSON}
+              className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-foreground rounded hover:bg-muted transition-colors"
+            >
+              <FileJson className="w-3.5 h-3.5 text-slate-400" />
+              {tr('toolbar.exportJSON', '导出图层 JSON')}
+            </button>
+
+            <div className="my-1 border-t border-border" />
+
+            <button
+              onClick={handleClearCanvas}
+              className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 rounded hover:bg-red-500/10 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {tr('toolbar.clear', '清空画布')}
+            </button>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   )

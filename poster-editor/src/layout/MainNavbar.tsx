@@ -232,8 +232,8 @@ export function MainNavbar() {
       onClick={() => setActiveMenu(null)}
     >
       <div className="flex items-center gap-6" onClick={(event) => event.stopPropagation()}>
-        <div className="flex items-center text-sm font-bold tracking-widest text-[#fb7185]">
-          <Hexagon className="mr-2 h-5 w-5 fill-[#rose-500/20]" /> Poster Editor
+        <div className="flex items-center text-sm font-bold tracking-widest text-[#fb7185] shrink-0">
+          <Hexagon className="mr-2 h-5 w-5 fill-[#rose-500/20] shrink-0" /> Poster Editor
         </div>
         <div className="flex gap-1">
           {menus.map((menu) => (
