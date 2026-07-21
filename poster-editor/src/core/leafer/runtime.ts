@@ -1,4 +1,5 @@
 import { Rect, Ellipse, Text, Star, Image, Path } from 'leafer-ui'
+import { generateQRCodeSVG, generateBarcodeDataUrl } from '@/lib/qrcode'
 import type { EditorNode } from '@/store/useEditorStore'
 
 type LeaferNode = any
@@ -82,6 +83,13 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   if (props?.contain) runtimeProps.objectFit = 'contain'
   if (props?.filter && props.filter !== 'none') runtimeProps.filter = props.filter
 
+  if (el.type === 'QRCode') {
+    runtimeProps.url = generateQRCodeSVG(el.text || props?.text || 'https://postercraft.app')
+  }
+  if (el.type === 'Barcode') {
+    runtimeProps.url = generateBarcodeDataUrl(el.text || props?.text || '690123456789')
+  }
+
   if (el.type === 'Path') {
     const width = el.width || 100
     const height = el.height || 100
@@ -139,6 +147,8 @@ export function createLeaferNode(el: EditorNode & Record<string, any>, options: 
     case 'Star':
       return new Star(runtimeProps)
     case 'Image':
+    case 'QRCode':
+    case 'Barcode':
       return new Image(runtimeProps)
     case 'Path':
       return new Path(runtimeProps)

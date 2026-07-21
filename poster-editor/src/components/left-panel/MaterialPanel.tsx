@@ -75,6 +75,15 @@ const CATEGORIES = [
       { type: 'Image', nameKey: 'material.items.bg2', fallbackName: '孟菲斯磨砂图', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600', width: 800, height: 1200 },
       { type: 'Image', nameKey: 'material.items.bg3', fallbackName: '大理石白纹理', url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600', width: 800, height: 1200 },
     ]
+  },
+  {
+    id: 'qrcodes',
+    titleKey: 'material.categories.qrcodes',
+    fallbackTitle: '可编辑二维码与条码',
+    items: [
+      { type: 'QRCode', nameKey: 'material.items.qrcode', fallbackName: '动态二维码', text: 'https://postercraft.app', width: 160, height: 160 },
+      { type: 'Barcode', nameKey: 'material.items.barcode', fallbackName: '矢量条形码', text: '690123456789', width: 240, height: 80 },
+    ]
   }
 ]
 
@@ -113,8 +122,14 @@ function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius
   if (type === 'Text') {
     return <Type className="w-6 h-6 mb-0.5 text-sky-400" />
   }
+  if (type === 'QRCode') {
+    return <QrCode className="w-7 h-7 text-emerald-400 mb-0.5" />
+  }
+  if (type === 'Barcode') {
+    return <Barcode className="w-7 h-7 text-blue-400 mb-0.5" />
+  }
   if (type === 'Image') {
-    return <ImageIcon className="w-6 h-6 mb-0.5 text-pink-400" />
+    return <ImageIcon className="w-7 h-7 text-pink-400 mb-0.5" />
   }
   // Rect
   return (

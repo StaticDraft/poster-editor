@@ -421,6 +421,28 @@ function ComponentPropsTab({ node }: { node: any }) {
     )
   }
 
+  if (node.type === 'QRCode' || node.type === 'Barcode') {
+    const labelText = node.type === 'QRCode' ? '二维码跳转内容/网址' : '条形码编码数字'
+    const defaultText = node.type === 'QRCode' ? 'https://postercraft.app' : '690123456789'
+    return (
+      <div className="p-3 border-t border-border mt-2">
+        <Section title={node.type === 'QRCode' ? '二维码动态配置' : '条形码动态配置'}>
+          <div className="flex flex-col gap-1.5">
+            <div className="text-[10px] text-editor-text-dim">{labelText}</div>
+            <textarea
+              rows={3}
+              value={node.text || defaultText}
+              onChange={(e) => updateNode(node.id, { text: e.target.value })}
+              className="w-full bg-editor-deep border border-border text-editor-text text-xs rounded p-2 focus:outline-none focus:border-blue-500 font-mono resize-none"
+              placeholder="请输入数据..."
+            />
+            <div className="text-[10px] text-emerald-400 font-bold">✨ 修改上方文本后，画布中的码图形将实时重新生成</div>
+          </div>
+        </Section>
+      </div>
+    )
+  }
+
   if (node.type === 'Image') {
     return (
       <div className="p-3 border-t border-border mt-2">
