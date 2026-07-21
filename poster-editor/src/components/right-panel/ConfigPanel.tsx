@@ -421,6 +421,39 @@ function ComponentPropsTab({ node }: { node: any }) {
     )
   }
 
+  if (node.type === 'Image') {
+    return (
+      <div className="p-3 border-t border-border mt-2">
+        <Section title="图片属性与滤镜">
+          <Row label="填充模式">
+            <select
+              value={p.contain ? 'contain' : 'cover'}
+              onChange={e => u('contain', e.target.value === 'contain')}
+              className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card"
+            >
+              <option value="cover">裁剪填充 (Cover)</option>
+              <option value="contain">等比完整 (Contain)</option>
+            </select>
+          </Row>
+          <Row label="滤镜特效">
+            <select
+              value={p.filter || 'none'}
+              onChange={e => u('filter', e.target.value)}
+              className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card"
+            >
+              <option value="none">原图无滤镜</option>
+              <option value="grayscale(100%)">黑白怀旧</option>
+              <option value="sepia(80%)">暖调复古</option>
+              <option value="blur(4px)">模糊马赛克</option>
+              <option value="brightness(130%)">高光提亮</option>
+              <option value="contrast(150%)">高对比胶片</option>
+            </select>
+          </Row>
+        </Section>
+      </div>
+    )
+  }
+
   return null
 }
 

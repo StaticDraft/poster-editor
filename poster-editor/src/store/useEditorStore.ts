@@ -122,6 +122,12 @@ interface EditorState {
 
   _leaferApp: any
   setLeaferApp: (app: any) => void
+
+  rulerGuides: Array<{ id: string; type: 'v' | 'h'; pos: number }>
+  addRulerGuide: (guide: { type: 'v' | 'h'; pos: number }) => void
+  removeRulerGuide: (id: string) => void
+  clearRulerGuides: () => void
+
   zoomIn: () => void
   zoomOut: () => void
   zoomFit: () => void
@@ -433,6 +439,11 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     _leaferApp: null,
     setLeaferApp: (app) => set({ _leaferApp: app }),
+
+    rulerGuides: [],
+    addRulerGuide: (guide) => set((s) => ({ rulerGuides: [...s.rulerGuides, { ...guide, id: `guide-${Date.now()}` }] })),
+    removeRulerGuide: (id) => set((s) => ({ rulerGuides: s.rulerGuides.filter((g) => g.id !== id) })),
+    clearRulerGuides: () => set({ rulerGuides: [] }),
     zoomIn: () => {
       const app = get()._leaferApp
       if (app?.tree && typeof app.tree.zoom === 'function') app.tree.zoom('in')

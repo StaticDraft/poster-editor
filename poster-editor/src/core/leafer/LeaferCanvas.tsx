@@ -578,6 +578,40 @@ export function LeaferCanvas() {
     app.editor.target = nextTarget
   }, [activeIds, isPreview, elements])
 
+  // Custom Ruler Guides sync
+  const rulerGuides = useEditorStore((state) => state.rulerGuides)
+  useEffect(() => {
+    const app = appRef.current
+    if (!app || app.destroyed) return
+    const guideGroup = ensureGuideGroup(app)
+    const oldRulerLines = guideGroup.children.filter((c: any) => c.id && String(c.id).startsWith('__ruler_guide__'))
+    oldRulerLines.forEach((c: any) => c.remove())
+
+    rulerGuides.forEach((g) => {
+      if (g.type === 'v') {
+        const line = new Line({
+          id: `__ruler_guide__${g.id}`,
+          points: [g.pos, -5000, g.pos, 10000],
+          stroke: '#06b6d4',
+          strokeWidth: 1,
+          dashPattern: [6, 4],
+          hittable: false,
+        })
+        guideGroup.add(line)
+      } else {
+        const line = new Line({
+          id: `__ruler_guide__${g.id}`,
+          points: [-5000, g.pos, 10000, g.pos],
+          stroke: '#06b6d4',
+          strokeWidth: 1,
+          dashPattern: [6, 4],
+          hittable: false,
+        })
+        guideGroup.add(line)
+      }
+    })
+  }, [rulerGuides])
+
   // Node sync
   useEffect(() => {
     if (!appRef.current) return
@@ -647,6 +681,29 @@ export function LeaferCanvas() {
             canvasY = (screenY - ty) / zoom
           }
         } catch {}
+
+        // Check if dropping image over an existing Image node to REPLACE it
+        if ((data.type === 'Image' || data.url) && data.url) {
+          const state = useEditorStore.getState()
+          const targetImage = state.elements.slice().reverse().find(el => {
+            if (el.type !== 'Image') return false
+            const ex = el.x
+            const ey = el.y
+            const ew = el.width || 100
+            const eh = el.height || 100
+            return canvasX >= ex && canvasX <= ex + ew && canvasY >= ey && canvasY <= ey + eh
+          })
+
+          if (targetImage) {
+            state.updateNode(targetImage.id, { url: data.url })
+            feedback.notify({
+              title: '图片替换成功',
+              description: '已成功将新图片替换至已有图片图层',
+              tone: 'success',
+            })
+            return
+          }
+        }
 
         useEditorStore.getState().addNode({
           ...(data.defaultProps || {}),

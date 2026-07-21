@@ -155,7 +155,22 @@ export function MainLayout({ leftPanel, centerCanvas, rightPanel, topToolbar }: 
         {/* Canvas + Ruler wrapper */}
         <div className="flex-1 flex flex-col overflow-hidden relative">
           {/* X-axis ruler */}
-          <div className="bg-ruler border-b border-editor-darker flex items-center overflow-hidden shrink-0 relative select-none" style={{ height: RULER_SIZE }}>
+          <div
+            className="bg-ruler border-b border-editor-darker flex items-center overflow-hidden shrink-0 relative select-none cursor-crosshair hover:bg-ruler/80 transition-colors"
+            style={{ height: RULER_SIZE }}
+            title="点击标尺放置垂直参考线"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect()
+              const app = useEditorStore.getState()._leaferApp
+              if (!app) return
+              const screenX = e.clientX - rect.left - RULER_SIZE
+              const tree = app.tree as any
+              const zoom = tree.scaleX || tree.scale?.x || 1
+              const tx = tree.x || 0
+              const canvasX = Math.round((screenX - tx) / zoom)
+              useEditorStore.getState().addRulerGuide({ type: 'v', pos: canvasX })
+            }}
+          >
             <div className="absolute left-0 top-0 h-full bg-editor-deep border-r border-editor-darker" style={{ width: RULER_SIZE }} />
             <div className="absolute inset-y-0 right-0 overflow-hidden" style={{ left: RULER_SIZE }}>
               {xTicks.map((tick) => (
@@ -178,7 +193,22 @@ export function MainLayout({ leftPanel, centerCanvas, rightPanel, topToolbar }: 
           {/* Y-axis ruler + canvas */}
           <div className="flex flex-1 overflow-hidden">
             {/* Y-axis ruler */}
-            <div className="bg-ruler border-r border-editor-darker flex flex-col items-center overflow-hidden shrink-0 relative select-none" style={{ width: RULER_SIZE }}>
+            <div
+              className="bg-ruler border-r border-editor-darker flex flex-col items-center overflow-hidden shrink-0 relative select-none cursor-crosshair hover:bg-ruler/80 transition-colors"
+              style={{ width: RULER_SIZE }}
+              title="点击标尺放置水平参考线"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                const app = useEditorStore.getState()._leaferApp
+                if (!app) return
+                const screenY = e.clientY - rect.top
+                const tree = app.tree as any
+                const zoom = tree.scaleY || tree.scale?.y || 1
+                const ty = tree.y || 0
+                const canvasY = Math.round((screenY - ty) / zoom)
+                useEditorStore.getState().addRulerGuide({ type: 'h', pos: canvasY })
+              }}
+            >
               {yTicks.map((tick) => (
                 <div
                   key={tick.key}

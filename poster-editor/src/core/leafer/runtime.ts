@@ -80,6 +80,7 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   }
 
   if (props?.contain) runtimeProps.objectFit = 'contain'
+  if (props?.filter && props.filter !== 'none') runtimeProps.filter = props.filter
 
   if (el.type === 'Path') {
     const width = el.width || 100
