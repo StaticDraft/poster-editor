@@ -96,6 +96,7 @@ interface EditorState {
   loadScene: (id: string) => void
   saveScene: () => void
   createScene: (name?: string) => void
+  createSceneFromCurrent: (name?: string) => string
   renameScene: (id: string, name: string) => void
   duplicateScene: (id: string, name?: string) => string | null
   deleteScene: (id: string) => void
@@ -309,6 +310,17 @@ export const useEditorStore = create<EditorState>((set, get) => {
       })
       cmdManager.clear()
       get().saveScene()
+    },
+    createSceneFromCurrent: (name) => {
+      const id = createSceneId(new Set(get().scenes.map((scene) => scene.id)))
+      const sceneName = name?.trim() || get().projectName || '转换海报场景'
+      set({
+        currentSceneId: id,
+        projectName: sceneName,
+        projectCategory: 'Posters',
+      })
+      get().saveScene()
+      return id
     },
     renameScene: (id, name) => {
       const nextName = name.trim()

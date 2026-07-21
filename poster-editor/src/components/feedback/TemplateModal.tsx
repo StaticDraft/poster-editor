@@ -28,9 +28,12 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
 
   if (!open) return null
 
+  const setProjectName = useEditorStore((state) => state.setProjectName)
+
   const handleApplyTemplate = (tpl: PresetTemplate) => {
-    // 1. Update Canvas config (width, height, background color)
+    // 1. Update Canvas config & Project Name
     setCanvasConfig(tpl.canvasConfig)
+    setProjectName(tpl.name)
     // 2. Clone elements to ensure fresh unique IDs
     const clonedElements = tpl.elements.map((el) => ({
       ...el,
@@ -39,8 +42,8 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
     setElements(clonedElements)
 
     feedback.notify({
-      title: '海报模板载入成功',
-      description: `已载入「${tpl.name}」模板场景，支持在此基础上自由二次编辑`,
+      title: `正编辑海报模板「${tpl.name}」`,
+      description: '已在主画布载入模板！右键点击画布选择「转为场景」即可保存至页面目录',
       tone: 'success',
     })
     setPreviewTemplate(null)

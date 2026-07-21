@@ -33,8 +33,11 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     return list
   }, [activeCategory, searchFilter])
 
+  const setProjectName = useEditorStore((state) => state.setProjectName)
+
   const handleApplyTemplate = (tpl: PresetTemplate) => {
     setCanvasConfig(tpl.canvasConfig)
+    setProjectName(tpl.name)
     const clonedElements = tpl.elements.map((el) => ({
       ...el,
       id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -42,8 +45,8 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     setElements(clonedElements)
 
     feedback.notify({
-      title: '海报模板应用成功',
-      description: `已成功载入「${tpl.name}」场景图元`,
+      title: `正载入海报模板「${tpl.name}」`,
+      description: '已在主画布载入模板组件！右键点击画布选择「转为场景」即可另存存入页面目录',
       tone: 'success',
     })
     setPreviewTemplate(null)

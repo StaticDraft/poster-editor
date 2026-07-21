@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import {
   Copy, ClipboardPaste, BringToFront, SendToBack, Trash2,
   Scissors, Undo2, Redo2, ChevronUp, ChevronDown,
-  Lock, Unlock, Group, Ungroup,
+  Lock, Unlock, Group, Ungroup, Monitor,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
@@ -128,6 +128,19 @@ export function CanvasContextMenu({ pos, onClose }: Props) {
     onClose()
   }
 
+  const handleConvertToScene = () => {
+    const state = useEditorStore.getState()
+    const name = state.projectName || '转换海报场景'
+    state.createSceneFromCurrent(name)
+    state.setSidebarTab('myScenes')
+    feedback.notify({
+      title: '转换海报场景成功',
+      description: `已将当前海报成功另存并转换为独立场景「${name}」，已自动切换至页面目录`,
+      tone: 'success',
+    })
+    onClose()
+  }
+
   // ── Menu item helpers ──
 
   const MenuItem = ({ icon: Icon, label, onClick, disabled, shortcut, className = '' }: {
@@ -157,6 +170,11 @@ export function CanvasContextMenu({ pos, onClose }: Props) {
       onClick={(e) => { e.stopPropagation(); onClose() }}
       onContextMenu={e => { e.preventDefault(); onClose() }}
     >
+      {/* Convert template/canvas to Scene */}
+      <MenuItem icon={Monitor} label="转为场景 (保存至页面目录)" onClick={handleConvertToScene} className="text-purple-400 font-bold" />
+
+      <Divider />
+
       {/* Undo / Redo */}
       <MenuItem icon={Undo2} label={tr('contextMenu.undo', '撤销')} onClick={handleUndo} disabled={!canUndo} shortcut="Ctrl+Z" className="text-primary" />
       <MenuItem icon={Redo2} label={tr('contextMenu.redo', '重做')} onClick={handleRedo} disabled={!canRedo} shortcut="Ctrl+Y" className="text-primary" />
