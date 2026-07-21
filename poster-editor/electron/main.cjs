@@ -17,7 +17,7 @@ function createWindow() {
     frame: true,
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
       contextBridge: true,
       webSecurity: true,
@@ -47,7 +47,6 @@ function createWindow() {
 
 // IPC Handlers for system / file dialogs
 ipcMain.handle('get-machine-code', () => {
-  // Generate a hardware-bound machine identifier for license verification
   const networkInterfaces = os.networkInterfaces()
   let macAddress = ''
   for (const name of Object.keys(networkInterfaces)) {
@@ -60,7 +59,6 @@ ipcMain.handle('get-machine-code', () => {
     if (macAddress) break
   }
   const rawId = `${os.hostname()}-${os.platform()}-${os.arch()}-${macAddress}`
-  // Basic hash/format into machine code string
   return Buffer.from(rawId).toString('base64').replace(/=/g, '').toUpperCase().slice(0, 24)
 })
 
