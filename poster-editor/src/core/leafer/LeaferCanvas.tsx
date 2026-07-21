@@ -293,7 +293,7 @@ export function LeaferCanvas() {
     const app = new App({
       view: containerRef.current,
       editor: {},
-      wheel: { zoomMode: true }
+      wheel: { zoomMode: true, zoomSpeed: 0.02 }
     })
     appRef.current = app
     // Force-clear any stale board from a previous App instance (React Strict Mode remount)
@@ -716,6 +716,25 @@ export function LeaferCanvas() {
     } catch (e) {}
   }
 
+  const lastMiddleClickRef = useRef<number>(0)
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button === 1) {
+      e.preventDefault()
+      const now = Date.now()
+      if (now - lastMiddleClickRef.current < 350) {
+        useEditorStore.getState().zoomFit()
+        feedback.notify({
+          title: '画布已自适应居中显示',
+          tone: 'info',
+        })
+        lastMiddleClickRef.current = 0
+      } else {
+        lastMiddleClickRef.current = now
+      }
+    }
+  }
+
   return (
     <div
       className="flex-1 w-full h-full bg-editor-deep overflow-hidden relative shadow-inner flex items-center justify-center"
@@ -725,6 +744,8 @@ export function LeaferCanvas() {
         className="w-full h-full absolute inset-0 cursor-crosshair"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        onMouseDown={handleMouseDown}
+        onAuxClick={(e) => e.button === 1 && e.preventDefault()}
         onContextMenu={e => e.preventDefault()}
       />
 

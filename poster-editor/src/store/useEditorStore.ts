@@ -468,8 +468,11 @@ export const useEditorStore = create<EditorState>((set, get) => {
       const app = get()._leaferApp
       const { width, height } = get().canvasConfig
       if (app?.tree && typeof app.tree.zoom === 'function') {
-        const pad = 60
-        app.tree.zoom({ x: -pad, y: -pad, width: width + pad * 2, height: height + pad * 2 })
+        try {
+          app.tree.zoom({ x: 0, y: 0, width, height }, 40)
+        } catch {
+          app.tree.zoom('fit')
+        }
       }
     },
     zoomReset: () => {
