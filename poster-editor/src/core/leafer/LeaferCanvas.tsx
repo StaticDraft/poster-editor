@@ -262,6 +262,45 @@ export function LeaferCanvas() {
         e.preventDefault()
         handleKeyboardPaste()
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !editingField) {
+        e.preventDefault()
+        const allElements = useEditorStore.getState().elements
+        const selectableIds = allElements.filter((el) => !el.props?.isLocked).map((el) => el.id)
+        useEditorStore.getState().setActiveIds(selectableIds)
+        if (appRef.current && (appRef.current as any).editor) {
+          const globalNodes = selectableIds.map((id) => nodeMapRef.current.get(id)).filter(Boolean)
+          if (globalNodes.length > 0) (appRef.current as any).editor.target = globalNodes
+        }
+        feedback.notify({
+          title: `全选图元 (${selectableIds.length} 个)`,
+          tone: 'info',
+        })
+      }
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !editingField) {
+        const actives = useEditorStore.getState().activeIds
+        if (actives.length > 0) {
+          e.preventDefault()
+          const step = e.shiftKey ? 10 : 1
+          let dx = 0
+          let dy = 0
+          if (e.key === 'ArrowLeft') dx = -step
+          if (e.key === 'ArrowRight') dx = step
+          if (e.key === 'ArrowUp') dy = -step
+          if (e.key === 'ArrowDown') dy = step
+
+          const state = useEditorStore.getState()
+          const updates = state.elements
+            .filter((el) => actives.includes(el.id))
+            .map((el) => ({
+              id: el.id,
+              attrs: {
+                x: (el.x || 0) + dx,
+                y: (el.y || 0) + dy,
+              },
+            }))
+          state.batchUpdateNodes(updates)
+        }
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && !editingField) {
         const actives = useEditorStore.getState().activeIds
         if (actives.length > 0) { e.preventDefault(); void handleKeyboardDelete(actives) }
@@ -489,15 +528,44 @@ export function LeaferCanvas() {
       }
     })
 
+    let isAltDuplicating = false
+    app.on(DragEvent.START, (e) => {
+      const originEvent = (e.origin as MouseEvent) || (window.event as MouseEvent)
+      if (originEvent && originEvent.altKey && !isAltDuplicating) {
+        isAltDuplicating = true
+        const state = useEditorStore.getState()
+        const activeIds = state.activeIds
+        if (activeIds.length > 0) {
+          const clonedNodes = state.elements
+            .filter((el) => activeIds.includes(el.id))
+            .map((el) => ({
+              ...JSON.parse(JSON.stringify(el)),
+              id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              x: (el.x || 0) + 20,
+              y: (el.y || 0) + 20,
+            }))
+
+          clonedNodes.forEach((node) => state.addNode(node))
+          const newIds = clonedNodes.map((n) => n.id)
+          state.setActiveIds(newIds)
+          feedback.notify({
+            title: `Alt 拖拽快速复制 (${newIds.length} 个图元)`,
+            tone: 'info',
+          })
+        }
+      }
+    })
+
     app.on(DragEvent.END, () => {
+      isAltDuplicating = false
       if (guideGroupRef.current) {
         guideGroupRef.current.removeAll()
       }
       persistEditorSelection(app)
       setTimeout(() => {
-         if ((app as any).editor?.list) {
-           useEditorStore.getState().setActiveIds((app as any).editor.list.map((n: any) => n.id).filter(Boolean))
-         }
+        if ((app as any).editor?.list) {
+          useEditorStore.getState().setActiveIds((app as any).editor.list.map((n: any) => n.id).filter(Boolean))
+        }
       }, 0)
     })
 
