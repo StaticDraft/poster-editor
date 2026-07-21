@@ -14,11 +14,13 @@ import {
   Redo2,
   UserCircle,
   Command,
+  LayoutTemplate,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { SaveStatusBadge } from '@/components/feedback/SaveStatusBadge'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
+import { TemplateModal } from '@/components/feedback/TemplateModal'
 
 interface MenuDef {
   label: string
@@ -30,6 +32,7 @@ export function MainNavbar() {
   const feedback = useFeedback()
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const tr = (key: string, fallback: string) => {
     const value = t(key)
@@ -173,6 +176,7 @@ export function MainNavbar() {
     {
       label: tr('navbar.file', '文件'),
       items: [
+        { label: '海报模板库', icon: <LayoutTemplate className="w-3.5 h-3.5 text-purple-400" />, action: () => { setShowTemplateModal(true); setActiveMenu(null) } },
         { label: tr('navbar.menu.newProject', '新建海报'), icon: <File className="w-3.5 h-3.5" />, action: handleNewProject },
         { label: tr('navbar.menu.openLocal', '打开本地'), icon: <FolderOpen className="w-3.5 h-3.5" />, action: handleLoadLocal },
         { label: tr('navbar.menu.saveLocal', '存为模板'), icon: <Save className="w-3.5 h-3.5" />, action: handleSaveLocal, shortcut: 'Ctrl+S' },
@@ -294,6 +298,7 @@ export function MainNavbar() {
         <UserCircle className="h-6 w-6 cursor-pointer text-editor-text transition-transform hover:scale-110" />
       </div>
       <ShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      <TemplateModal open={showTemplateModal} onClose={() => setShowTemplateModal(false)} />
     </div>
   )
 }

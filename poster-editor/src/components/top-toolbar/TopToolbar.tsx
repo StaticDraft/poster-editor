@@ -28,6 +28,7 @@ import {
   MoreHorizontal,
   ChevronDown,
   FileJson,
+  LayoutTemplate,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
@@ -36,10 +37,12 @@ import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
 import { ExportModal } from '@/components/feedback/ExportModal'
+import { TemplateModal } from '@/components/feedback/TemplateModal'
 
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const activeIds = useEditorStore((state) => state.activeIds)
   const updateNodes = useEditorStore((state) => state.updateNodes)
   const clearNodes = useEditorStore((state) => state.clearNodes)
@@ -262,6 +265,16 @@ export function TopToolbar() {
           <Play className="w-3.5 h-3.5 mr-1 fill-current text-green-500" /> {tr('toolbar.startPreview', '预览')}
         </Button>
 
+        {/* CTA 1: Open Preset Template Library */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowTemplateModal(true)}
+          className="h-7 text-xs px-2.5 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/30 font-semibold shrink-0"
+        >
+          <LayoutTemplate className="w-3.5 h-3.5 mr-1" /> 模板库
+        </Button>
+
         {/* Primary CTA: Export Image */}
         <Button
           variant="default"
@@ -339,6 +352,7 @@ export function TopToolbar() {
       </div>
 
       <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
+      <TemplateModal open={showTemplateModal} onClose={() => setShowTemplateModal(false)} />
     </div>
   )
 }
