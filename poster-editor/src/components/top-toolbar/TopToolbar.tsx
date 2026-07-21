@@ -25,10 +25,11 @@ import {
   Ungroup,
   Image as ImageIcon,
   FolderOpen,
-  MoreHorizontal,
-  ChevronDown,
   FileJson,
   LayoutTemplate,
+  Command,
+  ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
@@ -38,11 +39,13 @@ import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
 import { ExportModal } from '@/components/feedback/ExportModal'
 import { TemplateModal } from '@/components/feedback/TemplateModal'
+import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
 
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false)
   const activeIds = useEditorStore((state) => state.activeIds)
   const updateNodes = useEditorStore((state) => state.updateNodes)
   const clearNodes = useEditorStore((state) => state.clearNodes)
@@ -254,6 +257,16 @@ export function TopToolbar() {
 
       {/* Right actions */}
       <div className="flex items-center gap-1.5 shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowShortcutsModal(true)}
+          className="h-7 text-xs px-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold shrink-0"
+          title="查看海报编辑器全量快捷键指南"
+        >
+          <Command className="w-3.5 h-3.5 mr-1 text-blue-400" /> 快捷键
+        </Button>
+
         <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleLanguage} title={t('toolbar.lang')}>
           <Languages className="w-3.5 h-3.5" />
         </Button>
@@ -419,6 +432,7 @@ export function TopToolbar() {
 
       <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
       <TemplateModal open={showTemplateModal} onClose={() => setShowTemplateModal(false)} />
+      <ShortcutsDialog open={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
     </div>
   )
 }

@@ -577,36 +577,63 @@ export function LeaferCanvas() {
       }
     })
 
-    let isAltDuplicating = false
+    let lastAltDuplicateTime = 0
+
+    const performAltDuplicate = (e: any) => {
+      const originEvent = (e.origin as MouseEvent) || (window.event as MouseEvent)
+      if (!originEvent || !originEvent.altKey) return
+
+      const now = Date.now()
+      if (now - lastAltDuplicateTime < 250) return
+      lastAltDuplicateTime = now
+
+      const state = useEditorStore.getState()
+      const activeIds = state.activeIds
+      if (activeIds.length > 0) {
+        const clonedNodes = state.elements
+          .filter((el) => activeIds.includes(el.id))
+          .map((el) => ({
+            ...JSON.parse(JSON.stringify(el)),
+            id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            x: (el.x || 0) + 20,
+            y: (el.y || 0) + 20,
+          }))
+
+        clonedNodes.forEach((node) => state.addNode(node))
+        const newIds = clonedNodes.map((n) => n.id)
+        state.setActiveIds(newIds)
+
+        setTimeout(() => {
+          if (appRef.current && (appRef.current as any).editor) {
+            const globalNodes = newIds.map((id) => nodeMapRef.current.get(id)).filter(Boolean)
+            if (globalNodes.length > 0) {
+              ;(appRef.current as any).editor.target = globalNodes
+            }
+          }
+        }, 10)
+
+        feedback.notify({
+          title: `Alt 快速复制 (${newIds.length} 个图元)`,
+          tone: 'info',
+        })
+      }
+    }
+
+    app.on(PointerEvent.DOWN, (e) => {
+      const originEvent = (e.origin as MouseEvent) || (window.event as MouseEvent)
+      if (originEvent && originEvent.altKey) {
+        performAltDuplicate(e)
+      }
+    })
+
     app.on(DragEvent.START, (e) => {
       const originEvent = (e.origin as MouseEvent) || (window.event as MouseEvent)
-      if (originEvent && originEvent.altKey && !isAltDuplicating) {
-        isAltDuplicating = true
-        const state = useEditorStore.getState()
-        const activeIds = state.activeIds
-        if (activeIds.length > 0) {
-          const clonedNodes = state.elements
-            .filter((el) => activeIds.includes(el.id))
-            .map((el) => ({
-              ...JSON.parse(JSON.stringify(el)),
-              id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-              x: (el.x || 0) + 20,
-              y: (el.y || 0) + 20,
-            }))
-
-          clonedNodes.forEach((node) => state.addNode(node))
-          const newIds = clonedNodes.map((n) => n.id)
-          state.setActiveIds(newIds)
-          feedback.notify({
-            title: `Alt 拖拽快速复制 (${newIds.length} 个图元)`,
-            tone: 'info',
-          })
-        }
+      if (originEvent && originEvent.altKey) {
+        performAltDuplicate(e)
       }
     })
 
     app.on(DragEvent.END, () => {
-      isAltDuplicating = false
       if (guideGroupRef.current) {
         guideGroupRef.current.removeAll()
       }
