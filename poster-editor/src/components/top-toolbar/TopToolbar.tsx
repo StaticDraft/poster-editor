@@ -174,9 +174,75 @@ export function TopToolbar() {
         <Button variant="ghost" size="icon" className="w-7 h-7" title={t('toolbar.zoomOut')} onClick={() => useEditorStore.getState().zoomOut()}>
           <ZoomOut className="w-3.5 h-3.5" />
         </Button>
-        <button onClick={() => useEditorStore.getState().zoomReset()} className="text-[11px] font-mono text-muted-foreground hover:text-foreground px-1.5 min-w-[42px] text-center">
-          {t('toolbar.zoomReset')}
-        </button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="text-[11px] font-mono font-bold text-muted-foreground hover:text-foreground px-1.5 min-w-[44px] text-center flex items-center justify-center gap-0.5 rounded hover:bg-muted/50 py-1 transition-colors">
+              {t('toolbar.zoomReset')}
+              <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-32 p-1 bg-card border border-border shadow-xl z-50">
+            <button
+              onClick={() => {
+                const app = useEditorStore.getState()._leaferApp
+                if (app?.tree) app.tree.zoom(0.5)
+              }}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono"
+            >
+              <span>50%</span>
+            </button>
+            <button
+              onClick={() => {
+                const app = useEditorStore.getState()._leaferApp
+                if (app?.tree) app.tree.zoom(0.75)
+              }}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono"
+            >
+              <span>75%</span>
+            </button>
+            <button
+              onClick={() => useEditorStore.getState().zoomReset()}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono font-bold"
+            >
+              <span>100%</span>
+            </button>
+            <button
+              onClick={() => {
+                const app = useEditorStore.getState()._leaferApp
+                if (app?.tree) app.tree.zoom(1.25)
+              }}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono"
+            >
+              <span>125%</span>
+            </button>
+            <button
+              onClick={() => {
+                const app = useEditorStore.getState()._leaferApp
+                if (app?.tree) app.tree.zoom(1.5)
+              }}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono"
+            >
+              <span>150%</span>
+            </button>
+            <button
+              onClick={() => {
+                const app = useEditorStore.getState()._leaferApp
+                if (app?.tree) app.tree.zoom(2.0)
+              }}
+              className="flex w-full items-center justify-between px-2 py-1 text-xs text-foreground hover:bg-muted rounded font-mono"
+            >
+              <span>200%</span>
+            </button>
+            <div className="my-1 border-t border-border" />
+            <button
+              onClick={() => useEditorStore.getState().zoomFit()}
+              className="flex w-full items-center gap-1.5 px-2 py-1 text-xs text-purple-400 font-bold hover:bg-purple-500/10 rounded"
+            >
+              <Maximize2 className="w-3 h-3" />
+              自适应居中
+            </button>
+          </PopoverContent>
+        </Popover>
         <Button variant="ghost" size="icon" className="w-7 h-7" title={t('toolbar.zoomIn')} onClick={() => useEditorStore.getState().zoomIn()}>
           <ZoomIn className="w-3.5 h-3.5" />
         </Button>

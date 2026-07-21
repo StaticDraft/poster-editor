@@ -301,6 +301,55 @@ export function LeaferCanvas() {
           state.batchUpdateNodes(updates)
         }
       }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g' && !editingField) {
+        e.preventDefault()
+        const state = useEditorStore.getState()
+        const actives = state.activeIds
+        if (e.shiftKey) {
+          state.updateNodes(actives, { groupId: undefined } as any)
+          feedback.notify({ title: '已解组选中图元', tone: 'info' })
+        } else if (actives.length > 1) {
+          const groupId = `group-${Date.now()}`
+          state.updateNodes(actives, { groupId } as any)
+          feedback.notify({ title: `已编组 ${actives.length} 个图元`, tone: 'success' })
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l' && !editingField) {
+        e.preventDefault()
+        const state = useEditorStore.getState()
+        const actives = state.activeIds
+        if (actives.length > 0) {
+          const first = state.elements.find((el) => actives.includes(el.id))
+          const nextLocked = !first?.props?.isLocked
+          state.updateNodes(actives, { props: { ...(first?.props || {}), isLocked: nextLocked } } as any)
+          feedback.notify({
+            title: nextLocked ? '已锁定选中图元' : '已解锁选中图元',
+            tone: 'info',
+          })
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '[' || e.key === ']') && !editingField) {
+        e.preventDefault()
+        const state = useEditorStore.getState()
+        const actives = state.activeIds
+        if (actives.length > 0) {
+          const currentElements = [...state.elements]
+          const targetId = actives[0]
+          const idx = currentElements.findIndex((el) => el.id === targetId)
+          if (idx !== -1) {
+            const item = currentElements[idx]
+            currentElements.splice(idx, 1)
+            if (e.key === '[') {
+              const newIdx = e.shiftKey ? 0 : Math.max(0, idx - 1)
+              currentElements.splice(newIdx, 0, item)
+            } else {
+              const newIdx = e.shiftKey ? currentElements.length : Math.min(currentElements.length, idx + 1)
+              currentElements.splice(newIdx, 0, item)
+            }
+            state.setElements(currentElements)
+          }
+        }
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && !editingField) {
         const actives = useEditorStore.getState().activeIds
         if (actives.length > 0) { e.preventDefault(); void handleKeyboardDelete(actives) }
