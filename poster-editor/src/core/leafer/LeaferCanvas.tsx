@@ -184,8 +184,9 @@ export function LeaferCanvas() {
   const ensureGuideGroup = (app: App) => {
     if (guideGroupRef.current && guideGroupRef.current.destroyed) guideGroupRef.current = null
     if (!guideGroupRef.current) {
+      const board = ensureBoard(app)
       guideGroupRef.current = new Group({ id: '__guide_group__', zIndex: 100000 })
-      app.tree.add(guideGroupRef.current)
+      board.add(guideGroupRef.current)
     }
     return guideGroupRef.current
   }
@@ -226,14 +227,39 @@ export function LeaferCanvas() {
        }
      } catch {}
 
-     // Safe Margin & 3x3 Grid Overlay Renderer
+     // Safe Margin, 3x3 Grid Overlay & Mesh Grid Renderer
      try {
        const guideGroup = ensureGuideGroup(app)
-       const existingGrid = guideGroup.find((n: any) => n.id && typeof n.id === 'string' && n.id.startsWith('__grid_overlay_'))
-       existingGrid.forEach((n: any) => n.remove())
+       guideGroup.removeAll()
 
-       const { width: bW, height: bH, showSafeMargin, showGridOverlay } = canvasConfig
+       const { width: bW, height: bH, showGrid, showSafeMargin, showGridOverlay } = canvasConfig
 
+       // 1. Base 50px Canvas Grid Mesh (显示网格)
+       if (showGrid) {
+         const gridStep = 50
+         for (let x = gridStep; x < bW; x += gridStep) {
+           guideGroup.add(new Line({
+             id: `__grid_overlay_mesh_v_${x}__`,
+             points: [x, 0, x, bH],
+             stroke: 'rgba(148, 163, 184, 0.35)',
+             strokeWidth: 1,
+             dashPattern: [2, 2],
+             hittable: false,
+           }))
+         }
+         for (let y = gridStep; y < bH; y += gridStep) {
+           guideGroup.add(new Line({
+             id: `__grid_overlay_mesh_h_${y}__`,
+             points: [0, y, bW, y],
+             stroke: 'rgba(148, 163, 184, 0.35)',
+             strokeWidth: 1,
+             dashPattern: [2, 2],
+             hittable: false,
+           }))
+         }
+       }
+
+       // 2. Safe Bleed Margin 5% (显示 5% 出血安全边距)
        if (showSafeMargin) {
          const insetX = bW * 0.05
          const insetY = bH * 0.05
@@ -243,13 +269,14 @@ export function LeaferCanvas() {
            y: insetY,
            width: bW - insetX * 2,
            height: bH - insetY * 2,
-           stroke: '#38bdf8',
-           strokeWidth: 1,
+           stroke: '#0284c7',
+           strokeWidth: 2,
            dashPattern: [6, 6],
            hittable: false,
          }))
        }
 
+       // 3. Rule of Thirds 3x3 Grid Overlay (显示三分构图辅助网格)
        if (showGridOverlay) {
          const stepX = bW / 3
          const stepY = bH / 3
@@ -257,32 +284,32 @@ export function LeaferCanvas() {
          guideGroup.add(new Line({
            id: '__grid_overlay_v1__',
            points: [stepX, 0, stepX, bH],
-           stroke: '#a855f7',
-           strokeWidth: 1,
+           stroke: '#9333ea',
+           strokeWidth: 2,
            dashPattern: [4, 4],
            hittable: false,
          }))
          guideGroup.add(new Line({
            id: '__grid_overlay_v2__',
            points: [stepX * 2, 0, stepX * 2, bH],
-           stroke: '#a855f7',
-           strokeWidth: 1,
+           stroke: '#9333ea',
+           strokeWidth: 2,
            dashPattern: [4, 4],
            hittable: false,
          }))
          guideGroup.add(new Line({
            id: '__grid_overlay_h1__',
            points: [0, stepY, bW, stepY],
-           stroke: '#a855f7',
-           strokeWidth: 1,
+           stroke: '#9333ea',
+           strokeWidth: 2,
            dashPattern: [4, 4],
            hittable: false,
          }))
          guideGroup.add(new Line({
            id: '__grid_overlay_h2__',
            points: [0, stepY * 2, bW, stepY * 2],
-           stroke: '#a855f7',
-           strokeWidth: 1,
+           stroke: '#9333ea',
+           strokeWidth: 2,
            dashPattern: [4, 4],
            hittable: false,
          }))
