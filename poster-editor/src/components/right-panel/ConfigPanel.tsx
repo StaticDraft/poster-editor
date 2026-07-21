@@ -132,8 +132,26 @@ function AppearanceTab({ node }: { node: any }) {
             <NumInput value={node.height || 100} onChange={handleHeight} />
           </div>
         </div>
-        <Row label={tr('config.appearance.rotation', '旋转角度')}>
-          <NumInput value={node.rotation || 0} onChange={v => u('rotation', v)} />
+        <Row label="旋转与翻转">
+          <div className="flex items-center gap-1.5 flex-1">
+            <NumInput value={node.rotation || 0} onChange={v => u('rotation', v)} />
+            <button
+              type="button"
+              onClick={() => up('flipH', !p.flipH)}
+              title="水平镜像翻转"
+              className={`h-7 px-2 text-[11px] font-bold rounded border transition-colors ${p.flipH ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
+            >
+              ⇄ 水平
+            </button>
+            <button
+              type="button"
+              onClick={() => up('flipV', !p.flipV)}
+              title="垂直镜像翻转"
+              className={`h-7 px-2 text-[11px] font-bold rounded border transition-colors ${p.flipV ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
+            >
+              ⇅ 垂直
+            </button>
+          </div>
         </Row>
         <Row label={tr('config.appearance.opacity', '透明度')}>
           <div className="flex items-center gap-2 flex-1">

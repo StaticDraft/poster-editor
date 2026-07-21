@@ -333,6 +333,16 @@ export function LeaferCanvas() {
           }
         })
 
+        // Also snap to canvas center lines
+        const { width: bWidth, height: bHeight } = useEditorStore.getState().canvasConfig
+        otherNodes.push({
+          x: bWidth / 2,
+          y: bHeight / 2,
+          width: 0,
+          height: 0,
+          id: '__board_center__'
+        } as any)
+
         if (otherNodes.length === 0) return
 
         const threshold = 6

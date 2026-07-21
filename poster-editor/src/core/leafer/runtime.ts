@@ -93,8 +93,8 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     return runtimeProps
   }
 
-  if (props?.flipH) runtimeProps.scaleX = -1
-  if (props?.flipV) runtimeProps.scaleY = -1
+  runtimeProps.scaleX = props?.flipH ? -1 : 1
+  runtimeProps.scaleY = props?.flipV ? -1 : 1
   if (props?.flipH || props?.flipV || animation?.type === 'spin') runtimeProps.around = 'center'
 
   return runtimeProps

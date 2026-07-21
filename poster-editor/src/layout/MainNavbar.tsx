@@ -13,10 +13,12 @@ import {
   Undo2,
   Redo2,
   UserCircle,
+  Command,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { SaveStatusBadge } from '@/components/feedback/SaveStatusBadge'
+import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
 
 interface MenuDef {
   label: string
@@ -28,6 +30,7 @@ export function MainNavbar() {
   const feedback = useFeedback()
   const [activeMenu, setActiveMenu] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const tr = (key: string, fallback: string) => {
     const value = t(key)
     return value === key ? fallback : value
@@ -210,6 +213,7 @@ export function MainNavbar() {
     {
       label: tr('navbar.help', '帮助'),
       items: [
+        { label: '快捷键指南', icon: <Command className="w-3.5 h-3.5" />, action: () => { setShowShortcuts(true); setActiveMenu(null) } },
         { label: tr('navbar.menu.viewDocs', '查看文档'), action: handleOpenDocs },
         {
           label: tr('navbar.menu.about', '关于'),
@@ -289,6 +293,7 @@ export function MainNavbar() {
         <span className="cursor-pointer text-xs font-bold text-[#fb7185]">{tr('navbar.vis2d', '海报设计中心')}</span>
         <UserCircle className="h-6 w-6 cursor-pointer text-editor-text transition-transform hover:scale-110" />
       </div>
+      <ShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
   )
 }

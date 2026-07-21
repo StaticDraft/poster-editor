@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon } from 'lucide-react'
+import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
+import { generateQRCodeSVG, generateBarcodeDataUrl } from '@/lib/qrcode'
 
 // ─────────────────────────────────────────────────
 // SVG path definitions for graphic design elements
@@ -32,6 +33,9 @@ const CATEGORIES = [
       { type: 'Text', nameKey: 'material.items.superTitle', fallbackName: '特大醒目标题', text: 'SUMMER', fill: '#ef4444', width: 360, height: 100, fontSize: 72, props: { fontweight: '900', textalign: 'center' } },
       { type: 'Text', nameKey: 'material.items.titleText', fallbackName: '正标题文本', text: '设计狂欢夜', fill: '#ffffff', width: 260, height: 60, fontSize: 36, props: { fontweight: '700', textalign: 'center' } },
       { type: 'Text', nameKey: 'material.items.subTitleText', fallbackName: '创意副标题', text: 'CREATIVE DESIGN PARTY', fill: '#94a3b8', width: 220, height: 40, fontSize: 16, props: { fontweight: '500', textalign: 'center', letterspacing: '2px' } },
+      { type: 'Text', nameKey: 'material.items.comboSale', fallbackName: '组合：5折促销爆款', text: '5折封顶\n全场满199立减50', fill: '#ef4444', width: 280, height: 110, fontSize: 44, props: { fontweight: '900', textalign: 'center', lineheight: '1.2' } },
+      { type: 'Text', nameKey: 'material.items.comboInvite', fallbackName: '组合：盛典邀请函', text: 'INVITATION\n2026 年度设计盛典', fill: '#fbbf24', width: 300, height: 90, fontSize: 28, props: { fontweight: '700', textalign: 'center' } },
+      { type: 'Text', nameKey: 'material.items.comboGuochao', fallbackName: '组合：国潮招牌文字', text: '国潮崛起\n匠心造物 传承经典', fill: '#f97316', width: 280, height: 100, fontSize: 40, props: { fontweight: '900', textalign: 'center' } },
       { type: 'Text', nameKey: 'material.items.textLabel', fallbackName: '普通正文', text: '双击编辑修改此文本内容。海报设计与版式构图。', fill: '#cbd5e1', width: 240, height: 80, fontSize: 13 },
       { type: 'Text', nameKey: 'material.items.tagLabel', fallbackName: '标签属性文本', text: '限时 8.5 折', fill: '#f59e0b', width: 100, height: 30, fontSize: 12, props: { border: '1px solid #f59e0b', padding: '4px 8px' } },
     ]
@@ -123,6 +127,7 @@ function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius
 export function MaterialPanel({ searchFilter = '', mode = 'components' }: { searchFilter?: string; mode?: 'components' | 'assets' }) {
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ 'text-nodes': true, 'basic-shapes': true, stickers: true, backgrounds: true })
+  const [qrText, setQrText] = useState('')
 
   const tr = (key: string, fallback: string) => {
     const value = t(key)
@@ -223,6 +228,59 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
           </label>
         </div>
       )}
+
+      {/* 二维码与条形码在线生成器 */}
+      <div className="mx-3 mt-4 p-2.5 bg-editor-deep rounded border border-border">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-editor-text mb-2">
+          <QrCode className="w-4 h-4 text-emerald-400" />
+          <span>二维码 / 条形码生成器</span>
+        </div>
+        <input
+          type="text"
+          value={qrText}
+          onChange={(e) => setQrText(e.target.value)}
+          placeholder="输入网址或文本..."
+          className="w-full h-7 bg-card border border-border text-editor-text text-xs rounded px-2 mb-2 focus:outline-none focus:border-emerald-500 font-mono"
+        />
+        <div className="flex gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              const url = generateQRCodeSVG(qrText || 'https://postercraft.app')
+              useEditorStore.getState().addNode({
+                id: `qrcode-${Date.now()}`,
+                type: 'Image',
+                url,
+                x: 100,
+                y: 100,
+                width: 180,
+                height: 180,
+              })
+            }}
+            className="flex-1 h-7 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10px] rounded flex items-center justify-center gap-1 transition-colors"
+          >
+            <QrCode className="w-3 h-3" /> 生成二维码
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const url = generateBarcodeDataUrl(qrText || '690123456789')
+              useEditorStore.getState().addNode({
+                id: `barcode-${Date.now()}`,
+                type: 'Image',
+                url,
+                x: 100,
+                y: 100,
+                width: 240,
+                height: 80,
+              })
+            }}
+            className="flex-1 h-7 bg-blue-600 hover:bg-blue-500 text-white font-bold text-[10px] rounded flex items-center justify-center gap-1 transition-colors"
+          >
+            <Barcode className="w-3 h-3" /> 生成条形码
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

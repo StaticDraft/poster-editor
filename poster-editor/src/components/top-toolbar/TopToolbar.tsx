@@ -35,9 +35,11 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
+import { ExportModal } from '@/components/feedback/ExportModal'
 
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
+  const [showExportModal, setShowExportModal] = useState(false)
   const activeIds = useEditorStore((state) => state.activeIds)
   const updateNodes = useEditorStore((state) => state.updateNodes)
   const clearNodes = useEditorStore((state) => state.clearNodes)
@@ -136,31 +138,6 @@ export function TopToolbar() {
       description: tr('topToolbar.exportToast', '工程数据包已下载'),
       tone: 'success',
     })
-  }
-
-  const handleExportPNG = async () => {
-    const app = useEditorStore.getState()._leaferApp
-    if (!app) return
-    try {
-      await app.tree.export(`${useEditorStore.getState().projectName || 'my_poster'}.png`, { screenshot: true, scale: 2 })
-      const confetti = (await import('canvas-confetti')).default
-      confetti({
-        particleCount: 150,
-        spread: 90,
-        origin: { y: 0.6 }
-      })
-      feedback.notify({
-        title: tr('toolbar.exportImageSuccess', '海报导出成功'),
-        description: tr('toolbar.exportImageSuccessDesc', '超清 PNG 图片已下载分发'),
-        tone: 'success',
-      })
-    } catch (err) {
-      console.error(err)
-      feedback.notify({
-        title: tr('toolbar.exportImageFailed', '导出图片失败'),
-        tone: 'error',
-      })
-    }
   }
 
   const toggleTheme = () => {
@@ -289,7 +266,7 @@ export function TopToolbar() {
         <Button
           variant="default"
           size="sm"
-          onClick={handleExportPNG}
+          onClick={() => setShowExportModal(true)}
           className="h-7 text-xs px-2.5 bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-md shrink-0"
         >
           <ImageIcon className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.exportImage', '导出图片')}
@@ -360,6 +337,8 @@ export function TopToolbar() {
           </PopoverContent>
         </Popover>
       </div>
+
+      <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
     </div>
   )
 }
