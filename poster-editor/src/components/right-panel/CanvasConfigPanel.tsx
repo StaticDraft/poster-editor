@@ -271,9 +271,15 @@ export function CanvasConfigPanel() {
         </Row>
       </Section>
 
-      <Section title={tr('canvasConfig.auxSettings', '辅助开关')}>
-        <Row label={tr('canvasConfig.showGrid', '显示底纹格')}>
+      <Section title={tr('canvasConfig.auxSettings', '辅助视图控制')}>
+        <Row label={tr('canvasConfig.showGrid', '显示画布网格')}>
           <Toggle checked={config.showGrid} onChange={v => set('showGrid', v)} />
+        </Row>
+        <Row label="显示 5% 出血安全边距">
+          <Toggle checked={!!config.showSafeMargin} onChange={v => set('showSafeMargin', v)} />
+        </Row>
+        <Row label="显示三分构图辅助网格">
+          <Toggle checked={!!config.showGridOverlay} onChange={v => set('showGridOverlay', v)} />
         </Row>
       </Section>
     </div>

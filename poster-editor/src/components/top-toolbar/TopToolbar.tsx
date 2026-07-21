@@ -188,11 +188,6 @@ export function TopToolbar() {
       .filter(Boolean) as Array<{ id: string; attrs: any }>
 
     state.batchUpdateNodes(updates)
-    feedback.notify({
-      title: `已套用「${palette.name}」配色方案`,
-      description: '全画布图元色彩已自动融合重绘',
-      tone: 'success',
-    })
   }
 
   const handleApplyCanvasPreset = (preset: CanvasPreset) => {
@@ -201,11 +196,6 @@ export function TopToolbar() {
     setTimeout(() => {
       state.zoomFit()
     }, 50)
-    feedback.notify({
-      title: `画幅已切换至「${preset.name}」`,
-      description: `规格: ${preset.width} x ${preset.height} px (${preset.ratio})`,
-      tone: 'success',
-    })
   }
 
   const toggleLanguage = () => {

@@ -48,6 +48,8 @@ export interface CanvasConfig {
   height: number
   bgColor: any // string | { type: 'linear'|'radial', stops: string[], from?: string, to?: string } | { type: 'image', url: string, mode?: string }
   showGrid: boolean
+  showSafeMargin?: boolean
+  showGridOverlay?: boolean
   scaleMode: 'auto' | 'fit-w' | 'fit-h'
   lockPan: boolean
   lockZoom: boolean

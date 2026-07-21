@@ -214,18 +214,83 @@ export function LeaferCanvas() {
          else if (app.interaction.config.wheel) app.interaction.config.wheel.moveSpeed = 0.5
       }
     } catch {}
-    try {
-      if (app.interaction) {
-         if (app.interaction.config.zoom) app.interaction.config.zoom.disabled = canvasConfig.lockZoom
-         else app.interaction.config.zoom = { disabled: canvasConfig.lockZoom }
+     try {
+       if (app.interaction) {
+          if (app.interaction.config.zoom) app.interaction.config.zoom.disabled = canvasConfig.lockZoom
+          else app.interaction.config.zoom = { disabled: canvasConfig.lockZoom }
 
-         if (app.interaction.config.wheel) {
-             app.interaction.config.wheel.zoomMode = !canvasConfig.lockZoom
-             app.interaction.config.wheel.zoomSpeed = canvasConfig.lockZoom ? 0 : 0.5
-         }
-      }
-    } catch {}
-  }, [canvasConfig])
+          if (app.interaction.config.wheel) {
+              app.interaction.config.wheel.zoomMode = !canvasConfig.lockZoom
+              app.interaction.config.wheel.zoomSpeed = canvasConfig.lockZoom ? 0 : 0.5
+          }
+       }
+     } catch {}
+
+     // Safe Margin & 3x3 Grid Overlay Renderer
+     try {
+       const guideGroup = ensureGuideGroup(app)
+       const existingGrid = guideGroup.find((n: any) => n.id && typeof n.id === 'string' && n.id.startsWith('__grid_overlay_'))
+       existingGrid.forEach((n: any) => n.remove())
+
+       const { width: bW, height: bH, showSafeMargin, showGridOverlay } = canvasConfig
+
+       if (showSafeMargin) {
+         const insetX = bW * 0.05
+         const insetY = bH * 0.05
+         guideGroup.add(new Rect({
+           id: '__grid_overlay_safe_margin__',
+           x: insetX,
+           y: insetY,
+           width: bW - insetX * 2,
+           height: bH - insetY * 2,
+           stroke: '#38bdf8',
+           strokeWidth: 1,
+           dashPattern: [6, 6],
+           hittable: false,
+         }))
+       }
+
+       if (showGridOverlay) {
+         const stepX = bW / 3
+         const stepY = bH / 3
+
+         guideGroup.add(new Line({
+           id: '__grid_overlay_v1__',
+           points: [stepX, 0, stepX, bH],
+           stroke: '#a855f7',
+           strokeWidth: 1,
+           dashPattern: [4, 4],
+           hittable: false,
+         }))
+         guideGroup.add(new Line({
+           id: '__grid_overlay_v2__',
+           points: [stepX * 2, 0, stepX * 2, bH],
+           stroke: '#a855f7',
+           strokeWidth: 1,
+           dashPattern: [4, 4],
+           hittable: false,
+         }))
+         guideGroup.add(new Line({
+           id: '__grid_overlay_h1__',
+           points: [0, stepY, bW, stepY],
+           stroke: '#a855f7',
+           strokeWidth: 1,
+           dashPattern: [4, 4],
+           hittable: false,
+         }))
+         guideGroup.add(new Line({
+           id: '__grid_overlay_h2__',
+           points: [0, stepY * 2, bW, stepY * 2],
+           stroke: '#a855f7',
+           strokeWidth: 1,
+           dashPattern: [4, 4],
+           hittable: false,
+         }))
+       }
+     } catch (e) {
+       console.error('Grid overlay sync error:', e)
+     }
+   }, [canvasConfig])
 
   // Global keyboard shortcuts
   const handleKeyboardDelete = async (ids: string[]) => {
@@ -271,10 +336,6 @@ export function LeaferCanvas() {
           const globalNodes = selectableIds.map((id) => nodeMapRef.current.get(id)).filter(Boolean)
           if (globalNodes.length > 0) (appRef.current as any).editor.target = globalNodes
         }
-        feedback.notify({
-          title: `全选图元 (${selectableIds.length} 个)`,
-          tone: 'info',
-        })
       }
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !editingField) {
         const actives = useEditorStore.getState().activeIds
@@ -307,11 +368,9 @@ export function LeaferCanvas() {
         const actives = state.activeIds
         if (e.shiftKey) {
           state.updateNodes(actives, { groupId: undefined } as any)
-          feedback.notify({ title: '已解组选中图元', tone: 'info' })
         } else if (actives.length > 1) {
           const groupId = `group-${Date.now()}`
           state.updateNodes(actives, { groupId } as any)
-          feedback.notify({ title: `已编组 ${actives.length} 个图元`, tone: 'success' })
         }
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l' && !editingField) {
@@ -322,10 +381,6 @@ export function LeaferCanvas() {
           const first = state.elements.find((el) => actives.includes(el.id))
           const nextLocked = !first?.props?.isLocked
           state.updateNodes(actives, { props: { ...(first?.props || {}), isLocked: nextLocked } } as any)
-          feedback.notify({
-            title: nextLocked ? '已锁定选中图元' : '已解锁选中图元',
-            tone: 'info',
-          })
         }
       }
       if ((e.ctrlKey || e.metaKey) && (e.key === '[' || e.key === ']') && !editingField) {
@@ -593,10 +648,6 @@ export function LeaferCanvas() {
             id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           }))
           stayBehindCopies.forEach((node) => state.addNode(node))
-          feedback.notify({
-            title: `Alt 拖拽连续复制 (${stayBehindCopies.length} 个图元)`,
-            tone: 'info',
-          })
         }
       }
     })

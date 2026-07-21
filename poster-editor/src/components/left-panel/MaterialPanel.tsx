@@ -64,6 +64,18 @@ const CATEGORIES = [
     ]
   },
   {
+    id: 'marketing-stamps',
+    titleKey: 'material.categories.marketingStamps',
+    fallbackTitle: '营销爆款印章贴纸',
+    items: [
+      { type: 'Text', nameKey: 'material.items.stampSale', fallbackName: '限时 5 折爆款章', text: '限时特惠\n5折抢购', fill: '#ef4444', width: 140, height: 140, fontSize: 24, props: { fontweight: '900', textalign: 'center', border: '3px solid #ef4444', borderRadius: '50%', padding: '20px' } },
+      { type: 'Text', nameKey: 'material.items.stampHot', fallbackName: '热销推荐 NO.1', text: 'HOT\n爆款热销', fill: '#f59e0b', width: 130, height: 130, fontSize: 22, props: { fontweight: '900', textalign: 'center', border: '3px dashed #f59e0b', borderRadius: '16px', padding: '16px' } },
+      { type: 'Text', nameKey: 'material.items.stampAuthentic', fallbackName: '正品保障印章', text: '100%\n正品保障', fill: '#10b981', width: 130, height: 130, fontSize: 20, props: { fontweight: '800', textalign: 'center', border: '3px double #10b981', borderRadius: '50%', padding: '16px' } },
+      { type: 'Text', nameKey: 'material.items.stampNew', fallbackName: 'NEW 新品首发', text: 'NEW\n新品上市', fill: '#8b5cf6', width: 130, height: 130, fontSize: 22, props: { fontweight: '900', textalign: 'center', border: '3px solid #8b5cf6', borderRadius: '50%', padding: '16px' } },
+      { type: 'Text', nameKey: 'material.items.stampVip', fallbackName: 'VIP 专属特权', text: 'VIP\n专属尊享', fill: '#fbbf24', width: 130, height: 130, fontSize: 22, props: { fontweight: '900', textalign: 'center', border: '3px double #fbbf24', borderRadius: '16px', padding: '16px' } },
+    ]
+  },
+  {
     id: 'stickers',
     titleKey: 'material.categories.stickers',
     fallbackTitle: '潮酷矢量贴纸',
