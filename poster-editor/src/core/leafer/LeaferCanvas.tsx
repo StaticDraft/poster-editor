@@ -301,29 +301,23 @@ export function LeaferCanvas() {
     ensureBoard(app)
     useEditorStore.getState().setLeaferApp(app)
 
-    // Auto-fit artboard to viewport on first load
-    requestAnimationFrame(() => {
-      try {
-        const { width, height } = useEditorStore.getState().canvasConfig
-        if (app.tree && typeof app.tree.zoom === 'function') {
-          const pad = 60
-          app.tree.zoom({ x: -pad, y: -pad, width: width + pad * 2, height: height + pad * 2 })
-        }
-      } catch {}
-    })
+    // Auto-fit artboard to viewport on first load & layout settle
+    const autoFit = () => {
+      useEditorStore.getState().zoomFit()
+    }
 
-    ;(window as any).__leaferZoomIn = () => {
-       if (app.tree && typeof app.tree.zoom === 'function') app.tree.zoom('in')
-    }
-    ;(window as any).__leaferZoomOut = () => {
-       if (app.tree && typeof app.tree.zoom === 'function') app.tree.zoom('out')
-    }
-    ;(window as any).__leaferZoomReset = () => {
-       if (app.tree && typeof app.tree.zoom === 'function') app.tree.zoom('fit', 0)
-    }
-    ;(window as any).__leaferZoomFit = () => {
-       if (app.tree && typeof app.tree.zoom === 'function') app.tree.zoom('fit')
-    }
+    setTimeout(autoFit, 50)
+    setTimeout(autoFit, 300)
+
+    const ro = new ResizeObserver(() => {
+      autoFit()
+    })
+    if (containerRef.current) ro.observe(containerRef.current)
+
+    ;(window as any).__leaferZoomIn = () => useEditorStore.getState().zoomIn()
+    ;(window as any).__leaferZoomOut = () => useEditorStore.getState().zoomOut()
+    ;(window as any).__leaferZoomReset = () => useEditorStore.getState().zoomReset()
+    ;(window as any).__leaferZoomFit = () => useEditorStore.getState().zoomFit()
 
     app.on(DragEvent.DRAG, (e) => {
       const target = e.target
@@ -530,6 +524,7 @@ export function LeaferCanvas() {
      })
 
     return () => {
+      ro.disconnect()
       boardRef.current = null
       app.destroy()
     }
