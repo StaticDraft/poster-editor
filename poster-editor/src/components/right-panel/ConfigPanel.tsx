@@ -4,11 +4,13 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { FontManager } from './FontManager'
 import { Input } from '@/components/ui/input'
 import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
+import { removeImageBackground, BEAUTY_PRESETS } from '@/lib/imageProcess'
+import { useFeedback } from '@/lib/feedback'
 import {
   AlignLeft, AlignCenter, AlignRight,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignHorizontalSpaceAround, AlignVerticalSpaceAround,
-  Lock, Unlock
+  Lock, Unlock, Wand2
 } from 'lucide-react'
 
 // ────────────────────────────────────
@@ -50,12 +52,40 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 // ────────────────────────────────────
 function AppearanceTab({ node }: { node: any }) {
   const { t } = useTranslation()
+  const feedback = useFeedback()
   const updateNode = useEditorStore(s => s.updateNode)
   const alignNodes = useEditorStore(s => s.alignNodes)
   const u = (k: string, v: any) => updateNode(node.id, { [k]: v })
   const p = node.props || {}
   const up = (k: string, v: any) => u('props', { ...p, [k]: v })
   const [lockRatio, setLockRatio] = useState(false)
+  const [isProcessingCutout, setIsProcessingCutout] = useState(false)
+
+  const handleCutout = async (mode: 'white' | 'chroma' = 'white') => {
+    if (!node.url) {
+      feedback.notify({ title: '没有可抠图的图片 URL', tone: 'warning' })
+      return
+    }
+    setIsProcessingCutout(true)
+    try {
+      const transparentUrl = await removeImageBackground(node.url, mode)
+      u('url', transparentUrl)
+      feedback.notify({
+        title: '抠图成功',
+        description: mode === 'white' ? '已成功消除纯浅背景' : '已成功消除绿幕背景',
+        tone: 'success',
+      })
+    } catch (err) {
+      console.error(err)
+      feedback.notify({
+        title: '抠图失败',
+        description: '请确保图片允许跨域加载',
+        tone: 'error',
+      })
+    } finally {
+      setIsProcessingCutout(false)
+    }
+  }
 
   const isGradient = typeof node.fill === 'object' && node.fill !== null
   const solidColor = isGradient ? (node.fill.stops?.[0] || '#3b82f6') : (node.fill || '#3b82f6')
@@ -292,19 +322,84 @@ function AppearanceTab({ node }: { node: any }) {
         )}
       </Section>
 
-      {/* Image Specific */}
+      {/* Image Specific & Advanced Photo Editing */}
       {node.type === 'Image' && (
-        <Section title={tr('config.appearance.image', '图片属性')}>
-          <Row label="图片路径">
-            <Input value={node.url || ''} onChange={(e: ChangeEvent<HTMLInputElement>) => u('url', e.target.value)}
-              placeholder="https://..." className="flex-1 h-7 bg-editor-deep border-border text-editor-text text-xs" />
-          </Row>
-          <div className="flex flex-wrap gap-3 mt-2">
-            <ToggleCheck checked={!!p.flipH} onChange={v => up('flipH', v)} label={tr('config.appearance.flipH', '水平翻转')} />
-            <ToggleCheck checked={!!p.flipV} onChange={v => up('flipV', v)} label={tr('config.appearance.flipV', '垂直翻转')} />
-            <ToggleCheck checked={!!p.contain} onChange={v => up('contain', v)} label={tr('config.appearance.contain', '等比缩放')} />
-          </div>
-        </Section>
+        <>
+          <Section title={tr('config.appearance.image', '图片基础属性')}>
+            <Row label="图片路径">
+              <Input value={node.url || ''} onChange={(e: ChangeEvent<HTMLInputElement>) => u('url', e.target.value)}
+                placeholder="https://..." className="flex-1 h-7 bg-editor-deep border-border text-editor-text text-xs font-mono" />
+            </Row>
+            <div className="flex flex-wrap gap-3 mt-2">
+              <ToggleCheck checked={!!p.flipH} onChange={v => up('flipH', v)} label={tr('config.appearance.flipH', '水平翻转')} />
+              <ToggleCheck checked={!!p.flipV} onChange={v => up('flipV', v)} label={tr('config.appearance.flipV', '垂直翻转')} />
+              <ToggleCheck checked={!!p.contain} onChange={v => up('contain', v)} label={tr('config.appearance.contain', '等比缩放')} />
+            </div>
+          </Section>
+
+          {/* 1. Smart Cutout / Background Removal */}
+          <Section title="✨ 智能 P 图抠图 (背景消除)">
+            <div className="space-y-1.5">
+              <button
+                type="button"
+                disabled={isProcessingCutout}
+                onClick={() => handleCutout('white')}
+                className="w-full py-1.5 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded text-xs font-bold flex items-center justify-center gap-1.5 shadow transition-all disabled:opacity-50"
+              >
+                <Wand2 className="w-3.5 h-3.5" />
+                <span>{isProcessingCutout ? '正在智能抠图处理中...' : '一键消除纯浅白背景'}</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isProcessingCutout}
+                onClick={() => handleCutout('chroma')}
+                className="w-full py-1 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+              >
+                <span>🟢 绿幕 / 单色抠图</span>
+              </button>
+            </div>
+          </Section>
+
+          {/* 2. Mosaic & Blur */}
+          <Section title="🔲 马赛克与模糊打码">
+            <Row label="马赛克/模糊">
+              <div className="flex items-center gap-2 flex-1">
+                <input
+                  type="range"
+                  min="0"
+                  max="30"
+                  step="1"
+                  value={node.blur || 0}
+                  onChange={e => u('blur', Number(e.target.value))}
+                  className="flex-1 accent-blue-500 h-1.5"
+                />
+                <span className="text-xs text-editor-text w-8 text-right font-mono">{node.blur || 0}px</span>
+              </div>
+            </Row>
+          </Section>
+
+          {/* 3. Beauty Filters & Photo Adjustments */}
+          <Section title="💄 一键美颜与 P 图滤镜">
+            <div className="grid grid-cols-3 gap-1.5">
+              {BEAUTY_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    u('blur', preset.blur)
+                    up('brightness', preset.brightness)
+                    up('contrast', preset.contrast)
+                    up('saturate', preset.saturate)
+                  }}
+                  className="py-1.5 px-1 bg-editor-deep hover:bg-muted border border-border hover:border-blue-500 text-[10px] font-bold text-editor-text rounded transition-colors text-center truncate"
+                >
+                  {preset.name}
+                </button>
+              ))}
+            </div>
+          </Section>
+        </>
       )}
 
       {/* Text Content */}
