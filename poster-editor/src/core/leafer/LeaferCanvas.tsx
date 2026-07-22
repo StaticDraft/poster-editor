@@ -138,6 +138,36 @@ export function LeaferCanvas() {
     return '#ffffff'
   }
 
+  const boardShadowRef = useRef<Rect | null>(null)
+
+  const ensureBoardShadow = (app: App) => {
+    if (boardShadowRef.current && boardShadowRef.current.destroyed) boardShadowRef.current = null
+    if (!boardShadowRef.current) {
+      boardShadowRef.current = new Rect({
+        id: '__board_shadow__',
+        x: 0,
+        y: 0,
+        width: canvasConfig.width,
+        height: canvasConfig.height,
+        fill: '#ffffff',
+        stroke: 'rgba(148, 163, 184, 0.32)',
+        strokeWidth: 1,
+        editable: false,
+        draggable: false,
+        hittable: false,
+        zIndex: -100001,
+        shadow: {
+          x: 0,
+          y: 12,
+          blur: 36,
+          color: 'rgba(15, 23, 42, 0.35)',
+        },
+      })
+      app.tree.add(boardShadowRef.current)
+    }
+    return boardShadowRef.current
+  }
+
   const ensureBoard = (app: App) => {
     // Discard board if it was destroyed or belongs to a different/old App tree
     if (boardRef.current) {
@@ -163,18 +193,10 @@ export function LeaferCanvas() {
         width: canvasConfig.width,
         height: canvasConfig.height,
         fill: bgColorToFill(canvasConfig.bgColor),
-        stroke: 'rgba(148, 163, 184, 0.32)',
-        strokeWidth: 1,
         editable: false,
         draggable: false,
         hittable: false,
         zIndex: -100000,
-        shadow: {
-          x: 0,
-          y: 12,
-          blur: 36,
-          color: 'rgba(15, 23, 42, 0.35)',
-        },
       })
       app.tree.add(boardRef.current)
     }
@@ -206,11 +228,18 @@ export function LeaferCanvas() {
     if (!app || app.destroyed) return
     try {
       const board = ensureBoard(app)
+      const boardShadow = ensureBoardShadow(app)
+
       board.set({
         width: canvasConfig.width,
         height: canvasConfig.height,
         fill: bgColorToFill(canvasConfig.bgColor),
         zIndex: -100000,
+      })
+      boardShadow.set({
+        width: canvasConfig.width,
+        height: canvasConfig.height,
+        zIndex: -100001,
       })
     } catch (e) {
       console.error('Board background sync error:', e)

@@ -23,6 +23,16 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     const app = useEditorStore.getState()._leaferApp as any
     if (!app) return
     setIsExporting(true)
+
+    const boardShadow = app.tree?.findId?.('__board_shadow__')
+    const gridOverlay = app.tree?.findId?.('__grid_overlay_group__')
+    const guideGroup = app.tree?.findId?.('__guide_group__')
+
+    // Temporarily hide editor-only overlays and viewport shadow during export
+    if (boardShadow) boardShadow.visible = false
+    if (gridOverlay) gridOverlay.visible = false
+    if (guideGroup) guideGroup.visible = false
+
     try {
       const fileName = `${projectName || 'my_poster'}.${format}`
       const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
@@ -94,6 +104,10 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         tone: 'error',
       })
     } finally {
+      // Restore editor-only overlays and viewport shadow
+      if (boardShadow) boardShadow.visible = true
+      if (gridOverlay) gridOverlay.visible = true
+      if (guideGroup) guideGroup.visible = true
       setIsExporting(false)
     }
   }
