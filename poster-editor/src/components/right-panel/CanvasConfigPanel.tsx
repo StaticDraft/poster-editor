@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { useEditorStore, CanvasConfig } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
-import { Save, CheckCircle } from 'lucide-react'
+import { Save, CheckCircle, Upload } from 'lucide-react'
+import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
 
 const STORAGE_KEY = 'poster_project'
 
@@ -183,10 +184,11 @@ export function CanvasConfigPanel() {
 
                 {/* Solid color */}
                 {isSolid && (
-                  <div className="flex items-center gap-2">
-                    <input type="color" value={bg} onChange={e => setCanvasConfig({ bgColor: e.target.value })}
-                      className="w-6 h-6 rounded cursor-pointer border-0 bg-transparent" />
-                    <span className="text-xs text-editor-text-label font-mono">{bg}</span>
+                  <div className="pt-1">
+                    <ColorPickerWithAlpha
+                      value={typeof bg === 'string' ? bg : '#ffffff'}
+                      onChange={c => setCanvasConfig({ bgColor: c })}
+                    />
                   </div>
                 )}
 
@@ -227,18 +229,71 @@ export function CanvasConfigPanel() {
                   </div>
                 )}
 
-                {/* Image */}
+                {/* Image Background */}
                 {isImage && (
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2 pt-1">
                     <input
                       type="text"
                       value={bg.url || ''}
                       onChange={e => setCanvasConfig({ bgColor: { ...bg, url: e.target.value } })}
-                      placeholder="https://images.unsplash.com/..."
-                      className="h-7 text-xs bg-editor-deep border border-border text-editor-text rounded px-2 focus:outline-none focus:border-blue-500 w-full"
+                      placeholder="https://在线图片地址..."
+                      className="h-7 text-xs bg-editor-deep border border-border text-editor-text rounded px-2 focus:outline-none focus:border-blue-500 w-full font-mono"
                     />
+
+                    {/* Local Image Upload Button */}
+                    <label className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded text-[11px] font-bold cursor-pointer transition-colors">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>上传本地图片作为背景</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          if (!file) return
+                          const reader = new FileReader()
+                          reader.onload = (ev) => {
+                            const dataUrl = ev.target?.result as string
+                            if (dataUrl) {
+                              setCanvasConfig({ bgColor: { type: 'image', url: dataUrl, mode: bg.mode || 'cover' } })
+                            }
+                          }
+                          reader.readAsDataURL(file)
+                          e.target.value = ''
+                        }}
+                      />
+                    </label>
+
+                    {/* Preset background materials gallery */}
+                    <div className="space-y-1 mt-1">
+                      <div className="text-[10px] text-muted-foreground font-semibold flex items-center justify-between">
+                        <span>从精选素材库选取背景</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { name: '极光艺术', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600' },
+                          { name: '孟菲斯', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600' },
+                          { name: '大理石白', url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600' },
+                          { name: '炫彩渐变', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600' },
+                        ].map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setCanvasConfig({ bgColor: { type: 'image', url: item.url, mode: bg.mode || 'cover' } })}
+                            title={item.name}
+                            className={`h-10 rounded border overflow-hidden relative group transition-all ${bg.url === item.url ? 'border-blue-500 ring-2 ring-blue-500/50' : 'border-border hover:border-blue-400'}`}
+                          >
+                            <img src={item.url} alt={item.name} className="w-full h-full object-cover" />
+                            <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[9px] text-white font-bold transition-opacity">
+                              {item.name}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <select value={bg.mode || 'cover'} onChange={e => setCanvasConfig({ bgColor: { ...bg, mode: e.target.value } })}
-                      className="h-6 text-[10px] bg-editor-deep border border-border text-editor-text rounded px-1 focus:outline-none">
+                      className="h-6 text-[10px] bg-editor-deep border border-border text-editor-text rounded px-1 focus:outline-none mt-1">
                       <option value="cover">铺满裁剪 (Cover)</option>
                       <option value="contain">完整显示 (Contain)</option>
                       <option value="repeat">平铺重复 (Repeat)</option>
@@ -248,7 +303,7 @@ export function CanvasConfigPanel() {
 
                 <button
                   onClick={() => setCanvasConfig({ bgColor: '#ffffff' })}
-                  className="mt-2 w-full py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border rounded transition-colors"
+                  className="mt-2.5 w-full py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border rounded transition-colors"
                 >
                   重置为默认纯白背景
                 </button>

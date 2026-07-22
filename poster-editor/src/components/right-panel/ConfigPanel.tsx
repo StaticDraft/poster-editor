@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useEditorStore } from '@/store/useEditorStore'
 import { FontManager } from './FontManager'
 import { Input } from '@/components/ui/input'
+import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
 import {
   AlignLeft, AlignCenter, AlignRight,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical,
@@ -199,14 +200,10 @@ function AppearanceTab({ node }: { node: any }) {
 
           {!isGradient ? (
             <Row label={tr('config.appearance.fillColor', '填充颜色')}>
-              <div className="flex items-center gap-2">
-                <input type="color" value={solidColor}
-                  onChange={e => u('fill', e.target.value)}
-                  className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent" />
-                <input type="text" value={node.fill || ''}
-                  onChange={e => u('fill', e.target.value)}
-                  className="w-24 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 font-mono focus:outline-none" />
-              </div>
+              <ColorPickerWithAlpha
+                value={solidColor}
+                onChange={c => u('fill', c)}
+              />
             </Row>
           ) : (
             <div className="space-y-2 pl-2 border-l border-border/50">
@@ -247,12 +244,16 @@ function AppearanceTab({ node }: { node: any }) {
             </div>
           )}
           <Row label={tr('config.appearance.strokeColor', '描边轮廓')}>
-            <div className="flex items-center gap-2">
-              <input type="color" value={p.stroke || '#ffffff'}
-                onChange={e => up('stroke', e.target.value)}
-                className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent" />
-              <NumInput value={p.strokeWidth || 0} onChange={v => up('strokeWidth', v)} w="w-14" />
-              <span className="text-[10px] text-editor-text-dim">px</span>
+            <div className="flex flex-col gap-1.5 w-full">
+              <ColorPickerWithAlpha
+                value={p.stroke || '#ffffff'}
+                onChange={c => up('stroke', c)}
+              />
+              <div className="flex items-center gap-2 justify-end">
+                <span className="text-[10px] text-editor-text-dim">粗细</span>
+                <NumInput value={p.strokeWidth || 0} onChange={v => up('strokeWidth', v)} w="w-14" />
+                <span className="text-[10px] text-editor-text-dim">px</span>
+              </div>
             </div>
           </Row>
           <Row label={tr('config.appearance.cornerRadius', '边框圆角')}>
