@@ -20,41 +20,57 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   if (!open) return null
 
   const handleExport = async () => {
-    const app = useEditorStore.getState()._leaferApp
+    const app = useEditorStore.getState()._leaferApp as any
     if (!app) return
     setIsExporting(true)
     try {
-      const board = app.tree.findId('__scene_board__')
-      const targetNode = board || app.tree
       const fileName = `${projectName || 'my_poster'}.${format}`
+      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
+      const exportQuality = format === 'png' ? undefined : quality
 
-      // Request format-only export to get data payload
-      const result = await targetNode.export(format, {
-        scale,
-        quality: format === 'png' ? undefined : quality,
-      })
+      // Find Leafer's container div and its internal <canvas> elements
+      const containerDiv = app.view || app.config?.view
+      let dataUrl = ''
 
-      if (result && result.data) {
-        let downloadUrl = ''
-        if (result.data instanceof Blob) {
-          downloadUrl = URL.createObjectURL(result.data)
-        } else if (typeof result.data === 'string') {
-          downloadUrl = result.data
-        } else if (result.data.url) {
-          downloadUrl = result.data.url
+      if (containerDiv instanceof HTMLElement) {
+        // Leafer renders multiple stacked <canvas> layers inside the container div
+        const canvases = containerDiv.querySelectorAll('canvas')
+        if (canvases.length > 0) {
+          // Get the dimensions from the first canvas
+          const firstCanvas = canvases[0]
+          const w = firstCanvas.width
+          const h = firstCanvas.height
+
+          // Create an offscreen canvas to composite all layers
+          const offscreen = document.createElement('canvas')
+          offscreen.width = w
+          offscreen.height = h
+          const ctx = offscreen.getContext('2d')!
+
+          // Draw each Leafer canvas layer in order (bottom to top)
+          canvases.forEach((c) => {
+            try {
+              ctx.drawImage(c, 0, 0)
+            } catch (_e) { /* skip tainted canvases */ }
+          })
+
+          dataUrl = offscreen.toDataURL(mimeType, exportQuality)
         }
+      }
 
-        if (downloadUrl) {
-          const link = document.createElement('a')
-          link.href = downloadUrl
-          link.download = fileName
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          if (result.data instanceof Blob) {
-            setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
-          }
-        }
+      // Trigger browser file download
+      if (dataUrl) {
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.download = fileName
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => document.body.removeChild(link), 500)
+      } else {
+        feedback.notify({ title: '导出失败：未找到画布元素', tone: 'error' })
+        setIsExporting(false)
+        return
       }
 
       const confetti = (await import('canvas-confetti')).default
@@ -66,14 +82,15 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
       feedback.notify({
         title: '海报导出成功',
-        description: `已成功导出并下载 ${scale}x 超清 ${format.toUpperCase()} 图片`,
+        description: `已成功导出并下载 ${scale}x ${format.toUpperCase()} 图片`,
         tone: 'success',
       })
       onClose()
     } catch (err) {
-      console.error(err)
+      console.error('Export error:', err)
       feedback.notify({
         title: '导出图片失败',
+        description: String(err),
         tone: 'error',
       })
     } finally {
