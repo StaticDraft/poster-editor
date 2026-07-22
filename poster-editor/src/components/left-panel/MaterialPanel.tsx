@@ -38,7 +38,7 @@ const CATEGORIES = [
   {
     id: 'qrcodes',
     titleKey: 'material.categories.qrcodes',
-    fallbackTitle: '实用组件工具箱 (马赛克/二维码/条码)',
+    fallbackTitle: '常用组件',
     items: [
       { type: 'Mosaic', nameKey: 'material.items.mosaic', fallbackName: '马赛克遮罩', width: 200, height: 120, props: { pixelSize: 12 } },
       { type: 'QRCode', nameKey: 'material.items.qrcode', fallbackName: '动态二维码', text: 'https://postercraft.app', width: 160, height: 160 },
