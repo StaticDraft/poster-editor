@@ -541,17 +541,19 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
       {filtered.length === 0 && (
         <div className="text-center text-editor-text-dim text-xs py-8">{tr('material.noMatch', '未找到匹配')}</div>
       )}
-      {filtered.map(cat => (
-        <div key={cat.id} className="mb-0.5">
-          <button
-            onClick={() => toggle(cat.id)}
-            className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-editor-text-label hover:text-white hover:bg-editor-surface transition-colors"
-          >
-            <span>{expanded[cat.id] ? '▼' : '▶'} {tr(cat.titleKey, cat.fallbackTitle)}</span>
-            {expanded[cat.id] ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-          </button>
-          {(expanded[cat.id] || searchFilter) && (
-            <div className="grid grid-cols-3 gap-1 px-2 pb-2">
+      {filtered.map(cat => {
+        const isCatExpanded = expanded[cat.id] ?? true
+        return (
+          <div key={cat.id} className="mb-0.5">
+            <button
+              onClick={() => setExpanded(prev => ({ ...prev, [cat.id]: !isCatExpanded }))}
+              className="w-full flex items-center justify-between px-3 py-2 text-[11px] font-bold text-editor-text-label hover:text-white hover:bg-editor-surface transition-colors"
+            >
+              <span>{isCatExpanded ? '▼' : '▶'} {tr(cat.titleKey, cat.fallbackTitle)}</span>
+              {isCatExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+            </button>
+            {(isCatExpanded || searchFilter) && (
+              <div className="grid grid-cols-3 gap-1 px-2 pb-2">
               {cat.items.map((mat: any, i: number) => (
                 <div
                   key={i}
@@ -585,7 +587,8 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
             </div>
           )}
         </div>
-      ))}
+      )
+    })}
 
       {mode === 'assets' && (
         <div className="mx-3 mt-3 border border-dashed border-border rounded hover:border-blue-500 transition-colors">
