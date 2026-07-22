@@ -117,7 +117,9 @@ function AppearanceTab({ node }: { node: any }) {
         saturate: nextSaturate,
         blur: nextBlur,
       })
-      u('url', filteredUrl)
+      if (filteredUrl && filteredUrl.length > 100 && filteredUrl !== 'data:,') {
+        u('url', filteredUrl)
+      }
     } catch (err) {
       console.error('Failed to apply image effect:', err)
     }
