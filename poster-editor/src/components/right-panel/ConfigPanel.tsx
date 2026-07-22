@@ -87,26 +87,31 @@ function AppearanceTab({ node }: { node: any }) {
     }
   }
 
-  const handleApplyEffect = async (opts: { brightness?: number; contrast?: number; saturate?: number; blur?: number }) => {
-    const origin = p.originalUrl || node.url
+  const handleApplyEffect = async (opts: { presetId?: string; brightness?: number; contrast?: number; saturate?: number; blur?: number }) => {
+    let origin = p.originalUrl || node.url
     if (!origin) return
+
     if (!p.originalUrl) {
       up('originalUrl', node.url)
+      origin = node.url
     }
 
     const nextBlur = opts.blur !== undefined ? opts.blur : (p.blur || node.blur || 0)
+    const nextPresetId = opts.presetId !== undefined ? opts.presetId : p.activePresetId
     const nextBrightness = opts.brightness !== undefined ? opts.brightness : (p.brightness || 100)
     const nextContrast = opts.contrast !== undefined ? opts.contrast : (p.contrast || 100)
     const nextSaturate = opts.saturate !== undefined ? opts.saturate : (p.saturate || 100)
 
     u('blur', nextBlur)
     up('blur', nextBlur)
+    up('activePresetId', nextPresetId)
     up('brightness', nextBrightness)
     up('contrast', nextContrast)
     up('saturate', nextSaturate)
 
     try {
       const filteredUrl = await applyImageEffects(origin, {
+        presetId: nextPresetId,
         brightness: nextBrightness,
         contrast: nextContrast,
         saturate: nextSaturate,
@@ -418,12 +423,13 @@ function AppearanceTab({ node }: { node: any }) {
                   key={preset.id}
                   type="button"
                   onClick={() => handleApplyEffect({
+                    presetId: preset.id,
                     brightness: preset.brightness,
                     contrast: preset.contrast,
                     saturate: preset.saturate,
                     blur: preset.blur,
                   })}
-                  className="py-1.5 px-1 bg-editor-deep hover:bg-muted border border-border hover:border-blue-500 text-[10px] font-bold text-editor-text rounded transition-colors text-center truncate"
+                  className={`py-1.5 px-1 border text-[10px] font-bold rounded transition-colors text-center truncate ${p.activePresetId === preset.id ? 'bg-blue-600 text-white border-blue-500' : 'bg-editor-deep hover:bg-muted border-border text-editor-text'}`}
                 >
                   {preset.name}
                 </button>
