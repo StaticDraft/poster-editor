@@ -96,8 +96,8 @@ function AppearanceTab({ node }: { node: any }) {
       origin = node.url
     }
 
+    const nextPresetId = opts.presetId !== undefined ? opts.presetId : (p.activePresetId || 'original')
     const nextBlur = opts.blur !== undefined ? opts.blur : (p.blur || node.blur || 0)
-    const nextPresetId = opts.presetId !== undefined ? opts.presetId : p.activePresetId
     const nextBrightness = opts.brightness !== undefined ? opts.brightness : (p.brightness || 100)
     const nextContrast = opts.contrast !== undefined ? opts.contrast : (p.contrast || 100)
     const nextSaturate = opts.saturate !== undefined ? opts.saturate : (p.saturate || 100)
@@ -109,6 +109,12 @@ function AppearanceTab({ node }: { node: any }) {
     up('contrast', nextContrast)
     up('saturate', nextSaturate)
 
+    // Restore to pristine original image instantly if 'original' preset is chosen with 0 blur
+    if (nextPresetId === 'original' && nextBlur === 0) {
+      u('url', origin)
+      return
+    }
+
     try {
       const filteredUrl = await applyImageEffects(origin, {
         presetId: nextPresetId,
@@ -117,7 +123,7 @@ function AppearanceTab({ node }: { node: any }) {
         saturate: nextSaturate,
         blur: nextBlur,
       })
-      if (filteredUrl && filteredUrl.length > 100 && filteredUrl !== 'data:,') {
+      if (filteredUrl && filteredUrl !== 'data:,' && filteredUrl.length > 5) {
         u('url', filteredUrl)
       }
     } catch (err) {
@@ -420,22 +426,30 @@ function AppearanceTab({ node }: { node: any }) {
           {/* 3. Beauty Filters & Photo Adjustments */}
           <Section title="💄 一键美颜与 P 图滤镜">
             <div className="grid grid-cols-3 gap-1.5">
-              {BEAUTY_PRESETS.map((preset) => (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() => handleApplyEffect({
-                    presetId: preset.id,
-                    brightness: preset.brightness,
-                    contrast: preset.contrast,
-                    saturate: preset.saturate,
-                    blur: preset.blur,
-                  })}
-                  className={`py-1.5 px-1 border text-[10px] font-bold rounded transition-colors text-center truncate ${p.activePresetId === preset.id ? 'bg-blue-600 text-white border-blue-500' : 'bg-editor-deep hover:bg-muted border-border text-editor-text'}`}
-                >
-                  {preset.name}
-                </button>
-              ))}
+              {BEAUTY_PRESETS.map((preset) => {
+                const activePresetId = p.activePresetId || 'original'
+                const isActive = activePresetId === preset.id
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => handleApplyEffect({
+                      presetId: preset.id,
+                      brightness: preset.brightness,
+                      contrast: preset.contrast,
+                      saturate: preset.saturate,
+                      blur: preset.blur,
+                    })}
+                    className={`py-1.5 px-1 text-[10px] font-bold rounded transition-all text-center truncate flex items-center justify-center gap-1 ${
+                      isActive
+                        ? 'bg-blue-600 text-white border border-blue-400 shadow-md ring-2 ring-blue-500/40 font-black'
+                        : 'bg-editor-deep hover:bg-muted border border-border text-editor-text hover:border-blue-500/50'
+                    }`}
+                  >
+                    <span>{preset.name}</span>
+                  </button>
+                )
+              })}
             </div>
           </Section>
         </>
