@@ -89,12 +89,13 @@ function AppearanceTab({ node }: { node: any }) {
 
   const handleApplyEffect = async (opts: { presetId?: string; brightness?: number; contrast?: number; saturate?: number; blur?: number }) => {
     if (node.type !== 'Image') return
-    const currentProps = node.props || {}
-    const pristineUrl = currentProps.originalUrl || node.url
+    const storeNode = useEditorStore.getState().elements.find(el => el.id === node.id) || node
+    const currentProps = storeNode.props || node.props || {}
+    const pristineUrl = currentProps.originalUrl || storeNode.url || node.url
     if (!pristineUrl) return
 
     const nextPresetId = opts.presetId !== undefined ? opts.presetId : (currentProps.activePresetId || 'original')
-    const nextBlur = opts.blur !== undefined ? opts.blur : (currentProps.blur || node.blur || 0)
+    const nextBlur = opts.blur !== undefined ? opts.blur : (currentProps.blur || 0)
     const nextBrightness = opts.brightness !== undefined ? opts.brightness : (currentProps.brightness || 100)
     const nextContrast = opts.contrast !== undefined ? opts.contrast : (currentProps.contrast || 100)
     const nextSaturate = opts.saturate !== undefined ? opts.saturate : (currentProps.saturate || 100)
