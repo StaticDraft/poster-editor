@@ -26,7 +26,6 @@ import {
   Image as ImageIcon,
   FolderOpen,
   FileJson,
-  LayoutTemplate,
   Command,
   ChevronDown,
   MoreHorizontal,
@@ -40,7 +39,6 @@ import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
 import { ExportModal } from '@/components/feedback/ExportModal'
-import { TemplateModal } from '@/components/feedback/TemplateModal'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
 import { COLOR_PALETTES, type ColorPalette } from '@/lib/colorPalettes'
 import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
@@ -48,7 +46,6 @@ import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
-  const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
   const activeIds = useEditorStore((state) => state.activeIds)
   const updateNodes = useEditorStore((state) => state.updateNodes)
@@ -430,19 +427,19 @@ export function TopToolbar() {
               <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-56 p-2 bg-card border border-border shadow-xl z-50">
+          <PopoverContent className="w-72 p-2.5 bg-card border border-border shadow-xl z-50">
             <div className="text-[10px] font-bold text-muted-foreground uppercase px-1 mb-1.5">{tr('toolbar.alignHeader', '图层对齐与分布')}</div>
-            <div className="grid grid-cols-3 gap-1 mb-2">
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('left')}><AlignLeft className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.left', '左对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('center')}><AlignCenter className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.center', '居中')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('right')}><AlignRight className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.right', '右对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('top')}><AlignVerticalJustifyStart className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.top', '顶对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('middle')}><AlignVerticalJustifyCenter className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.middle', '垂直居中')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('bottom')}><AlignVerticalJustifyEnd className="w-3.5 h-3.5 mr-1.5 text-blue-500" />{tr('toolbar.bottom', '底对齐')}</Button>
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('left')}><AlignLeft className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.left', '左对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('center')}><AlignCenter className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.center', '居中')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('right')}><AlignRight className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.right', '右对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('top')}><AlignVerticalJustifyStart className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.top', '顶对齐')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('middle')}><AlignVerticalJustifyCenter className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.middle', '垂直居中')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('bottom')}><AlignVerticalJustifyEnd className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.bottom', '底对齐')}</Button>
             </div>
-            <div className="border-t border-border pt-1.5 grid grid-cols-2 gap-1">
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('distribute-x')} disabled={activeIds.length < 3}><AlignHorizontalSpaceAround className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />{tr('toolbar.distributeX', '水平分布')}</Button>
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] justify-start px-2" onClick={() => alignNodes('distribute-y')} disabled={activeIds.length < 3}><AlignVerticalSpaceAround className="w-3.5 h-3.5 mr-1.5 text-emerald-500" />{tr('toolbar.distributeY', '垂直分布')}</Button>
+            <div className="border-t border-border pt-1.5 grid grid-cols-2 gap-1.5">
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('distribute-x')} disabled={activeIds.length < 3}><AlignHorizontalSpaceAround className="w-3.5 h-3.5 mr-1 text-emerald-500 shrink-0" />{tr('toolbar.distributeX', '水平分布')}</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('distribute-y')} disabled={activeIds.length < 3}><AlignVerticalSpaceAround className="w-3.5 h-3.5 mr-1 text-emerald-500 shrink-0" />{tr('toolbar.distributeY', '垂直分布')}</Button>
             </div>
           </PopoverContent>
         </Popover>
@@ -465,16 +462,6 @@ export function TopToolbar() {
           onClick={handleStartPreview}
         >
           <Play className="w-3.5 h-3.5 mr-1 fill-current text-green-500" /> {tr('toolbar.startPreview', '预览')}
-        </Button>
-
-        {/* CTA 1: Open Preset Template Library */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowTemplateModal(true)}
-          className="h-7 text-xs px-2.5 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/30 font-semibold shrink-0"
-        >
-          <LayoutTemplate className="w-3.5 h-3.5 mr-1" /> 模板库
         </Button>
 
         {/* Primary CTA: Export Image */}
@@ -554,7 +541,6 @@ export function TopToolbar() {
       </div>
 
       <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
-      <TemplateModal open={showTemplateModal} onClose={() => setShowTemplateModal(false)} />
       <ShortcutsDialog open={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
     </div>
   )
