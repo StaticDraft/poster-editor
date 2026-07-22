@@ -37,30 +37,60 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       const fileName = `${projectName || 'my_poster'}.${format}`
       const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
       const exportQuality = format === 'png' ? undefined : quality
+      const { width: posterW, height: posterH } = useEditorStore.getState().canvasConfig
+      const targetW = Math.round(posterW * scale)
+      const targetH = Math.round(posterH * scale)
 
-      // Find Leafer's container div and its internal <canvas> elements
-      const containerDiv = app.view || app.config?.view
       let dataUrl = ''
 
-      if (containerDiv instanceof HTMLElement) {
-        // Leafer renders multiple stacked <canvas> layers inside the container div
+      // Attempt 1: Try Leafer's native node export on the board or tree
+      const boardNode = app.tree?.findId?.('__scene_board__')
+      const targetNode = app.tree
+
+      if (targetNode && typeof targetNode.export === 'function') {
+        try {
+          const exportResult = await targetNode.export(format, {
+            scale,
+            quality: format === 'png' ? undefined : quality,
+            screenshot: false,
+          })
+          if (exportResult) {
+            const rawData = exportResult.data || exportResult
+            if (rawData instanceof Blob) {
+              dataUrl = URL.createObjectURL(rawData)
+            } else if (typeof rawData === 'string') {
+              dataUrl = rawData
+            } else if (rawData?.url) {
+              dataUrl = rawData.url
+            }
+          }
+        } catch (_e) {
+          console.warn('Leafer export() failed, falling back to canvas crop:', _e)
+        }
+      }
+
+      // Attempt 2: Precise bounding box crop from Leafer's rendered viewport canvas
+      if (!dataUrl && app.view) {
+        const containerDiv = app.view
         const canvases = containerDiv.querySelectorAll('canvas')
         if (canvases.length > 0) {
-          // Get the dimensions from the first canvas
-          const firstCanvas = canvases[0]
-          const w = firstCanvas.width
-          const h = firstCanvas.height
+          const boardBounds = boardNode ? boardNode.getBounds('page') : { x: 0, y: 0, width: posterW, height: posterH }
+          const pixelRatio = window.devicePixelRatio || 1
 
-          // Create an offscreen canvas to composite all layers
+          // Calculate precise crop rect on the viewport canvas
+          const srcX = Math.round((boardBounds.x || 0) * pixelRatio)
+          const srcY = Math.round((boardBounds.y || 0) * pixelRatio)
+          const srcW = Math.round((boardBounds.width || posterW) * pixelRatio)
+          const srcH = Math.round((boardBounds.height || posterH) * pixelRatio)
+
           const offscreen = document.createElement('canvas')
-          offscreen.width = w
-          offscreen.height = h
+          offscreen.width = targetW
+          offscreen.height = targetH
           const ctx = offscreen.getContext('2d')!
 
-          // Draw each Leafer canvas layer in order (bottom to top)
-          canvases.forEach((c) => {
+          canvases.forEach((c: HTMLCanvasElement) => {
             try {
-              ctx.drawImage(c, 0, 0)
+              ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
             } catch (_e) { /* skip tainted canvases */ }
           })
 
