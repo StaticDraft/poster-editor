@@ -31,9 +31,6 @@ import {
   MoreHorizontal,
   Palette,
   Scaling,
-  QrCode,
-  Barcode,
-  Grid,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
@@ -376,94 +373,6 @@ export function TopToolbar() {
                   </span>
                 </button>
               ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Quick Component Addition: QR Code / Barcode / Mosaic */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold shrink-0"
-              title="一键插入二维码、条形码或马赛克控件"
-            >
-              <QrCode className="w-3.5 h-3.5 mr-1" />
-              二维码组件
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-56 p-2 bg-card border border-border shadow-2xl z-50">
-            <div className="text-xs font-bold text-foreground mb-2 px-1 flex items-center justify-between">
-              <span>一键插入实用组件</span>
-              <span className="text-[10px] text-muted-foreground font-mono">3 款常用工具</span>
-            </div>
-            <div className="space-y-1">
-              <button
-                onClick={() => {
-                  useEditorStore.getState().addNode({
-                    id: `qrcode-${Date.now()}`,
-                    type: 'QRCode',
-                    x: 150 + Math.random() * 100,
-                    y: 150 + Math.random() * 100,
-                    width: 160,
-                    height: 160,
-                    text: 'https://postercraft.app',
-                  } as any)
-                  feedback.notify({ title: '已成功插入动态二维码', tone: 'success' })
-                }}
-                className="w-full p-2 rounded-lg border border-border/60 hover:border-emerald-500 bg-muted/20 hover:bg-muted transition-all flex items-center gap-2 group text-left"
-              >
-                <QrCode className="w-4 h-4 text-emerald-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-foreground group-hover:text-emerald-400">动态二维码</div>
-                  <div className="text-[10px] text-muted-foreground">扫码跳转网址或文本</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  useEditorStore.getState().addNode({
-                    id: `barcode-${Date.now()}`,
-                    type: 'Barcode',
-                    x: 150 + Math.random() * 100,
-                    y: 150 + Math.random() * 100,
-                    width: 240,
-                    height: 80,
-                    text: '690123456789',
-                  } as any)
-                  feedback.notify({ title: '已成功插入矢量条形码', tone: 'success' })
-                }}
-                className="w-full p-2 rounded-lg border border-border/60 hover:border-blue-500 bg-muted/20 hover:bg-muted transition-all flex items-center gap-2 group text-left"
-              >
-                <Barcode className="w-4 h-4 text-blue-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-foreground group-hover:text-blue-400">矢量条形码</div>
-                  <div className="text-[10px] text-muted-foreground">商品 EAN-13 编码条码</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => {
-                  useEditorStore.getState().addNode({
-                    id: `mosaic-${Date.now()}`,
-                    type: 'Mosaic',
-                    x: 150 + Math.random() * 100,
-                    y: 150 + Math.random() * 100,
-                    width: 200,
-                    height: 120,
-                    props: { pixelSize: 12 },
-                  } as any)
-                  feedback.notify({ title: '已成功插入马赛克遮罩控件', tone: 'success' })
-                }}
-                className="w-full p-2 rounded-lg border border-border/60 hover:border-indigo-500 bg-muted/20 hover:bg-muted transition-all flex items-center gap-2 group text-left"
-              >
-                <Grid className="w-4 h-4 text-indigo-400 shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-foreground group-hover:text-indigo-400">马赛克遮罩控件</div>
-                  <div className="text-[10px] text-muted-foreground">自由拖拽遮挡敏感信息</div>
-                </div>
-              </button>
             </div>
           </PopoverContent>
         </Popover>
