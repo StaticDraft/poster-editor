@@ -475,6 +475,54 @@ function AppearanceTab({ node }: { node: any }) {
         </Section>
       )}
 
+      {/* Standalone Mosaic Overlay Component Properties */}
+      {node.type === 'Mosaic' && (
+        <Section title="🔲 马赛克遮罩控件设置">
+          <Row label="像素格子大小">
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="range"
+                min="4"
+                max="32"
+                step="1"
+                value={p.pixelSize || 12}
+                onChange={e => up('pixelSize', Number(e.target.value))}
+                className="flex-1 accent-blue-500 h-1.5"
+              />
+              <span className="text-xs text-editor-text w-8 text-right font-mono">{p.pixelSize || 12}px</span>
+            </div>
+          </Row>
+          <Row label="遮罩透明度">
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={node.opacity ?? 1}
+                onChange={e => u('opacity', Number(e.target.value))}
+                className="flex-1 accent-blue-500 h-1.5"
+              />
+              <span className="text-xs text-editor-text w-8 text-right font-mono">{Math.round((node.opacity ?? 1) * 100)}%</span>
+            </div>
+          </Row>
+          <Row label="圆角半径">
+            <div className="flex items-center gap-2 flex-1">
+              <input
+                type="range"
+                min="0"
+                max="40"
+                step="1"
+                value={node.cornerRadius || 0}
+                onChange={e => u('cornerRadius', Number(e.target.value))}
+                className="flex-1 accent-blue-500 h-1.5"
+              />
+              <span className="text-xs text-editor-text w-8 text-right font-mono">{node.cornerRadius || 0}px</span>
+            </div>
+          </Row>
+        </Section>
+      )}
+
       {/* Visibility and Locking */}
       <Section title={tr('config.appearance.visibility', '锁定与显隐')}>
         <div className="flex flex-wrap gap-3">

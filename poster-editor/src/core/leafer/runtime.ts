@@ -1,5 +1,6 @@
 import { Rect, Ellipse, Text, Star, Image, Path } from 'leafer-ui'
 import { generateQRCodeSVG, generateBarcodeDataUrl } from '@/lib/qrcode'
+import { generateMosaicPatternDataUrl } from '@/lib/imageProcess'
 import type { EditorNode } from '@/store/useEditorStore'
 
 // Global Polyfill: Protect Leafer UI's __updateRenderSpread against missing getSpread on Shadow objects
@@ -145,6 +146,13 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     runtimeProps.url = generateBarcodeDataUrl(el.text || props?.text || '690123456789')
   }
 
+  if (el.type === 'Mosaic') {
+    const w = el.width || 180
+    const h = el.height || 120
+    const pSize = props?.pixelSize || 12
+    runtimeProps.url = generateMosaicPatternDataUrl(w, h, pSize)
+  }
+
   if (el.type === 'Path') {
     const width = el.width || 100
     const height = el.height || 100
@@ -204,6 +212,7 @@ export function createLeaferNode(el: EditorNode & Record<string, any>, options: 
     case 'Image':
     case 'QRCode':
     case 'Barcode':
+    case 'Mosaic':
       return new Image(runtimeProps)
     case 'Path':
       return new Path(runtimeProps)

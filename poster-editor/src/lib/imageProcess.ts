@@ -2,6 +2,38 @@
  * Image processing utilities: Smart Background Removal (Cutout), Pure Pixel & CSS Filter Beauty Presets, and Pixelated Mosaic
  */
 
+export function generateMosaicPatternDataUrl(
+  width = 200,
+  height = 200,
+  pixelSize = 12
+): string {
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(20, Math.round(width))
+  canvas.height = Math.max(20, Math.round(height))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+
+  const cols = Math.ceil(canvas.width / pixelSize)
+  const rows = Math.ceil(canvas.height / pixelSize)
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const noise = (r * 13 + c * 17) % 75
+      const shade = 160 + noise
+      const rCol = Math.min(255, shade + 5)
+      const gCol = Math.min(255, shade + 5)
+      const bCol = Math.min(255, shade + 15)
+      ctx.fillStyle = `rgba(${rCol}, ${gCol}, ${bCol}, 0.92)`
+      ctx.fillRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize)
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.06)'
+      ctx.lineWidth = 0.5
+      ctx.strokeRect(c * pixelSize, r * pixelSize, pixelSize, pixelSize)
+    }
+  }
+
+  return canvas.toDataURL('image/png')
+}
+
 export function loadImageWithCorsFallback(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     if (!url || typeof url !== 'string') {

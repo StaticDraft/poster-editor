@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen } from 'lucide-react'
+import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen, Grid } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import {
   getAssetFolders,
@@ -101,8 +101,9 @@ const CATEGORIES = [
   {
     id: 'qrcodes',
     titleKey: 'material.categories.qrcodes',
-    fallbackTitle: '可编辑二维码与条码',
+    fallbackTitle: '实用组件工具箱 (马赛克/二维码/条码)',
     items: [
+      { type: 'Mosaic', nameKey: 'material.items.mosaic', fallbackName: '马赛克遮罩控件', width: 200, height: 120, props: { pixelSize: 12 } },
       { type: 'QRCode', nameKey: 'material.items.qrcode', fallbackName: '动态二维码', text: 'https://postercraft.app', width: 160, height: 160 },
       { type: 'Barcode', nameKey: 'material.items.barcode', fallbackName: '矢量条形码', text: '690123456789', width: 240, height: 80 },
     ]
@@ -113,6 +114,9 @@ const CATEGORIES = [
 // Inline SVG previews for shapes (replaces icon)
 // ─────────────────────────────────────────────────
 function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius }: any) {
+  if (type === 'Mosaic') {
+    return <Grid className="w-7 h-7 text-indigo-400 mb-0.5" />
+  }
   if (type === 'Path' && unitPath) {
     return (
       <svg viewBox="0 0 100 100" className="w-7 h-7 mb-0.5">
