@@ -43,15 +43,16 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
       let dataUrl = ''
 
-      // Attempt 1: Try Leafer's native node export on the board or tree
-      const boardNode = app.tree?.findId?.('__scene_board__')
-      const targetNode = app.tree
+      // Attempt 1: Leafer native export constrained to exact poster bounds (0, 0, posterW, posterH)
+      const posterBounds = { x: 0, y: 0, width: posterW, height: posterH }
 
-      if (targetNode && typeof targetNode.export === 'function') {
+      if (app.tree && typeof app.tree.export === 'function') {
         try {
-          const exportResult = await targetNode.export(format, {
+          const exportResult = await app.tree.export(format, {
+            bounds: posterBounds,
             scale,
             quality: format === 'png' ? undefined : quality,
+            blob: false,
             screenshot: false,
           })
           if (exportResult) {
@@ -69,19 +70,14 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         }
       }
 
-      // Attempt 2: Precise bounding box crop from Leafer's rendered viewport canvas
+      // Attempt 2: Precise DOM page-to-canvas coordinate crop from rendered viewport canvas
       if (!dataUrl && app.view) {
         const containerDiv = app.view
         const canvases = containerDiv.querySelectorAll('canvas')
-        if (canvases.length > 0) {
-          const boardBounds = boardNode ? boardNode.getBounds('page') : { x: 0, y: 0, width: posterW, height: posterH }
-          const pixelRatio = window.devicePixelRatio || 1
+        const boardNode = app.tree?.findId?.('__scene_board__')
 
-          // Calculate precise crop rect on the viewport canvas
-          const srcX = Math.round((boardBounds.x || 0) * pixelRatio)
-          const srcY = Math.round((boardBounds.y || 0) * pixelRatio)
-          const srcW = Math.round((boardBounds.width || posterW) * pixelRatio)
-          const srcH = Math.round((boardBounds.height || posterH) * pixelRatio)
+        if (canvases.length > 0) {
+          const boardBounds = boardNode ? boardNode.getBounds('page') : null
 
           const offscreen = document.createElement('canvas')
           offscreen.width = targetW
@@ -90,7 +86,20 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
           canvases.forEach((c: HTMLCanvasElement) => {
             try {
-              ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
+              const canvasRect = c.getBoundingClientRect()
+              if (boardBounds && canvasRect.width > 0 && canvasRect.height > 0) {
+                const ratioX = c.width / canvasRect.width
+                const ratioY = c.height / canvasRect.height
+
+                const srcX = Math.round((boardBounds.x - canvasRect.left) * ratioX)
+                const srcY = Math.round((boardBounds.y - canvasRect.top) * ratioY)
+                const srcW = Math.round(boardBounds.width * ratioX)
+                const srcH = Math.round(boardBounds.height * ratioY)
+
+                ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
+              } else {
+                ctx.drawImage(c, 0, 0, c.width, c.height, 0, 0, targetW, targetH)
+              }
             } catch (_e) { /* skip tainted canvases */ }
           })
 
