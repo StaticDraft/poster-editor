@@ -33,6 +33,31 @@ const VISUAL_PROP_KEYS = [
   'filter',
 ]
 
+export function parseShadow(source: Record<string, any> = {}): string | undefined {
+  if (!source) return undefined
+  const shadowVal = source.shadow
+  if (shadowVal && typeof shadowVal === 'string') return shadowVal
+  if (typeof shadowVal === 'object' && shadowVal !== null) {
+    const x = shadowVal.x || 0
+    const y = shadowVal.y || 4
+    const blur = shadowVal.blur || 8
+    const color = shadowVal.color || 'rgba(0, 0, 0, 0.25)'
+    return `${x}px ${y}px ${blur}px ${color}`
+  }
+  const shadowColor = source.shadowColor || source.shadowcolor
+  const shadowBlur = source.shadowBlur || source.shadowblur
+  const shadowX = source.shadowX || source.shadowx
+  const shadowY = source.shadowY || source.shadowy
+  if (shadowColor || shadowBlur || shadowX || shadowY) {
+    const x = shadowX || 0
+    const y = shadowY || 4
+    const blur = shadowBlur || 8
+    const color = shadowColor || 'rgba(0, 0, 0, 0.25)'
+    return `${x}px ${y}px ${blur}px ${color}`
+  }
+  return undefined
+}
+
 function pickVisualProps(source: Record<string, any> = {}) {
   const picked: Record<string, any> = {}
 
@@ -44,15 +69,11 @@ function pickVisualProps(source: Record<string, any> = {}) {
   if (source.italic !== undefined) picked.fontStyle = source.italic ? 'italic' : 'normal'
   if (source.underline !== undefined) picked.textDecoration = source.underline ? 'underline' : 'none'
 
-  // Format shadow into CSS shadow string to prevent Leafer UI getSpread TypeError
-  if (source.shadow && typeof source.shadow === 'string') {
-    picked.shadow = source.shadow
-  } else if (source.shadowColor || source.shadowBlur || source.shadowX || source.shadowY) {
-    const x = source.shadowX || 0
-    const y = source.shadowY || 4
-    const blur = source.shadowBlur || 8
-    const color = source.shadowColor || 'rgba(0, 0, 0, 0.25)'
-    picked.shadow = `${x}px ${y}px ${blur}px ${color}`
+  const shadowStr = parseShadow(source)
+  if (shadowStr) {
+    picked.shadow = shadowStr
+  } else {
+    delete picked.shadow
   }
 
   return picked
@@ -87,6 +108,11 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   delete base.props
   delete base.name
   delete base.nameKey
+  delete base.shadow
+  delete base.shadowColor
+  delete base.shadowBlur
+  delete base.shadowX
+  delete base.shadowY
 
   const runtimeProps: Record<string, any> = {
     ...base,
@@ -95,6 +121,14 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     draggable: options.draggable && !hidden && !locked && !props?.noMove,
     visible: !hidden,
     hittable: !hidden,
+  }
+
+  // Ensure shadow is sanitized to CSS string format
+  const sanitizedShadow = parseShadow(props) || parseShadow(el)
+  if (sanitizedShadow) {
+    runtimeProps.shadow = sanitizedShadow
+  } else {
+    delete runtimeProps.shadow
   }
 
   // Ensure blur (mosaic) is passed to Leafer UI node

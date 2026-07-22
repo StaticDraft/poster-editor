@@ -472,8 +472,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
       if (app?.tree && typeof app.tree.zoom === 'function') {
         try {
           app.tree.zoom({ x: 0, y: 0, width, height }, 40)
-        } catch {
-          app.tree.zoom('fit')
+        } catch (_err) {
+          try {
+            app.tree.zoom('fit')
+          } catch (_e) {}
         }
       }
     },
@@ -482,7 +484,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
       if (!app) return
       try {
         if (app.tree && typeof app.tree.zoom === 'function') app.tree.zoom('fit', 0)
-      } catch {}
+      } catch (_e) {}
     },
   }
 })
