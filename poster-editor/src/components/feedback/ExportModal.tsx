@@ -24,12 +24,38 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     if (!app) return
     setIsExporting(true)
     try {
+      const board = app.tree.findId('__scene_board__')
+      const targetNode = board || app.tree
       const fileName = `${projectName || 'my_poster'}.${format}`
-      await app.tree.export(fileName, {
-        screenshot: true,
+
+      // Request format-only export to get data payload
+      const result = await targetNode.export(format, {
         scale,
         quality: format === 'png' ? undefined : quality,
       })
+
+      if (result && result.data) {
+        let downloadUrl = ''
+        if (result.data instanceof Blob) {
+          downloadUrl = URL.createObjectURL(result.data)
+        } else if (typeof result.data === 'string') {
+          downloadUrl = result.data
+        } else if (result.data.url) {
+          downloadUrl = result.data.url
+        }
+
+        if (downloadUrl) {
+          const link = document.createElement('a')
+          link.href = downloadUrl
+          link.download = fileName
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          if (result.data instanceof Blob) {
+            setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+          }
+        }
+      }
 
       const confetti = (await import('canvas-confetti')).default
       confetti({
@@ -40,7 +66,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
       feedback.notify({
         title: '海报导出成功',
-        description: `已成功导出 ${scale}x 超清 ${format.toUpperCase()} 图片`,
+        description: `已成功导出并下载 ${scale}x 超清 ${format.toUpperCase()} 图片`,
         tone: 'success',
       })
       onClose()
