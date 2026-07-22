@@ -4,7 +4,7 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { FontManager } from './FontManager'
 import { Input } from '@/components/ui/input'
 import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
-import { removeImageBackground, BEAUTY_PRESETS } from '@/lib/imageProcess'
+import { removeImageBackground, applyImageEffects, BEAUTY_PRESETS } from '@/lib/imageProcess'
 import { useFeedback } from '@/lib/feedback'
 import {
   AlignLeft, AlignCenter, AlignRight,
@@ -84,6 +84,37 @@ function AppearanceTab({ node }: { node: any }) {
       })
     } finally {
       setIsProcessingCutout(false)
+    }
+  }
+
+  const handleApplyEffect = async (opts: { brightness?: number; contrast?: number; saturate?: number; blur?: number }) => {
+    const origin = p.originalUrl || node.url
+    if (!origin) return
+    if (!p.originalUrl) {
+      up('originalUrl', node.url)
+    }
+
+    const nextBlur = opts.blur !== undefined ? opts.blur : (p.blur || node.blur || 0)
+    const nextBrightness = opts.brightness !== undefined ? opts.brightness : (p.brightness || 100)
+    const nextContrast = opts.contrast !== undefined ? opts.contrast : (p.contrast || 100)
+    const nextSaturate = opts.saturate !== undefined ? opts.saturate : (p.saturate || 100)
+
+    u('blur', nextBlur)
+    up('blur', nextBlur)
+    up('brightness', nextBrightness)
+    up('contrast', nextContrast)
+    up('saturate', nextSaturate)
+
+    try {
+      const filteredUrl = await applyImageEffects(origin, {
+        brightness: nextBrightness,
+        contrast: nextContrast,
+        saturate: nextSaturate,
+        blur: nextBlur,
+      })
+      u('url', filteredUrl)
+    } catch (err) {
+      console.error('Failed to apply image effect:', err)
     }
   }
 
@@ -371,7 +402,7 @@ function AppearanceTab({ node }: { node: any }) {
                   max="30"
                   step="1"
                   value={node.blur || 0}
-                  onChange={e => u('blur', Number(e.target.value))}
+                  onChange={e => handleApplyEffect({ blur: Number(e.target.value) })}
                   className="flex-1 accent-blue-500 h-1.5"
                 />
                 <span className="text-xs text-editor-text w-8 text-right font-mono">{node.blur || 0}px</span>
@@ -386,12 +417,12 @@ function AppearanceTab({ node }: { node: any }) {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => {
-                    u('blur', preset.blur)
-                    up('brightness', preset.brightness)
-                    up('contrast', preset.contrast)
-                    up('saturate', preset.saturate)
-                  }}
+                  onClick={() => handleApplyEffect({
+                    brightness: preset.brightness,
+                    contrast: preset.contrast,
+                    saturate: preset.saturate,
+                    blur: preset.blur,
+                  })}
                   className="py-1.5 px-1 bg-editor-deep hover:bg-muted border border-border hover:border-blue-500 text-[10px] font-bold text-editor-text rounded transition-colors text-center truncate"
                 >
                   {preset.name}

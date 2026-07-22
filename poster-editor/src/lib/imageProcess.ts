@@ -1,5 +1,5 @@
 /**
- * Image processing utilities: Smart Background Removal (Cutout), Beauty Filters, and Mosaic
+ * Image processing utilities: Smart Background Removal (Cutout), Beauty Filters, and Pixelated Mosaic
  */
 
 export async function removeImageBackground(
@@ -47,6 +47,70 @@ export async function removeImageBackground(
       }
     }
     img.onerror = (e) => reject(new Error('Failed to load image for cutout: ' + String(e)))
+    img.src = imageUrl
+  })
+}
+
+export interface ImageEffectOptions {
+  brightness?: number // 100 base
+  contrast?: number   // 100 base
+  saturate?: number   // 100 base
+  blur?: number       // 0 base (mosaic intensity)
+  hueRotate?: number  // 0 base
+}
+
+export async function applyImageEffects(
+  imageUrl: string,
+  options: ImageEffectOptions
+): Promise<string> {
+  const { brightness = 100, contrast = 100, saturate = 100, blur = 0, hueRotate = 0 } = options
+
+  // If all effects are default, return original URL
+  if (brightness === 100 && contrast === 100 && saturate === 100 && blur === 0 && hueRotate === 0) {
+    return imageUrl
+  }
+
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'Anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const w = img.naturalWidth || img.width
+        const h = img.naturalHeight || img.height
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return resolve(imageUrl)
+
+        // Pixelated Mosaic Algorithm if blur > 0
+        if (blur > 0) {
+          const pixelSize = Math.max(4, Math.round(blur * 1.6))
+          const smallW = Math.max(1, Math.floor(w / pixelSize))
+          const smallH = Math.max(1, Math.floor(h / pixelSize))
+
+          const smallCanvas = document.createElement('canvas')
+          smallCanvas.width = smallW
+          smallCanvas.height = smallH
+          const smallCtx = smallCanvas.getContext('2d')!
+          smallCtx.imageSmoothingEnabled = false
+          smallCtx.drawImage(img, 0, 0, smallW, smallH)
+
+          ctx.imageSmoothingEnabled = false
+          ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${hueRotate}deg)`
+          ctx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, w, h)
+        } else {
+          ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${hueRotate}deg)`
+          ctx.drawImage(img, 0, 0, w, h)
+        }
+
+        resolve(canvas.toDataURL('image/png'))
+      } catch (err) {
+        console.error('Filter apply error:', err)
+        resolve(imageUrl)
+      }
+    }
+    img.onerror = () => resolve(imageUrl)
     img.src = imageUrl
   })
 }
