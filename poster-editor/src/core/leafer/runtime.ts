@@ -2,6 +2,17 @@ import { Rect, Ellipse, Text, Star, Image, Path } from 'leafer-ui'
 import { generateQRCodeSVG, generateBarcodeDataUrl } from '@/lib/qrcode'
 import type { EditorNode } from '@/store/useEditorStore'
 
+// Global Polyfill: Protect Leafer UI's __updateRenderSpread against missing getSpread on Shadow objects
+if (typeof (Object.prototype as any).getSpread !== 'function') {
+  Object.defineProperty(Object.prototype, 'getSpread', {
+    value: function (this: any) {
+      return this.spread || this.blur || 0
+    },
+    configurable: true,
+    writable: true,
+  })
+}
+
 type LeaferNode = any
 
 interface RuntimeOptions {
@@ -225,6 +236,9 @@ export function createLeaferNode(el: EditorNode & Record<string, any>, options: 
 
 export function syncLeaferNode(node: LeaferNode, el: EditorNode & Record<string, any>, options: RuntimeOptions) {
   const runtimeProps = buildLeaferNodeProps(el, options)
+  if (!runtimeProps.shadow && node.shadow) {
+    node.shadow = undefined
+  }
   node.set(runtimeProps)
 }
 
