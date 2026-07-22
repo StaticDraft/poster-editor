@@ -44,6 +44,17 @@ function pickVisualProps(source: Record<string, any> = {}) {
   if (source.italic !== undefined) picked.fontStyle = source.italic ? 'italic' : 'normal'
   if (source.underline !== undefined) picked.textDecoration = source.underline ? 'underline' : 'none'
 
+  // Format shadow into CSS shadow string to prevent Leafer UI getSpread TypeError
+  if (source.shadow && typeof source.shadow === 'string') {
+    picked.shadow = source.shadow
+  } else if (source.shadowColor || source.shadowBlur || source.shadowX || source.shadowY) {
+    const x = source.shadowX || 0
+    const y = source.shadowY || 4
+    const blur = source.shadowBlur || 8
+    const color = source.shadowColor || 'rgba(0, 0, 0, 0.25)'
+    picked.shadow = `${x}px ${y}px ${blur}px ${color}`
+  }
+
   return picked
 }
 

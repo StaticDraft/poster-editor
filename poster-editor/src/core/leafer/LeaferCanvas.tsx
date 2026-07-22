@@ -156,12 +156,7 @@ export function LeaferCanvas() {
         draggable: false,
         hittable: false,
         zIndex: -100001,
-        shadow: {
-          x: 0,
-          y: 12,
-          blur: 36,
-          color: 'rgba(15, 23, 42, 0.35)',
-        },
+        shadow: '0px 12px 36px rgba(15, 23, 42, 0.35)',
       })
       app.tree.add(boardShadowRef.current)
     }
