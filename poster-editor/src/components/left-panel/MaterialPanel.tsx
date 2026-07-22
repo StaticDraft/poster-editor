@@ -36,6 +36,16 @@ const PATHS = {
 // ─────────────────────────────────────────────────
 const CATEGORIES = [
   {
+    id: 'qrcodes',
+    titleKey: 'material.categories.qrcodes',
+    fallbackTitle: '实用组件工具箱 (马赛克/二维码/条码)',
+    items: [
+      { type: 'Mosaic', nameKey: 'material.items.mosaic', fallbackName: '马赛克遮罩', width: 200, height: 120, props: { pixelSize: 12 } },
+      { type: 'QRCode', nameKey: 'material.items.qrcode', fallbackName: '动态二维码', text: 'https://postercraft.app', width: 160, height: 160 },
+      { type: 'Barcode', nameKey: 'material.items.barcode', fallbackName: '矢量条形码', text: '690123456789', width: 240, height: 80 },
+    ]
+  },
+  {
     id: 'text-nodes',
     titleKey: 'material.categories.textNodes',
     fallbackTitle: '高级文本排版',
@@ -96,16 +106,6 @@ const CATEGORIES = [
       { type: 'Image', nameKey: 'material.items.bg1', fallbackName: '极光艺术背景', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600', width: 800, height: 1200 },
       { type: 'Image', nameKey: 'material.items.bg2', fallbackName: '孟菲斯磨砂图', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600', width: 800, height: 1200 },
       { type: 'Image', nameKey: 'material.items.bg3', fallbackName: '大理石白纹理', url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600', width: 800, height: 1200 },
-    ]
-  },
-  {
-    id: 'qrcodes',
-    titleKey: 'material.categories.qrcodes',
-    fallbackTitle: '实用组件工具箱 (马赛克/二维码/条码)',
-    items: [
-      { type: 'Mosaic', nameKey: 'material.items.mosaic', fallbackName: '马赛克遮罩控件', width: 200, height: 120, props: { pixelSize: 12 } },
-      { type: 'QRCode', nameKey: 'material.items.qrcode', fallbackName: '动态二维码', text: 'https://postercraft.app', width: 160, height: 160 },
-      { type: 'Barcode', nameKey: 'material.items.barcode', fallbackName: '矢量条形码', text: '690123456789', width: 240, height: 80 },
     ]
   }
 ]
