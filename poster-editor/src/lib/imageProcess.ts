@@ -1,5 +1,5 @@
 /**
- * Image processing utilities: Smart Background Removal (Cutout), Pure Pixel Beauty Filters, and Pixelated Mosaic
+ * Image processing utilities: Smart Background Removal (Cutout), Pure Pixel & CSS Filter Beauty Presets, and Pixelated Mosaic
  */
 
 export function loadImageWithCorsFallback(url: string): Promise<HTMLImageElement> {
@@ -94,6 +94,31 @@ export interface ImageEffectOptions {
   blur?: number       // 0 base (mosaic intensity)
 }
 
+export function getCssFilterString(
+  presetId?: string,
+  brightness = 100,
+  contrast = 100,
+  saturate = 100
+): string {
+  if (presetId === 'high-contrast') {
+    return 'grayscale(100%) contrast(140%) brightness(105%)'
+  } else if (presetId === 'beauty-soft') {
+    return 'brightness(112%) contrast(95%) saturate(115%)'
+  } else if (presetId === 'warm-sun') {
+    return 'brightness(108%) contrast(105%) saturate(125%) sepia(18%)'
+  } else if (presetId === 'cyberpunk') {
+    return 'brightness(105%) contrast(130%) saturate(160%) hue-rotate(180deg)'
+  } else if (presetId === 'retro-film') {
+    return 'brightness(95%) contrast(110%) saturate(80%) sepia(30%)'
+  }
+
+  const parts: string[] = []
+  if (brightness !== 100) parts.push(`brightness(${brightness}%)`)
+  if (contrast !== 100) parts.push(`contrast(${contrast}%)`)
+  if (saturate !== 100) parts.push(`saturate(${saturate}%)`)
+  return parts.length > 0 ? parts.join(' ') : 'none'
+}
+
 export function applyPixelFilter(
   data: Uint8ClampedArray,
   presetId?: string,
@@ -181,6 +206,8 @@ export async function applyImageEffects(
     const ctx = canvas.getContext('2d')
     if (!ctx) return imageUrl
 
+    const filterString = getCssFilterString(presetId, brightness, contrast, saturate)
+
     // Step 1: Pixelated Mosaic Algorithm if blur > 0
     if (blur > 0) {
       const pixelSize = Math.max(4, Math.round(blur * 1.6))
@@ -193,20 +220,30 @@ export async function applyImageEffects(
       const smallCtx = smallCanvas.getContext('2d')
       if (smallCtx) {
         smallCtx.imageSmoothingEnabled = false
+        if (filterString !== 'none') smallCtx.filter = filterString
         smallCtx.drawImage(img, 0, 0, smallW, smallH)
+
         ctx.imageSmoothingEnabled = false
         ctx.drawImage(smallCanvas, 0, 0, smallW, smallH, 0, 0, w, h)
       } else {
+        if (filterString !== 'none') ctx.filter = filterString
         ctx.drawImage(img, 0, 0, w, h)
       }
     } else {
+      if (filterString !== 'none') ctx.filter = filterString
       ctx.drawImage(img, 0, 0, w, h)
     }
 
-    // Step 2: Pure Pixel Transformation for Beauty Filter presets
-    const imgData = ctx.getImageData(0, 0, w, h)
-    applyPixelFilter(imgData.data, presetId, brightness, contrast, saturate)
-    ctx.putImageData(imgData, 0, 0)
+    // Step 2: Try pixel-level filter fallback if supported
+    try {
+      const imgData = ctx.getImageData(0, 0, w, h)
+      if (filterString === 'none') {
+        applyPixelFilter(imgData.data, presetId, brightness, contrast, saturate)
+        ctx.putImageData(imgData, 0, 0)
+      }
+    } catch (_e) {
+      // Ignored: Canvas was rendered via ctx.filter without getImageData, avoiding CORS taints
+    }
 
     const resultDataUrl = canvas.toDataURL('image/png')
     if (!resultDataUrl || resultDataUrl.length < 100 || resultDataUrl === 'data:,') {

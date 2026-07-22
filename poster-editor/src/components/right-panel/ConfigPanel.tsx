@@ -88,43 +88,50 @@ function AppearanceTab({ node }: { node: any }) {
   }
 
   const handleApplyEffect = async (opts: { presetId?: string; brightness?: number; contrast?: number; saturate?: number; blur?: number }) => {
-    let origin = p.originalUrl || node.url
-    if (!origin) return
+    if (node.type !== 'Image') return
+    const currentProps = node.props || {}
+    const pristineUrl = currentProps.originalUrl || node.url
+    if (!pristineUrl) return
 
-    if (!p.originalUrl) {
-      up('originalUrl', node.url)
-      origin = node.url
+    const nextPresetId = opts.presetId !== undefined ? opts.presetId : (currentProps.activePresetId || 'original')
+    const nextBlur = opts.blur !== undefined ? opts.blur : (currentProps.blur || node.blur || 0)
+    const nextBrightness = opts.brightness !== undefined ? opts.brightness : (currentProps.brightness || 100)
+    const nextContrast = opts.contrast !== undefined ? opts.contrast : (currentProps.contrast || 100)
+    const nextSaturate = opts.saturate !== undefined ? opts.saturate : (currentProps.saturate || 100)
+
+    const updatedProps = {
+      ...currentProps,
+      originalUrl: pristineUrl,
+      activePresetId: nextPresetId,
+      blur: nextBlur,
+      brightness: nextBrightness,
+      contrast: nextContrast,
+      saturate: nextSaturate,
     }
 
-    const nextPresetId = opts.presetId !== undefined ? opts.presetId : (p.activePresetId || 'original')
-    const nextBlur = opts.blur !== undefined ? opts.blur : (p.blur || node.blur || 0)
-    const nextBrightness = opts.brightness !== undefined ? opts.brightness : (p.brightness || 100)
-    const nextContrast = opts.contrast !== undefined ? opts.contrast : (p.contrast || 100)
-    const nextSaturate = opts.saturate !== undefined ? opts.saturate : (p.saturate || 100)
-
-    u('blur', nextBlur)
-    up('blur', nextBlur)
-    up('activePresetId', nextPresetId)
-    up('brightness', nextBrightness)
-    up('contrast', nextContrast)
-    up('saturate', nextSaturate)
-
-    // Restore to pristine original image instantly if 'original' preset is chosen with 0 blur
+    // Direct 1-ms restore to pristine original image if 'original' preset is chosen with 0 blur
     if (nextPresetId === 'original' && nextBlur === 0) {
-      u('url', origin)
+      updateNode(node.id, {
+        url: pristineUrl,
+        props: updatedProps,
+      } as any)
       return
     }
 
     try {
-      const filteredUrl = await applyImageEffects(origin, {
+      const filteredUrl = await applyImageEffects(pristineUrl, {
         presetId: nextPresetId,
         brightness: nextBrightness,
         contrast: nextContrast,
         saturate: nextSaturate,
         blur: nextBlur,
       })
+
       if (filteredUrl && filteredUrl !== 'data:,' && filteredUrl.length > 5) {
-        u('url', filteredUrl)
+        updateNode(node.id, {
+          url: filteredUrl,
+          props: updatedProps,
+        } as any)
       }
     } catch (err) {
       console.error('Failed to apply image effect:', err)

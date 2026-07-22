@@ -36,12 +36,6 @@ const VISUAL_PROP_KEYS = [
   'textAlign',
   'letterSpacing',
   'lineHeight',
-  'blur',
-  'brightness',
-  'contrast',
-  'saturate',
-  'hueRotate',
-  'filter',
 ]
 
 export function parseShadow(source: Record<string, any> = {}): string | undefined {
@@ -142,23 +136,7 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     delete runtimeProps.shadow
   }
 
-  // Ensure blur (mosaic) is passed to Leafer UI node
-  if (el.blur !== undefined) runtimeProps.blur = el.blur
-  if (props?.blur !== undefined) runtimeProps.blur = props.blur
-
   if (props?.contain) runtimeProps.objectFit = 'contain'
-
-  // Build beauty & photo adjustments filter string for Leafer UI
-  const brightness = props?.brightness ?? 100
-  const contrast = props?.contrast ?? 100
-  const saturate = props?.saturate ?? 100
-  const hueRotate = props?.hueRotate ?? 0
-
-  if (brightness !== 100 || contrast !== 100 || saturate !== 100 || hueRotate !== 0) {
-    runtimeProps.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) hue-rotate(${hueRotate}deg)`
-  } else if (props?.filter && props.filter !== 'none') {
-    runtimeProps.filter = props.filter
-  }
 
   if (el.type === 'QRCode') {
     runtimeProps.url = generateQRCodeSVG(el.text || props?.text || 'https://postercraft.app')
