@@ -328,7 +328,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   const filtered = useMemo(() => {
     let cats = CATEGORIES
     if (mode === 'components') {
-      cats = CATEGORIES.filter(cat => ['text-nodes', 'basic-shapes'].includes(cat.id))
+      cats = CATEGORIES.filter(cat => ['qrcodes', 'text-nodes', 'basic-shapes', 'marketing-stamps'].includes(cat.id))
     } else if (mode === 'assets') {
       cats = CATEGORIES.filter(cat => ['stickers', 'backgrounds'].includes(cat.id))
     }
