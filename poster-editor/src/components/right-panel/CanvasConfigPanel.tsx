@@ -245,6 +245,13 @@ export function CanvasConfigPanel() {
                     </select>
                   </div>
                 )}
+
+                <button
+                  onClick={() => setCanvasConfig({ bgColor: '#ffffff' })}
+                  className="mt-2 w-full py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border rounded transition-colors"
+                >
+                  重置为默认纯白背景
+                </button>
               </div>
             )
           })()}
