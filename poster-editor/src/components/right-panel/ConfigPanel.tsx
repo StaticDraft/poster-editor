@@ -133,23 +133,23 @@ function AppearanceTab({ node }: { node: any }) {
           </div>
         </div>
         <Row label="旋转与翻转">
-          <div className="flex items-center gap-1.5 flex-1">
+          <div className="flex items-center gap-1.5 flex-1 justify-end">
             <NumInput value={node.rotation || 0} onChange={v => u('rotation', v)} />
             <button
               type="button"
               onClick={() => up('flipH', !p.flipH)}
               title="水平镜像翻转"
-              className={`h-7 px-2 text-[11px] font-bold rounded border transition-colors ${p.flipH ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
+              className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded border transition-colors ${p.flipH ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
             >
-              ⇄ 水平
+              ⇄
             </button>
             <button
               type="button"
               onClick={() => up('flipV', !p.flipV)}
               title="垂直镜像翻转"
-              className={`h-7 px-2 text-[11px] font-bold rounded border transition-colors ${p.flipV ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
+              className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded border transition-colors ${p.flipV ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
             >
-              ⇅ 垂直
+              ⇅
             </button>
           </div>
         </Row>
