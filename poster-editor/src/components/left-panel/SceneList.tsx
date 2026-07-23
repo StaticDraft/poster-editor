@@ -73,7 +73,7 @@ export function SceneList() {
   }
 
   const handleCreate = () => {
-    const newName = `未命名海报_${scenes.length + 1}`
+    const newName = `${tr('scene.untitledPoster', '未命名海报')}_${scenes.length + 1}`
     createScene(newName)
     const state = useEditorStore.getState()
     const realId = state.currentSceneId
