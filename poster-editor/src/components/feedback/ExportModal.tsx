@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Download, Image as ImageIcon, X } from 'lucide-react'
 import { Leafer } from 'leafer-ui'
 import '@leafer-in/export'
@@ -15,11 +16,17 @@ interface ExportModalProps {
 }
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
+  const { t } = useTranslation()
   const [format, setFormat] = useState<'png' | 'jpg' | 'webp'>('png')
   const [scale, setScale] = useState<number>(2)
   const [quality, setQuality] = useState<number>(0.92)
   const [isExporting, setIsExporting] = useState(false)
   const feedback = useFeedback()
+
+  const tr = (key: string, fallback: string) => {
+    const val = t(key)
+    return val === key ? fallback : val
+  }
 
   if (!open) return null
 
@@ -109,13 +116,13 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       } catch (_e) {}
 
       feedback.notify({
-        title: '海报导出成功',
-        description: `已成功导出并下载 ${scale}x ${format.toUpperCase()} 图片`,
+        title: tr('exportModal.exportSuccess', '海报导出成功'),
+        description: t('exportModal.exportSuccessDesc', { scale, format: format.toUpperCase() }) || `已成功导出并下载 ${scale}x ${format.toUpperCase()} 图片`,
         tone: 'success',
       })
       onClose()
     } else {
-      feedback.notify({ title: '导出失败：渲染生成错误', tone: 'error' })
+      feedback.notify({ title: tr('exportModal.exportFailed', '导出失败：渲染生成错误'), tone: 'error' })
     }
     setIsExporting(false)
   }
@@ -126,7 +133,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <ImageIcon className="w-4 h-4 text-rose-500" />
-            <span>导出海报图片</span>
+            <span>{tr('exportModal.title', '导出海报图片')}</span>
           </div>
           <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -136,7 +143,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         <div className="space-y-4 text-xs">
           {/* Format selection */}
           <div>
-            <label className="block text-muted-foreground font-medium mb-1.5">图片格式</label>
+            <label className="block text-muted-foreground font-medium mb-1.5">{tr('exportModal.imageFormat', '图片格式')}</label>
             <div className="grid grid-cols-3 gap-2">
               {(['png', 'jpg', 'webp'] as const).map((fmt) => (
                 <button
@@ -153,12 +160,12 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
           {/* Scale selection */}
           <div>
-            <label className="block text-muted-foreground font-medium mb-1.5">导出清晰度 (分辨率倍率)</label>
+            <label className="block text-muted-foreground font-medium mb-1.5">{tr('exportModal.resolution', '导出清晰度 (分辨率倍率)')}</label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { val: 1, label: '标准 1x' },
-                { val: 2, label: '高清 2x (推荐)' },
-                { val: 3, label: '超清 3x (印刷)' },
+                { val: 1, labelKey: 'exportModal.scale1x', fallback: '标准 1x' },
+                { val: 2, labelKey: 'exportModal.scale2x', fallback: '高清 2x (推荐)' },
+                { val: 3, labelKey: 'exportModal.scale3x', fallback: '超清 3x (印刷)' },
               ].map((item) => (
                 <button
                   key={item.val}
@@ -166,7 +173,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
                   onClick={() => setScale(item.val)}
                   className={`py-2 text-xs font-bold rounded-lg border transition-colors ${scale === item.val ? 'bg-blue-600 border-blue-500 text-white shadow-md' : 'bg-muted/40 border-border text-foreground hover:bg-muted'}`}
                 >
-                  {item.label}
+                  {tr(item.labelKey, item.fallback)}
                 </button>
               ))}
             </div>
@@ -176,7 +183,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           {format !== 'png' && (
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="text-muted-foreground font-medium">压缩质量</label>
+                <label className="text-muted-foreground font-medium">{tr('exportModal.quality', '压缩质量')}</label>
                 <span className="font-mono text-foreground font-bold">{Math.round(quality * 100)}%</span>
               </div>
               <input
@@ -194,7 +201,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
         <div className="mt-6 pt-3 border-t border-border flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
-            取消
+            {tr('exportModal.cancel', '取消')}
           </Button>
           <Button
             variant="default"
@@ -204,7 +211,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md"
           >
             <Download className="w-3.5 h-3.5 mr-1" />
-            {isExporting ? '生成导出中...' : '立即下载图片'}
+            {isExporting ? tr('exportModal.exporting', '生成导出中...') : tr('exportModal.downloadNow', '立即下载图片')}
           </Button>
         </div>
       </div>
