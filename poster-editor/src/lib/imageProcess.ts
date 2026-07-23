@@ -291,6 +291,7 @@ export async function applyImageEffects(
 export interface ImageFilterPreset {
   id: string
   name: string
+  nameKey?: string
   brightness: number // 100 base
   contrast: number   // 100 base
   saturate: number   // 100 base
@@ -298,10 +299,10 @@ export interface ImageFilterPreset {
 }
 
 export const BEAUTY_PRESETS: ImageFilterPreset[] = [
-  { id: 'original', name: '↺ 原图', brightness: 100, contrast: 100, saturate: 100, blur: 0 },
-  { id: 'beauty-soft', name: '🌸 柔光美颜', brightness: 112, contrast: 95, saturate: 115, blur: 0 },
-  { id: 'warm-sun', name: '🌅 日系暖调', brightness: 108, contrast: 105, saturate: 125, blur: 0 },
-  { id: 'cyberpunk', name: '🌌 赛博霓虹', brightness: 105, contrast: 130, saturate: 160, blur: 0 },
-  { id: 'retro-film', name: '🎬 复古电影', brightness: 95, contrast: 110, saturate: 80, blur: 0 },
-  { id: 'high-contrast', name: '🏁 动感黑白', brightness: 105, contrast: 140, saturate: 0, blur: 0 },
+  { id: 'original', name: '↺ 原图', nameKey: 'config.preset.original', brightness: 100, contrast: 100, saturate: 100, blur: 0 },
+  { id: 'beauty-soft', name: '🌸 柔光美颜', nameKey: 'config.preset.beautySoft', brightness: 112, contrast: 95, saturate: 115, blur: 0 },
+  { id: 'warm-sun', name: '🌅 日系暖调', nameKey: 'config.preset.warmSun', brightness: 108, contrast: 105, saturate: 125, blur: 0 },
+  { id: 'cyberpunk', name: '🌌 赛博霓虹', nameKey: 'config.preset.cyberpunk', brightness: 105, contrast: 130, saturate: 160, blur: 0 },
+  { id: 'retro-film', name: '🎬 复古电影', nameKey: 'config.preset.retroFilm', brightness: 95, contrast: 110, saturate: 80, blur: 0 },
+  { id: 'high-contrast', name: '🏁 动感黑白', nameKey: 'config.preset.highContrast', brightness: 105, contrast: 140, saturate: 0, blur: 0 },
 ]

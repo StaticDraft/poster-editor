@@ -192,36 +192,36 @@ function AppearanceTab({ node }: { node: any }) {
       <Section title={tr('config.appearance.position', '位置坐标与比例')}>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <div>
-            <div className="text-[10px] text-editor-text-dim mb-1">X 轴坐标</div>
+            <div className="text-[10px] text-editor-text-dim mb-1">{tr('config.appearance.x', 'X 轴坐标')}</div>
             <NumInput value={node.x} onChange={v => u('x', v)} />
           </div>
           <div>
-            <div className="text-[10px] text-editor-text-dim mb-1">Y 轴坐标</div>
+            <div className="text-[10px] text-editor-text-dim mb-1">{tr('config.appearance.y', 'Y 轴坐标')}</div>
             <NumInput value={node.y} onChange={v => u('y', v)} />
           </div>
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <span className="text-[10px] text-editor-text-dim">宽度 (W)</span>
+              <span className="text-[10px] text-editor-text-dim">{tr('config.appearance.width', '宽度 (W)')}</span>
             </div>
             <NumInput value={node.width || 100} onChange={handleWidth} />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-[10px] text-editor-text-dim">高度 (H)</span>
-              <button onClick={() => setLockRatio(!lockRatio)} title="锁定宽高比" className="text-editor-text-dim hover:text-blue-400">
+              <span className="text-[10px] text-editor-text-dim">{tr('config.appearance.height', '高度 (H)')}</span>
+              <button onClick={() => setLockRatio(!lockRatio)} title={tr('config.appearance.lockRatio', '锁定宽高比')} className="text-editor-text-dim hover:text-blue-400">
                 {lockRatio ? <Lock className="w-3 h-3 text-blue-400" /> : <Unlock className="w-3 h-3" />}
               </button>
             </div>
             <NumInput value={node.height || 100} onChange={handleHeight} />
           </div>
         </div>
-        <Row label="旋转与翻转">
+        <Row label={tr('config.appearance.rotateAndFlip', '旋转与翻转')}>
           <div className="flex items-center gap-1.5 flex-1 justify-end">
             <NumInput value={node.rotation || 0} onChange={v => u('rotation', v)} />
             <button
               type="button"
               onClick={() => up('flipH', !p.flipH)}
-              title="水平镜像翻转"
+              title={tr('config.appearance.flipHHint', '水平镜像翻转')}
               className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded border transition-colors ${p.flipH ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
             >
               ⇄
@@ -229,7 +229,7 @@ function AppearanceTab({ node }: { node: any }) {
             <button
               type="button"
               onClick={() => up('flipV', !p.flipV)}
-              title="垂直镜像翻转"
+              title={tr('config.appearance.flipVHint', '垂直镜像翻转')}
               className={`w-7 h-7 flex items-center justify-center text-sm font-bold rounded border transition-colors ${p.flipV ? 'bg-blue-600 border-blue-500 text-white' : 'bg-editor-deep border-border text-editor-text-label hover:border-blue-400 hover:text-editor-text'}`}
             >
               ⇅
@@ -260,7 +260,7 @@ function AppearanceTab({ node }: { node: any }) {
               }}
               className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${!isGradient ? 'bg-blue-600 text-editor-text' : 'text-editor-text-label hover:text-editor-text'}`}
             >
-              纯色填充
+              {tr('config.appearance.solidFill', '纯色填充')}
             </button>
             <button
               type="button"
@@ -276,7 +276,7 @@ function AppearanceTab({ node }: { node: any }) {
               }}
               className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${isGradient ? 'bg-blue-600 text-editor-text' : 'text-editor-text-label hover:text-editor-text'}`}
             >
-              渐变填充
+              {tr('config.appearance.gradientFill', '渐变填充')}
             </button>
           </div>
 
@@ -289,14 +289,14 @@ function AppearanceTab({ node }: { node: any }) {
             </Row>
           ) : (
             <div className="space-y-2 pl-2 border-l border-border/50">
-              <Row label="渐变类型">
+              <Row label={tr('config.appearance.gradType', '渐变类型')}>
                 <select value={gradType} onChange={e => u('fill', { ...node.fill, type: e.target.value })}
                   className="w-24 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card">
-                  <option value="linear">线性渐变</option>
-                  <option value="radial">径向渐变</option>
+                  <option value="linear">{tr('config.appearance.linearGrad', '线性渐变')}</option>
+                  <option value="radial">{tr('config.appearance.radialGrad', '径向渐变')}</option>
                 </select>
               </Row>
-              <Row label="渐变方向">
+              <Row label={tr('config.appearance.gradFrom', '渐变方向')}>
                 <select value={gradFrom} onChange={e => {
                     const val = e.target.value
                     let toVal = 'right'
@@ -306,18 +306,18 @@ function AppearanceTab({ node }: { node: any }) {
                     u('fill', { ...node.fill, from: val, to: toVal })
                   }}
                   className="w-24 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card">
-                  <option value="left">左到右</option>
-                  <option value="top">上到下</option>
-                  <option value="top-left">对角线</option>
-                  <option value="center">径向扩散</option>
+                  <option value="left">{tr('config.appearance.leftToRight', '左到右')}</option>
+                  <option value="top">{tr('config.appearance.topToBottom', '上到下')}</option>
+                  <option value="top-left">{tr('config.appearance.diagonal', '对角线')}</option>
+                  <option value="center">{tr('config.appearance.radialSpread', '径向扩散')}</option>
                 </select>
               </Row>
-              <Row label="起止颜色">
+              <Row label={tr('config.appearance.stopColors', '起止颜色')}>
                 <div className="flex items-center gap-1.5">
                   <input type="color" value={stop1}
                     onChange={e => u('fill', { ...node.fill, stops: [e.target.value, stop2] })}
                     className="w-6 h-6 rounded border-0 cursor-pointer bg-transparent" />
-                  <span className="text-[10px] text-editor-text-dim">至</span>
+                  <span className="text-[10px] text-editor-text-dim">{tr('config.appearance.to', '至')}</span>
                   <input type="color" value={stop2}
                     onChange={e => u('fill', { ...node.fill, stops: [stop1, e.target.value] })}
                     className="w-6 h-6 rounded border-0 cursor-pointer bg-transparent" />
@@ -332,7 +332,7 @@ function AppearanceTab({ node }: { node: any }) {
                 onChange={c => up('stroke', c)}
               />
               <div className="flex items-center gap-2 justify-end">
-                <span className="text-[10px] text-editor-text-dim">粗细</span>
+                <span className="text-[10px] text-editor-text-dim">{tr('config.appearance.strokeThickness', '粗细')}</span>
                 <NumInput value={p.strokeWidth || 0} onChange={v => up('strokeWidth', v)} w="w-14" />
                 <span className="text-[10px] text-editor-text-dim">px</span>
               </div>
@@ -351,12 +351,12 @@ function AppearanceTab({ node }: { node: any }) {
         </div>
         {p.shadow && (
           <>
-            <Row label="阴影颜色">
+            <Row label={tr('config.appearance.shadowColor', '阴影颜色')}>
               <input type="color" value={p.shadowColor || '#000000'}
                 onChange={e => up('shadowColor', e.target.value)}
                 className="w-7 h-7 rounded border-0 cursor-pointer bg-transparent" />
             </Row>
-            <Row label="阴影模糊">
+            <Row label={tr('config.appearance.shadowBlur', '阴影模糊')}>
               <div className="flex items-center gap-2 flex-1">
                 <input type="range" min="0" max="40" step="1" value={p.shadowBlur || 8}
                   onChange={e => up('shadowBlur', Number(e.target.value))}
@@ -364,10 +364,10 @@ function AppearanceTab({ node }: { node: any }) {
                 <span className="text-xs text-editor-text w-6 text-right">{p.shadowBlur || 8}</span>
               </div>
             </Row>
-            <Row label="偏移 X">
+            <Row label={tr('config.appearance.shadowX', '偏移 X')}>
               <NumInput value={p.shadowX || 4} onChange={v => up('shadowX', v)} />
             </Row>
-            <Row label="偏移 Y">
+            <Row label={tr('config.appearance.shadowY', '偏移 Y')}>
               <NumInput value={p.shadowY || 4} onChange={v => up('shadowY', v)} />
             </Row>
           </>
@@ -377,8 +377,8 @@ function AppearanceTab({ node }: { node: any }) {
       {/* Image Specific & Advanced Photo Editing */}
       {node.type === 'Image' && (
         <>
-          <Section title={tr('config.appearance.image', '图片基础属性')}>
-            <Row label="图片路径">
+          <Section title={tr('config.appearance.imageProps', '图片基础属性')}>
+            <Row label={tr('config.appearance.imagePath', '图片路径')}>
               <Input value={node.url || ''} onChange={(e: ChangeEvent<HTMLInputElement>) => u('url', e.target.value)}
                 placeholder="https://..." className="flex-1 h-7 bg-editor-deep border-border text-editor-text text-xs font-mono" />
             </Row>
@@ -390,7 +390,7 @@ function AppearanceTab({ node }: { node: any }) {
           </Section>
 
           {/* 1. Smart Cutout / Background Removal */}
-          <Section title="✨ 智能 P 图抠图 (背景消除)">
+          <Section title={tr('config.appearance.aiMattingTitle', '✨ 智能 P 图抠图 (背景消除)')}>
             <div className="space-y-1.5">
               <button
                 type="button"
@@ -399,7 +399,7 @@ function AppearanceTab({ node }: { node: any }) {
                 className="w-full py-1.5 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded text-xs font-bold flex items-center justify-center gap-1.5 shadow transition-all disabled:opacity-50"
               >
                 <Wand2 className="w-3.5 h-3.5" />
-                <span>{isProcessingCutout ? '正在智能抠图处理中...' : '一键消除纯浅白背景'}</span>
+                <span>{isProcessingCutout ? tr('config.appearance.processingCutout', '正在智能抠图处理中...') : tr('config.appearance.cutoutWhite', '一键消除纯浅白背景')}</span>
               </button>
 
               <button
@@ -408,14 +408,14 @@ function AppearanceTab({ node }: { node: any }) {
                 onClick={() => handleCutout('chroma')}
                 className="w-full py-1 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
               >
-                <span>🟢 绿幕 / 单色抠图</span>
+                <span>{tr('config.appearance.cutoutChroma', '🟢 绿幕 / 单色抠图')}</span>
               </button>
             </div>
           </Section>
 
           {/* 2. Mosaic & Blur */}
-          <Section title="🔲 马赛克与模糊打码">
-            <Row label="马赛克/模糊">
+          <Section title={tr('config.appearance.mosaicBlurTitle', '🔲 马赛克与模糊打码')}>
+            <Row label={tr('config.appearance.mosaicBlur', '马赛克/模糊')}>
               <div className="flex items-center gap-2 flex-1">
                 <input
                   type="range"
@@ -432,7 +432,7 @@ function AppearanceTab({ node }: { node: any }) {
           </Section>
 
           {/* 3. Beauty Filters & Photo Adjustments */}
-          <Section title="💄 一键美颜与 P 图滤镜">
+          <Section title={tr('config.appearance.beautyFiltersTitle', '💄 一键美颜与 P 图滤镜')}>
             <div className="grid grid-cols-3 gap-1.5">
               {BEAUTY_PRESETS.map((preset) => {
                 const activePresetId = p.activePresetId || 'original'
@@ -454,7 +454,7 @@ function AppearanceTab({ node }: { node: any }) {
                         : 'bg-editor-deep hover:bg-muted border border-border text-editor-text hover:border-blue-500/50'
                     }`}
                   >
-                    <span>{preset.name}</span>
+                    <span>{preset.nameKey ? tr(preset.nameKey, preset.name) : preset.name}</span>
                   </button>
                 )
               })}
@@ -477,8 +477,8 @@ function AppearanceTab({ node }: { node: any }) {
 
       {/* Standalone Mosaic Overlay Component Properties */}
       {node.type === 'Mosaic' && (
-        <Section title="🔲 马赛克遮罩控件设置">
-          <Row label="像素格子大小">
+        <Section title={tr('config.appearance.mosaicSettings', '🔲 马赛克遮罩控件设置')}>
+          <Row label={tr('config.appearance.pixelSize', '像素格子大小')}>
             <div className="flex items-center gap-2 flex-1">
               <input
                 type="range"
@@ -492,7 +492,7 @@ function AppearanceTab({ node }: { node: any }) {
               <span className="text-xs text-editor-text w-8 text-right font-mono">{p.pixelSize || 12}px</span>
             </div>
           </Row>
-          <Row label="遮罩透明度">
+          <Row label={tr('config.appearance.maskOpacity', '遮罩透明度')}>
             <div className="flex items-center gap-2 flex-1">
               <input
                 type="range"
@@ -506,7 +506,7 @@ function AppearanceTab({ node }: { node: any }) {
               <span className="text-xs text-editor-text w-8 text-right font-mono">{Math.round((node.opacity ?? 1) * 100)}%</span>
             </div>
           </Row>
-          <Row label="圆角半径">
+          <Row label={tr('config.appearance.cornerRadius', '圆角半径')}>
             <div className="flex items-center gap-2 flex-1">
               <input
                 type="range"
@@ -557,8 +557,8 @@ function AnimationTab({ node }: { node: any }) {
             }}
             className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card">
             <option value="">{tr('config.animation.none', '静止')}</option>
-            <option value="spin">旋转 (Spin)</option>
-            <option value="breathe">呼吸泡泡 (Breathe)</option>
+            <option value="spin">{tr('config.animation.spin', '旋转 (Spin)')}</option>
+            <option value="breathe">{tr('config.animation.breathe', '呼吸泡泡 (Breathe)')}</option>
           </select>
         </Row>
         {anim.type && (
@@ -600,26 +600,26 @@ function ComponentPropsTab({ node }: { node: any }) {
           <Row label={tr('config.component.fontFamily', '字体包')}>
             <FontManager value={p.fontFamily || 'Inter'} onChange={v => u('fontFamily', v)} />
           </Row>
-          <Row label="对齐分布">
+          <Row label={tr('config.component.textAlign', '对齐分布')}>
             <select value={p.textAlign || 'left'} onChange={e => u('textAlign', e.target.value)}
               className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card">
-              <option value="left">左对齐</option>
-              <option value="center">水平居中对齐</option>
-              <option value="right">右对齐</option>
+              <option value="left">{tr('config.component.alignLeft', '左对齐')}</option>
+              <option value="center">{tr('config.component.alignCenter', '水平居中对齐')}</option>
+              <option value="right">{tr('config.component.alignRight', '右对齐')}</option>
             </select>
           </Row>
-          <Row label="字距调整">
+          <Row label={tr('config.component.letterSpacing', '字距调整')}>
             <input type="text" value={p.letterSpacing || '0px'} onChange={e => u('letterSpacing', e.target.value)}
               className="w-20 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 text-right focus:outline-none" />
           </Row>
-          <Row label="行高大小">
+          <Row label={tr('config.component.lineHeight', '行高大小')}>
             <input type="text" value={p.lineHeight || '1.2'} onChange={e => u('lineHeight', e.target.value)}
               className="w-20 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 text-right focus:outline-none" />
           </Row>
           <div className="flex gap-3 mt-3">
             <ToggleCheck checked={!!p.bold} onChange={v => u('bold', v)} label={tr('config.component.bold', '加粗')} />
             <ToggleCheck checked={!!p.italic} onChange={v => u('italic', v)} label={tr('config.component.italic', '斜体')} />
-            <ToggleCheck checked={!!p.underline} onChange={v => u('underline', v)} label="下划线" />
+            <ToggleCheck checked={!!p.underline} onChange={v => u('underline', v)} label={tr('config.component.underline', '下划线')} />
           </div>
         </Section>
       </div>
@@ -627,11 +627,11 @@ function ComponentPropsTab({ node }: { node: any }) {
   }
 
   if (node.type === 'QRCode' || node.type === 'Barcode') {
-    const labelText = node.type === 'QRCode' ? '二维码跳转内容/网址' : '条形码编码数字'
+    const labelText = node.type === 'QRCode' ? tr('config.component.qrText', '二维码跳转内容/网址') : tr('config.component.barcodeText', '条形码编码数字')
     const defaultText = node.type === 'QRCode' ? 'https://postercraft.app' : '690123456789'
     return (
       <div className="p-3 border-t border-border mt-2">
-        <Section title={node.type === 'QRCode' ? '二维码动态配置' : '条形码动态配置'}>
+        <Section title={node.type === 'QRCode' ? tr('config.component.qrConfig', '二维码动态配置') : tr('config.component.barcodeConfig', '条形码动态配置')}>
           <div className="flex flex-col gap-1.5">
             <div className="text-[10px] text-editor-text-dim">{labelText}</div>
             <textarea
@@ -639,9 +639,9 @@ function ComponentPropsTab({ node }: { node: any }) {
               value={node.text || defaultText}
               onChange={(e) => updateNode(node.id, { text: e.target.value })}
               className="w-full bg-editor-deep border border-border text-editor-text text-xs rounded p-2 focus:outline-none focus:border-blue-500 font-mono resize-none"
-              placeholder="请输入数据..."
+              placeholder={tr('config.component.placeholderData', '请输入数据...')}
             />
-            <div className="text-[10px] text-emerald-400 font-bold">✨ 修改上方文本后，画布中的码图形将实时重新生成</div>
+            <div className="text-[10px] text-emerald-400 font-bold">{tr('config.component.realtimeCodeHint', '✨ 修改上方文本后，画布中的码图形将实时重新生成')}</div>
           </div>
         </Section>
       </div>
@@ -651,29 +651,29 @@ function ComponentPropsTab({ node }: { node: any }) {
   if (node.type === 'Image') {
     return (
       <div className="p-3 border-t border-border mt-2">
-        <Section title="图片属性与滤镜">
-          <Row label="填充模式">
+        <Section title={tr('config.component.imagePropsAndFilters', '图片属性与滤镜')}>
+          <Row label={tr('config.component.fillMode', '填充模式')}>
             <select
               value={p.contain ? 'contain' : 'cover'}
               onChange={e => u('contain', e.target.value === 'contain')}
               className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card"
             >
-              <option value="cover">裁剪填充 (Cover)</option>
-              <option value="contain">等比完整 (Contain)</option>
+              <option value="cover">{tr('config.component.cover', '裁剪填充 (Cover)')}</option>
+              <option value="contain">{tr('config.component.contain', '等比完整 (Contain)')}</option>
             </select>
           </Row>
-          <Row label="滤镜特效">
+          <Row label={tr('config.component.filterEffect', '滤镜特效')}>
             <select
               value={p.filter || 'none'}
               onChange={e => u('filter', e.target.value)}
               className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card"
             >
-              <option value="none">原图无滤镜</option>
-              <option value="grayscale(100%)">黑白怀旧</option>
-              <option value="sepia(80%)">暖调复古</option>
-              <option value="blur(4px)">模糊马赛克</option>
-              <option value="brightness(130%)">高光提亮</option>
-              <option value="contrast(150%)">高对比胶片</option>
+              <option value="none">{tr('config.component.filterNone', '原图无滤镜')}</option>
+              <option value="grayscale(100%)">{tr('config.component.filterGrayscale', '黑白怀旧')}</option>
+              <option value="sepia(80%)">{tr('config.component.filterSepia', '暖调复古')}</option>
+              <option value="blur(4px)">{tr('config.component.filterBlur', '模糊马赛克')}</option>
+              <option value="brightness(130%)">{tr('config.component.filterBrightness', '高光提亮')}</option>
+              <option value="contrast(150%)">{tr('config.component.filterContrast', '高对比胶片')}</option>
             </select>
           </Row>
         </Section>
@@ -711,11 +711,19 @@ export function ConfigPanel() {
     )
   }
 
+  const getNodeTypeName = (type: string) => {
+    if (type === 'Text') return tr('config.nodeType.text', '文字图元')
+    if (type === 'Image') return tr('config.nodeType.image', '图片图元')
+    if (type === 'Mosaic') return tr('config.nodeType.mosaic', '马赛克遮罩')
+    if (type === 'QRCode' || type === 'Barcode') return tr('config.nodeType.code', '条码图元')
+    return tr('config.nodeType.shape', '几何图形')
+  }
+
   return (
     <div className="flex flex-col h-full text-editor-text">
       {/* Node name + type badge */}
       <div className="px-4 py-2.5 border-b border-editor-darker flex items-center justify-between shrink-0">
-        <span className="text-xs font-bold text-editor-text truncate">{activeNode.type === 'Text' ? '文字图元' : activeNode.type === 'Image' ? '图片图元' : '几何图形'}</span>
+        <span className="text-xs font-bold text-editor-text truncate">{getNodeTypeName(activeNode.type)}</span>
         <span className="text-[10px] bg-blue-600/30 text-blue-400 rounded px-2 py-0.5 font-mono">{activeNode.id.slice(0, 10)}</span>
       </div>
 

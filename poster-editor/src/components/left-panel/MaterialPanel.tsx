@@ -359,7 +359,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
           <div className="flex items-center justify-between px-3 py-1.5 mb-1.5">
             <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>素材目录库</span>
+              <span>{tr('material.folderGallery', '素材目录库')}</span>
             </div>
             <button
               type="button"
@@ -367,7 +367,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
               className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors"
             >
               <FolderPlus className="w-3 h-3" />
-              新建目录
+              {tr('material.newDirectory', '新建目录')}
             </button>
           </div>
 
@@ -378,7 +378,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                 type="text"
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="目录名称 (如: 促销标志)"
+                placeholder={tr('material.directoryNamePlaceholder', '目录名称 (如: 促销标志)')}
                 className="flex-1 h-7 bg-background border border-border text-xs rounded px-2 focus:outline-none focus:border-emerald-500"
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
               />
@@ -387,7 +387,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                 onClick={handleCreateFolder}
                 className="px-2.5 h-7 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded"
               >
-                确定
+                {tr('common.save', '确定')}
               </button>
             </div>
           )}
@@ -430,7 +430,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                         />
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded shadow-xs transition-colors">
                           <Upload className="w-2.5 h-2.5" />
-                          上传图片
+                          {tr('material.uploadImage', '上传图片')}
                         </span>
                       </label>
 
@@ -439,7 +439,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                           type="button"
                           onClick={(e) => handleDeleteFolder(folder, e)}
                           className="p-1 text-muted-foreground hover:text-red-400 transition-colors"
-                          title="删除目录及其全部素材"
+                          title={tr('material.deleteDirHint', '删除目录及其全部素材')}
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -452,7 +452,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                     <div className="p-2 bg-muted/10">
                       {userAssets.length === 0 ? (
                         <div className="p-3 text-center border border-dashed border-border/50 rounded bg-background/50 text-muted-foreground text-[10px]">
-                          目录下暂无图片，点击右侧「上传图片」保存新素材
+                          {tr('material.emptyDirHint', '目录下暂无图片，点击右侧「上传图片」保存新素材')}
                         </div>
                       ) : (
                         <div
@@ -488,12 +488,12 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                                     height: asset.height || 300,
                                   })
                                   feedback.notify({
-                                    title: '添加素材成功',
+                                    title: tr('material.addSuccess', '添加素材成功'),
                                     tone: 'success',
                                   })
                                 }}
                                 className="group relative break-inside-avoid flex flex-col items-center justify-center p-1 bg-card border border-border hover:border-blue-500 rounded cursor-grab active:cursor-grabbing hover:shadow-md transition-all overflow-hidden mb-1.5"
-                                title={`${asset.name} (${asset.width}x${asset.height}) - 拖拽至画布使用`}
+                                title={`${asset.name} (${asset.width}x${asset.height}) - ${tr('material.dragToUse', '拖拽至画布使用')}`}
                               >
                                 <img
                                   src={asset.thumbnailUrl}
@@ -505,7 +505,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                                     type="button"
                                     onClick={(e) => handleDeleteAsset(asset, e)}
                                     className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow"
-                                    title="从数据库删除素材"
+                                    title={tr('material.deleteFromDb', '从数据库删除素材')}
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </button>
