@@ -9,6 +9,41 @@ interface ExportModalProps {
   onClose: () => void
 }
 
+function parseExportDataUrl(exportResult: any, mimeType: string, quality?: number): string {
+  if (!exportResult) return ''
+  const item = exportResult.data !== undefined ? exportResult.data : exportResult
+
+  if (typeof item === 'string') {
+    return item
+  }
+
+  if (item instanceof Blob) {
+    return URL.createObjectURL(item)
+  }
+
+  if (typeof HTMLCanvasElement !== 'undefined' && item instanceof HTMLCanvasElement) {
+    return item.toDataURL(mimeType, quality)
+  }
+
+  if (item && typeof item.toDataURL === 'function') {
+    return item.toDataURL(mimeType, quality)
+  }
+
+  if (item && item.view && typeof item.view.toDataURL === 'function') {
+    return item.view.toDataURL(mimeType, quality)
+  }
+
+  if (item && item.canvas && typeof item.canvas.toDataURL === 'function') {
+    return item.canvas.toDataURL(mimeType, quality)
+  }
+
+  if (exportResult?.url && typeof exportResult.url === 'string') {
+    return exportResult.url
+  }
+
+  return ''
+}
+
 export function ExportModal({ open, onClose }: ExportModalProps) {
   const [format, setFormat] = useState<'png' | 'jpg' | 'webp'>('png')
   const [scale, setScale] = useState<number>(2)
@@ -79,16 +114,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             blob: false,
             screenshot: false,
           })
-          if (exportResult) {
-            const rawData = exportResult.data || exportResult
-            if (rawData instanceof Blob) {
-              dataUrl = URL.createObjectURL(rawData)
-            } else if (typeof rawData === 'string') {
-              dataUrl = rawData
-            } else if (rawData?.url) {
-              dataUrl = rawData.url
-            }
-          }
+          dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
         } catch (_e) {
           console.warn('Leafer export() failed, falling back to canvas crop:', _e)
         }
@@ -108,22 +134,39 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           offscreen.height = targetH
           const ctx = offscreen.getContext('2d')!
 
+          const posterRatio = posterW / posterH
+
           canvases.forEach((c: HTMLCanvasElement) => {
             try {
               const canvasRect = c.getBoundingClientRect()
+              let srcX = 0
+              let srcY = 0
+              let srcW = c.width
+              let srcH = c.height
+
               if (boardBounds && canvasRect.width > 0 && canvasRect.height > 0) {
                 const ratioX = c.width / canvasRect.width
                 const ratioY = c.height / canvasRect.height
 
-                const srcX = Math.round((boardBounds.x - canvasRect.left) * ratioX)
-                const srcY = Math.round((boardBounds.y - canvasRect.top) * ratioY)
-                const srcW = Math.round(boardBounds.width * ratioX)
-                const srcH = Math.round(boardBounds.height * ratioY)
-
-                ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
-              } else {
-                ctx.drawImage(c, 0, 0, c.width, c.height, 0, 0, targetW, targetH)
+                srcX = Math.max(0, Math.round((boardBounds.x - canvasRect.left) * ratioX))
+                srcY = Math.max(0, Math.round((boardBounds.y - canvasRect.top) * ratioY))
+                srcW = Math.round(boardBounds.width * ratioX)
+                srcH = Math.round(boardBounds.height * ratioY)
               }
+
+              // Guarantee aspect ratio locking (posterW / posterH) to prevent image squishing/distortion
+              if (srcW <= 0 || srcH <= 0 || Math.abs((srcW / srcH) - posterRatio) > 0.05) {
+                srcH = c.height
+                srcW = Math.round(srcH * posterRatio)
+                if (srcW > c.width) {
+                  srcW = c.width
+                  srcH = Math.round(srcW / posterRatio)
+                }
+                srcX = Math.round((c.width - srcW) / 2)
+                srcY = Math.round((c.height - srcH) / 2)
+              }
+
+              ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
             } catch (_e) { /* skip tainted canvases */ }
           })
 
