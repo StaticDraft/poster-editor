@@ -69,6 +69,9 @@ const VISUAL_PROP_KEYS = [
   'textAlign',
   'letterSpacing',
   'lineHeight',
+  'filter',
+  'mode',
+  'contain',
 ]
 
 export function parseShadow(source: Record<string, any> = {}): string | undefined {
@@ -169,7 +172,9 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     delete runtimeProps.shadow
   }
 
-  if (props?.contain) runtimeProps.objectFit = 'contain'
+  if (props?.contain !== undefined || props?.mode) {
+    runtimeProps.mode = props?.contain ? 'contain' : (props?.mode || 'cover')
+  }
 
   enhanceElementProps(el, runtimeProps)
 
