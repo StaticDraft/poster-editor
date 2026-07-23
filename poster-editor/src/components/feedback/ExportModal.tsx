@@ -28,10 +28,34 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     const gridOverlay = app.tree?.findId?.('__grid_overlay_group__')
     const guideGroup = app.tree?.findId?.('__guide_group__')
 
-    // Temporarily hide editor-only overlays and viewport shadow during export
+    const tree = app.tree as any
+    const savedX = tree?.x ?? 0
+    const savedY = tree?.y ?? 0
+    const savedScaleX = tree?.scaleX ?? (tree?.scale?.x || 1)
+    const savedScaleY = tree?.scaleY ?? (tree?.scale?.y || 1)
+    const editorVisible = app.editor?.visible
+
+    // Temporarily hide editor-only overlays, viewport shadow, selection box, and reset viewport pan/zoom transform
     if (boardShadow) boardShadow.visible = false
     if (gridOverlay) gridOverlay.visible = false
     if (guideGroup) guideGroup.visible = false
+
+    if (app.editor) {
+      try {
+        app.editor.visible = false
+      } catch (_e) {}
+    }
+
+    try {
+      if (typeof tree?.set === 'function') {
+        tree.set({ x: 0, y: 0, scaleX: 1, scaleY: 1 })
+      } else if (tree) {
+        tree.x = 0
+        tree.y = 0
+        tree.scaleX = 1
+        tree.scaleY = 1
+      }
+    } catch (_e) {}
 
     try {
       const fileName = `${projectName || 'my_poster'}.${format}`
@@ -147,6 +171,26 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       if (boardShadow) boardShadow.visible = true
       if (gridOverlay) gridOverlay.visible = true
       if (guideGroup) guideGroup.visible = true
+
+      // Restore viewport pan & zoom transform
+      try {
+        if (typeof tree?.set === 'function') {
+          tree.set({ x: savedX, y: savedY, scaleX: savedScaleX, scaleY: savedScaleY })
+        } else if (tree) {
+          tree.x = savedX
+          tree.y = savedY
+          tree.scaleX = savedScaleX
+          tree.scaleY = savedScaleY
+        }
+      } catch (_e) {}
+
+      // Restore selection handles
+      if (app.editor && editorVisible !== undefined) {
+        try {
+          app.editor.visible = editorVisible
+        } catch (_e) {}
+      }
+
       setIsExporting(false)
     }
   }
