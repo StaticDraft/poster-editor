@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { Download, Image as ImageIcon, X } from 'lucide-react'
+import { Leafer } from 'leafer-ui'
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
+import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
 
 interface ExportModalProps {
   open: boolean
@@ -61,148 +63,90 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
   const [quality, setQuality] = useState<number>(0.92)
   const [isExporting, setIsExporting] = useState(false)
   const feedback = useFeedback()
-  const projectName = useEditorStore((state) => state.projectName)
 
   if (!open) return null
 
   const handleExport = async () => {
-    const app = useEditorStore.getState()._leaferApp as any
-    if (!app) return
     setIsExporting(true)
+    const { elements, canvasConfig, projectName } = useEditorStore.getState()
+    const { width: posterW, height: posterH, bgColor } = canvasConfig
 
-    const boardShadow = app.tree?.findId?.('__board_shadow__')
-    const gridOverlay = app.tree?.findId?.('__grid_overlay_group__')
-    const guideGroup = app.tree?.findId?.('__guide_group__')
+    const fileName = `${projectName || 'my_poster'}.${format}`
+    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
+    const exportQuality = format === 'png' ? undefined : quality
+    let dataUrl = ''
 
-    const tree = app.tree as any
-    const savedX = tree?.x ?? 0
-    const savedY = tree?.y ?? 0
-    const savedScaleX = tree?.scaleX ?? (tree?.scale?.x || 1)
-    const savedScaleY = tree?.scaleY ?? (tree?.scale?.y || 1)
-    const editorVisible = app.editor?.visible
+    // 1. Offscreen Isolated Container Creation
+    const container = document.createElement('div')
+    container.style.position = 'fixed'
+    container.style.left = '-99999px'
+    container.style.top = '-99999px'
+    container.style.width = `${posterW}px`
+    container.style.height = `${posterH}px`
+    container.style.overflow = 'hidden'
+    container.style.zIndex = '-99999'
+    document.body.appendChild(container)
 
-    // Temporarily hide editor-only overlays, viewport shadow, selection box, and reset viewport pan/zoom transform
-    if (boardShadow) boardShadow.visible = false
-    if (gridOverlay) gridOverlay.visible = false
-    if (guideGroup) guideGroup.visible = false
-
-    if (app.editor) {
-      try {
-        app.editor.visible = false
-      } catch (_e) {}
-    }
+    let offscreenLeafer: Leafer | null = null
 
     try {
-      if (typeof tree?.set === 'function') {
-        tree.set({ x: 0, y: 0, scaleX: 1, scaleY: 1 })
-      } else if (tree) {
-        tree.x = 0
-        tree.y = 0
-        tree.scaleX = 1
-        tree.scaleY = 1
-      }
-    } catch (_e) {}
+      offscreenLeafer = new Leafer({
+        view: container,
+        width: posterW,
+        height: posterH,
+        fill: bgColorToFill(bgColor),
+      })
 
-    try {
-      const fileName = `${projectName || 'my_poster'}.${format}`
-      const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
-      const exportQuality = format === 'png' ? undefined : quality
-      const { width: posterW, height: posterH } = useEditorStore.getState().canvasConfig
-      const targetW = Math.round(posterW * scale)
-      const targetH = Math.round(posterH * scale)
+      // Add all poster elements into offscreen Leafer
+      elements.forEach((el, index) => {
+        try {
+          const node = createLeaferNode({ ...el, zIndex: index }, { editable: false, draggable: false })
+          node.zIndex = index
+          offscreenLeafer?.add(node)
+        } catch (_err) {
+          console.warn('Failed to add node to offscreen Leafer:', el, _err)
+        }
+      })
 
-      let dataUrl = ''
+      // Wait for offscreen Leafer view to be ready & images loaded
+      await new Promise((resolve) => {
+        if (!offscreenLeafer) return resolve(null)
+        if ((offscreenLeafer as any).viewReady) {
+          setTimeout(resolve, 80)
+        } else {
+          offscreenLeafer.waitViewReady(() => setTimeout(resolve, 80))
+        }
+      })
 
-      // Attempt 1: Leafer native export constrained to exact poster bounds (0, 0, posterW, posterH)
-      const posterBounds = { x: 0, y: 0, width: posterW, height: posterH }
-
-      const exportOptions = {
-        bounds: posterBounds,
+      // Perform pure offscreen export
+      const exportResult = await offscreenLeafer.export(fileName, {
         scale,
         quality: format === 'png' ? undefined : quality,
+      })
+
+      dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
+    } catch (err) {
+      console.error('Offscreen export error:', err)
+    } finally {
+      if (offscreenLeafer) {
+        try { offscreenLeafer.destroy() } catch (_e) {}
       }
+      try { document.body.removeChild(container) } catch (_e) {}
+    }
+
+    if (dataUrl) {
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = fileName
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+      setTimeout(() => document.body.removeChild(link), 500)
 
       try {
-        if (app.tree && typeof app.tree.export === 'function') {
-          const exportResult = await app.tree.export(format, exportOptions)
-          dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
-        }
-        if (!dataUrl && typeof app.export === 'function') {
-          const exportResult = await app.export(format, exportOptions)
-          dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
-        }
-      } catch (_e) {
-        console.warn('Leafer export() failed, falling back to canvas crop:', _e)
-      }
-
-      // Attempt 2: Precise DOM page-to-canvas coordinate crop from rendered viewport canvas
-      if (!dataUrl && app.view) {
-        const containerDiv = app.view
-        const canvases = containerDiv.querySelectorAll('canvas')
-        const boardNode = app.tree?.findId?.('__scene_board__')
-
-        if (canvases.length > 0) {
-          const boardBounds = boardNode ? boardNode.getBounds('page') : null
-
-          const offscreen = document.createElement('canvas')
-          offscreen.width = targetW
-          offscreen.height = targetH
-          const ctx = offscreen.getContext('2d')!
-
-          canvases.forEach((c: HTMLCanvasElement) => {
-            try {
-              const canvasRect = c.getBoundingClientRect()
-              const ratioX = canvasRect.width > 0 ? c.width / canvasRect.width : 1
-              const ratioY = canvasRect.height > 0 ? c.height / canvasRect.height : 1
-
-              let srcX = 0
-              let srcY = 0
-              let srcW = Math.round(posterW * ratioX)
-              let srcH = Math.round(posterH * ratioY)
-
-              if (boardBounds && canvasRect.width > 0 && canvasRect.height > 0) {
-                const calculatedX = Math.round((boardBounds.x - canvasRect.left) * ratioX)
-                const calculatedY = Math.round((boardBounds.y - canvasRect.top) * ratioY)
-                const calculatedW = Math.round(boardBounds.width * ratioX)
-                const calculatedH = Math.round(boardBounds.height * ratioY)
-
-                if (calculatedW > 0 && calculatedH > 0 && calculatedX >= 0 && calculatedY >= 0) {
-                  srcX = calculatedX
-                  srcY = calculatedY
-                  srcW = calculatedW
-                  srcH = calculatedH
-                }
-              }
-
-              ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
-            } catch (_e) { /* skip tainted canvases */ }
-          })
-
-          dataUrl = offscreen.toDataURL(mimeType, exportQuality)
-        }
-      }
-
-      // Trigger browser file download
-      if (dataUrl) {
-        const link = document.createElement('a')
-        link.href = dataUrl
-        link.download = fileName
-        link.style.display = 'none'
-        document.body.appendChild(link)
-        link.click()
-        setTimeout(() => document.body.removeChild(link), 500)
-      } else {
-        feedback.notify({ title: '导出失败：未找到画布元素', tone: 'error' })
-        setIsExporting(false)
-        return
-      }
-
-      const confetti = (await import('canvas-confetti')).default
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.6 },
-      })
+        const confetti = (await import('canvas-confetti')).default
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } })
+      } catch (_e) {}
 
       feedback.notify({
         title: '海报导出成功',
@@ -210,40 +154,10 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         tone: 'success',
       })
       onClose()
-    } catch (err) {
-      console.error('Export error:', err)
-      feedback.notify({
-        title: '导出图片失败',
-        description: String(err),
-        tone: 'error',
-      })
-    } finally {
-      // Restore editor-only overlays and viewport shadow
-      if (boardShadow) boardShadow.visible = true
-      if (gridOverlay) gridOverlay.visible = true
-      if (guideGroup) guideGroup.visible = true
-
-      // Restore viewport pan & zoom transform
-      try {
-        if (typeof tree?.set === 'function') {
-          tree.set({ x: savedX, y: savedY, scaleX: savedScaleX, scaleY: savedScaleY })
-        } else if (tree) {
-          tree.x = savedX
-          tree.y = savedY
-          tree.scaleX = savedScaleX
-          tree.scaleY = savedScaleY
-        }
-      } catch (_e) {}
-
-      // Restore selection handles
-      if (app.editor && editorVisible !== undefined) {
-        try {
-          app.editor.visible = editorVisible
-        } catch (_e) {}
-      }
-
-      setIsExporting(false)
+    } else {
+      feedback.notify({ title: '导出失败：渲染生成错误', tone: 'error' })
     }
+    setIsExporting(false)
   }
 
   return (
