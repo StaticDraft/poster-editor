@@ -13,16 +13,6 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  AlignVerticalJustifyStart,
-  AlignVerticalJustifyCenter,
-  AlignVerticalJustifyEnd,
-  AlignHorizontalSpaceAround,
-  AlignVerticalSpaceAround,
-  Group,
-  Ungroup,
   Image as ImageIcon,
   FolderOpen,
   FileJson,
@@ -47,32 +37,17 @@ export function TopToolbar() {
   const { t, i18n } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
-  const activeIds = useEditorStore((state) => state.activeIds)
-  const updateNodes = useEditorStore((state) => state.updateNodes)
   const clearNodes = useEditorStore((state) => state.clearNodes)
   const undo = useEditorStore((state) => state.undo)
   const redo = useEditorStore((state) => state.redo)
   const canUndo = useEditorStore((state) => state.canUndo)
   const canRedo = useEditorStore((state) => state.canRedo)
-  const alignNodes = useEditorStore((state) => state.alignNodes)
   const elements = useEditorStore((state) => state.elements)
   const feedback = useFeedback()
 
   const tr = (key: string, fallback: string) => {
     const text = t(key)
     return text === key ? fallback : text
-  }
-
-  const handleGroup = () => {
-    if (activeIds.length < 2) return
-    const groupId = `group-${Date.now()}`
-    updateNodes(activeIds, { groupId })
-    useEditorStore.getState().setSidebarTab('structure')
-  }
-
-  const handleUngroup = () => {
-    if (activeIds.length === 0) return
-    updateNodes(activeIds, { groupId: undefined })
   }
 
   const [isDark, setIsDark] = useState(
@@ -303,16 +278,16 @@ export function TopToolbar() {
               variant="outline"
               size="sm"
               className="h-7 text-xs px-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold shrink-0"
-              title="一键套用专业海报配色方案"
+              title={tr('toolbar.colorPalette', '一键配色')}
             >
               <Palette className="w-3.5 h-3.5 mr-1" />
-              一键配色
+              {tr('toolbar.colorPalette', '一键配色')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-56 p-2 bg-card border border-border shadow-2xl z-50">
             <div className="text-xs font-bold text-foreground mb-2 px-1 flex items-center justify-between">
-              <span>海报配色灵感方案</span>
-              <span className="text-[10px] text-muted-foreground font-mono">6 款经典调色</span>
+              <span>{tr('toolbar.colorPaletteHeader', '海报配色灵感方案')}</span>
+              <span className="text-[10px] text-muted-foreground font-mono">6 Colors</span>
             </div>
             <div className="space-y-1.5">
               {COLOR_PALETTES.map((pal) => (
@@ -344,16 +319,15 @@ export function TopToolbar() {
               variant="outline"
               size="sm"
               className="h-7 text-xs px-2.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-semibold shrink-0"
-              title="一键适配小红书、公众号、手机海报尺寸"
+              title={tr('toolbar.presets', '画幅规格')}
             >
               <Scaling className="w-3.5 h-3.5 mr-1" />
-              画幅规格
+              {tr('toolbar.presets', '画幅规格')}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-64 p-2 bg-card border border-border shadow-2xl z-50">
             <div className="text-xs font-bold text-foreground mb-2 px-1 flex items-center justify-between">
-              <span>多终端海报尺寸规格</span>
-              <span className="text-[10px] text-muted-foreground font-mono">一键无损适配</span>
+              <span>{tr('toolbar.presetsHeader', '多终端海报尺寸规格')}</span>
             </div>
             <div className="space-y-1 max-h-[260px] overflow-y-auto pr-0.5">
               {CANVAS_PRESETS.map((preset) => (
@@ -382,9 +356,9 @@ export function TopToolbar() {
           size="sm"
           onClick={() => setShowShortcutsModal(true)}
           className="h-7 text-xs px-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold shrink-0"
-          title="查看海报编辑器全量快捷键指南"
+          title={tr('toolbar.shortcuts', '快捷键')}
         >
-          <Command className="w-3.5 h-3.5 mr-1 text-blue-400" /> 快捷键
+          <Command className="w-3.5 h-3.5 mr-1 text-blue-400" /> {tr('toolbar.shortcuts', '快捷键')}
         </Button>
 
         <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleLanguage} title={t('toolbar.lang')}>
@@ -403,48 +377,9 @@ export function TopToolbar() {
           <Redo2 className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.redo', '重做')}
         </Button>
 
-        <div className="w-px h-4 bg-border mx-0.5" />
 
-        {/* Group / Ungroup */}
-        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={handleGroup} disabled={activeIds.length < 2} title={tr('toolbar.group', '编组')}>
-          <Group className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={handleUngroup} disabled={activeIds.length === 0} title={tr('toolbar.ungroup', '解组')}>
-          <Ungroup className="w-3.5 h-3.5" />
-        </Button>
 
-        {/* Align & Distribute Popover */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2"
-              disabled={activeIds.length < 2}
-            >
-              <AlignLeft className="w-3.5 h-3.5 mr-1 text-blue-500" />
-              <span className="hidden md:inline">{tr('toolbar.align', '对齐分布')}</span>
-              <ChevronDown className="w-3 h-3 opacity-60 ml-0.5" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-2.5 bg-card border border-border shadow-xl z-50">
-            <div className="text-[10px] font-bold text-muted-foreground uppercase px-1 mb-1.5">{tr('toolbar.alignHeader', '图层对齐与分布')}</div>
-            <div className="grid grid-cols-3 gap-1.5 mb-2">
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('left')}><AlignLeft className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.left', '左对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('center')}><AlignCenter className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.center', '居中')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('right')}><AlignRight className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.right', '右对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('top')}><AlignVerticalJustifyStart className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.top', '顶对齐')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('middle')}><AlignVerticalJustifyCenter className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.middle', '垂直居中')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('bottom')}><AlignVerticalJustifyEnd className="w-3.5 h-3.5 mr-1 text-blue-500 shrink-0" />{tr('toolbar.bottom', '底对齐')}</Button>
-            </div>
-            <div className="border-t border-border pt-1.5 grid grid-cols-2 gap-1.5">
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('distribute-x')} disabled={activeIds.length < 3}><AlignHorizontalSpaceAround className="w-3.5 h-3.5 mr-1 text-emerald-500 shrink-0" />{tr('toolbar.distributeX', '水平分布')}</Button>
-              <Button variant="ghost" size="sm" className="h-8 text-[11px] justify-start px-1.5" onClick={() => alignNodes('distribute-y')} disabled={activeIds.length < 3}><AlignVerticalSpaceAround className="w-3.5 h-3.5 mr-1 text-emerald-500 shrink-0" />{tr('toolbar.distributeY', '垂直分布')}</Button>
-            </div>
-          </PopoverContent>
-        </Popover>
 
-        <div className="w-px h-4 bg-border mx-0.5" />
 
         {/* Primary Action Buttons */}
         <Button

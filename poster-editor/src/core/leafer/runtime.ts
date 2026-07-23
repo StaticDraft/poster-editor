@@ -1,7 +1,6 @@
-import { Rect, Ellipse, Text, Star, Image, Path } from 'leafer-ui'
-import { generateQRCodeSVG, generateBarcodeDataUrl } from '@/lib/qrcode'
-import { generateMosaicPatternDataUrl } from '@/lib/imageProcess'
 import type { EditorNode } from '@/store/useEditorStore'
+import { enhanceElementProps, instantiateLeaferNode } from './factories/ElementFactory'
+import { executeAnimationStrategy } from './factories/AnimationRegistry'
 
 // Global Polyfill: Protect Leafer UI's __updateRenderSpread against missing getSpread on Shadow objects
 if (typeof (Object.prototype as any).getSpread !== 'function') {
@@ -20,8 +19,6 @@ interface RuntimeOptions {
   editable: boolean
   draggable: boolean
 }
-
-const PATH_FALLBACK = 'M0 0 L100 0 L100 100 L0 100 Z'
 
 export function bgColorToFill(bgColor: any): any {
   if (!bgColor) return '#ffffff'
@@ -174,86 +171,24 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
 
   if (props?.contain) runtimeProps.objectFit = 'contain'
 
-  if (el.type === 'QRCode') {
-    runtimeProps.url = generateQRCodeSVG(el.text || props?.text || 'https://postercraft.app')
-  }
-  if (el.type === 'Barcode') {
-    runtimeProps.url = generateBarcodeDataUrl(el.text || props?.text || '690123456789')
-  }
+  enhanceElementProps(el, runtimeProps)
 
-  if (el.type === 'Mosaic') {
-    const w = el.width || 180
-    const h = el.height || 120
-    const pSize = props?.pixelSize || 12
-    runtimeProps.url = generateMosaicPatternDataUrl(w, h, pSize)
+  if (el.type !== 'Path') {
+    runtimeProps.scaleX = props?.flipH ? -1 : 1
+    runtimeProps.scaleY = props?.flipV ? -1 : 1
   }
-
-  if (el.type === 'Path') {
-    const width = el.width || 100
-    const height = el.height || 100
-    runtimeProps.path = el.unitPath || PATH_FALLBACK
-    runtimeProps.scaleX = (width / 100) * (props?.flipH ? -1 : 1)
-    runtimeProps.scaleY = (height / 100) * (props?.flipV ? -1 : 1)
-    runtimeProps.width = width
-    runtimeProps.height = height
-    if (props?.flipH || props?.flipV || animation?.type === 'spin') runtimeProps.around = 'center'
-    return runtimeProps
-  }
-
-  runtimeProps.scaleX = props?.flipH ? -1 : 1
-  runtimeProps.scaleY = props?.flipV ? -1 : 1
   if (props?.flipH || props?.flipV || animation?.type === 'spin') runtimeProps.around = 'center'
 
   return runtimeProps
 }
 
 export function applyAnimation(node: LeaferNode, anim: any, autoplay: boolean) {
-  if (node.__animationRef) {
-    try { node.__animationRef.stop() } catch {}
-    try { node.__animationRef.destroy() } catch {}
-    node.__animationRef = null
-    node.rotation = 0
-    node.opacity = 1
-  }
-
-  if (!anim || anim.type === 'none') return
-
-  if (anim.type === 'spin') {
-    node.around = 'center'
-    node.__animationRef = node.animate({ rotation: 360 }, { duration: anim.duration || 2, loop: true })
-  } else if (anim.type === 'breathe') {
-    node.__animationRef = node.animate({ opacity: 0.2 }, { duration: anim.duration || 1, loop: true, yoyo: true })
-  }
-
-  if (!autoplay && node.__animationRef) {
-    setTimeout(() => {
-      try { node.__animationRef.pause() } catch {}
-    }, 10)
-  }
+  executeAnimationStrategy(node, anim, autoplay)
 }
 
 export function createLeaferNode(el: EditorNode & Record<string, any>, options: RuntimeOptions) {
   const runtimeProps = buildLeaferNodeProps(el, options)
-
-  switch (el.type) {
-    case 'Rect':
-      return new Rect(runtimeProps)
-    case 'Ellipse':
-      return new Ellipse(runtimeProps)
-    case 'Text':
-      return new Text(runtimeProps)
-    case 'Star':
-      return new Star(runtimeProps)
-    case 'Image':
-    case 'QRCode':
-    case 'Barcode':
-    case 'Mosaic':
-      return new Image(runtimeProps)
-    case 'Path':
-      return new Path(runtimeProps)
-    default:
-      return new Rect(runtimeProps)
-  }
+  return instantiateLeaferNode(el.type, runtimeProps)
 }
 
 export function syncLeaferNode(node: LeaferNode, el: EditorNode & Record<string, any>, options: RuntimeOptions) {

@@ -20,6 +20,7 @@ import {
   GripVertical,
 } from 'lucide-react'
 import { useFeedback } from '@/lib/feedback'
+import { MiniMap } from '@/core/leafer/MiniMap'
 
 function getNodeIcon(type: string) {
   if (type === 'Ellipse') return <Circle className="w-3 h-3 text-rose-400 shrink-0" />
@@ -422,113 +423,120 @@ export function LayerTree() {
   }
 
   return (
-    <div className="flex flex-col w-full" onDragEnd={handleDragEnd}>
-      <div className="px-3 py-2 text-[10px] font-bold text-editor-text-dim uppercase tracking-widest border-b border-editor-darker">
+    <div className="flex flex-col w-full h-full overflow-hidden" onDragEnd={handleDragEnd}>
+      <div className="px-3 py-2 text-[10px] font-bold text-editor-text-dim uppercase tracking-widest border-b border-editor-darker shrink-0">
         {tr('layer.title', '图层树')} ({elements.length} {tr('layer.elements', '个元素')})
       </div>
 
-      {elements.length === 0 && (
-        <div className="text-center text-editor-text-dim text-xs py-10">{tr('layer.emptyCanvas', '空白画布')}</div>
-      )}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+        {elements.length === 0 && (
+          <div className="text-center text-editor-text-dim text-xs py-10">{tr('layer.emptyCanvas', '空白画布')}</div>
+        )}
 
-      {/* Render tree items in interleaved z-index order */}
-      {treeItems.map(item => {
-        if (item.type === 'node') {
+        {/* Render tree items in interleaved z-index order */}
+        {treeItems.map(item => {
+          if (item.type === 'node') {
+            return (
+              <NodeRow
+                key={item.el.id}
+                el={item.el}
+                depth={0}
+                onSelect={handleSelect}
+                onDelete={handleDelete}
+                {...dragProps}
+              />
+            )
+          }
+
+          const { gid, members: groupMembers } = item
+          const isCollapsed = collapsedGroups.has(gid)
+          const allActive = groupMembers.every(el => activeIds.includes(el.id))
+          const isGroupDropTarget = dropTarget?.id === `group:${gid}`
+
           return (
-            <NodeRow
-              key={item.el.id}
-              el={item.el}
-              depth={0}
-              onSelect={handleSelect}
-              onDelete={handleDelete}
-              {...dragProps}
-            />
-          )
-        }
-
-        const { gid, members: groupMembers } = item
-        const isCollapsed = collapsedGroups.has(gid)
-        const allActive = groupMembers.every(el => activeIds.includes(el.id))
-        const isGroupDropTarget = dropTarget?.id === `group:${gid}`
-
-        return (
-          <div key={gid} className="relative">
-            {/* Drop indicator - before group */}
-            {dropTarget?.id === `group:${gid}` && dropTarget?.position === 'before' && (
-              <div className="absolute top-0 left-2 right-2 h-0.5 bg-blue-500 z-10 rounded-full shadow-[0_0_6px_rgba(59,130,246,0.5)]">
-                <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-blue-500" />
-              </div>
-            )}
-            <div
-              onClick={(e) => handleSelect(groupMembers.map(el => el.id), e, groupMembers[0]?.id)}
-              onDoubleClick={() => toggleGroup(gid)}
-              draggable
-              onDragStart={(e) => handleGroupDragStart(gid, e)}
-              onDragOver={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                e.dataTransfer.dropEffect = 'move'
-                if (draggedId && draggedId !== `group:${gid}`) {
-                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-                  const relY = e.clientY - rect.top
-                  const height = rect.height
-                  if (relY < height * 0.25) {
-                    setDropTarget({ id: `group:${gid}`, position: 'before' })
-                  } else if (relY > height * 0.75) {
-                    setDropTarget({ id: `group:${gid}`, position: 'after' })
-                  } else {
-                    // Middle zone = drop INTO the group
-                    setDropTarget({ id: `group:${gid}`, position: null })
+            <div key={gid} className="relative">
+              {/* Drop indicator - before group */}
+              {dropTarget?.id === `group:${gid}` && dropTarget?.position === 'before' && (
+                <div className="absolute top-0 left-2 right-2 h-0.5 bg-blue-500 z-10 rounded-full shadow-[0_0_6px_rgba(59,130,246,0.5)]">
+                  <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-blue-500" />
+                </div>
+              )}
+              <div
+                onClick={(e) => handleSelect(groupMembers.map(el => el.id), e, groupMembers[0]?.id)}
+                onDoubleClick={() => toggleGroup(gid)}
+                draggable
+                onDragStart={(e) => handleGroupDragStart(gid, e)}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  e.dataTransfer.dropEffect = 'move'
+                  if (draggedId && draggedId !== `group:${gid}`) {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+                    const relY = e.clientY - rect.top
+                    const height = rect.height
+                    if (relY < height * 0.25) {
+                      setDropTarget({ id: `group:${gid}`, position: 'before' })
+                    } else if (relY > height * 0.75) {
+                      setDropTarget({ id: `group:${gid}`, position: 'after' })
+                    } else {
+                      // Middle zone = drop INTO the group
+                      setDropTarget({ id: `group:${gid}`, position: null })
+                    }
                   }
-                }
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                if (!draggedId) return
-                const position = dropTarget?.id === `group:${gid}` ? dropTarget.position : null
-                handleDrop(`group:${gid}`, position)
-              }}
-              className={`group flex items-center gap-1.5 px-2 py-1.5 cursor-pointer transition-all ${
-                isGroupDropTarget && dropTarget?.position === null
-                  ? 'bg-amber-500/20 border-l-2 border-amber-400 ring-1 ring-amber-400/30'
-                  : allActive
-                    ? 'bg-blue-600/20 border-l-2 border-blue-500'
-                    : 'hover:bg-editor-surface border-l-2 border-transparent'
-              }`}
-            >
-              <GripVertical className="w-3 h-3 text-editor-text-dim opacity-0 group-hover:opacity-60 shrink-0 cursor-grab active:cursor-grabbing" />
-              <button onClick={e => { e.stopPropagation(); toggleGroup(gid) }} className="p-0.5">
-                {isCollapsed ? <ChevronRight className="w-3 h-3 text-editor-text-label" /> : <ChevronDown className="w-3 h-3 text-editor-text-label" />}
-              </button>
-              {isCollapsed
-                ? <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                : <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-              <span className="text-[11px] text-amber-300 font-bold flex-1 truncate">
-                {tr('layer.group', '图元组合')} <span className="text-editor-text-dim font-normal">({groupMembers.length})</span>
-              </span>
-              <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                <button onClick={e => { e.stopPropagation(); updateNodes(groupMembers.map(el => el.id), { groupId: undefined }) }}
-                  className="text-[10px] text-editor-text-label hover:text-white px-1 rounded">{tr('layer.ungroup', '解除组合')}</button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(groupMembers.map(el => el.id), `${groupMembers.length} ${tr('layer.elements', '个元素')}`) }}
-                  className="p-0.5 rounded hover:text-red-400">
-                  <Trash2 className="w-3 h-3 text-editor-text-dim" />
+                }}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  if (!draggedId) return
+                  const position = dropTarget?.id === `group:${gid}` ? dropTarget.position : null
+                  handleDrop(`group:${gid}`, position)
+                }}
+                className={`group flex items-center gap-1.5 px-2 py-1.5 cursor-pointer transition-all ${
+                  isGroupDropTarget && dropTarget?.position === null
+                    ? 'bg-amber-500/20 border-l-2 border-amber-400 ring-1 ring-amber-400/30'
+                    : allActive
+                      ? 'bg-blue-600/20 border-l-2 border-blue-500'
+                      : 'hover:bg-editor-surface border-l-2 border-transparent'
+                }`}
+              >
+                <GripVertical className="w-3 h-3 text-editor-text-dim opacity-0 group-hover:opacity-60 shrink-0 cursor-grab active:cursor-grabbing" />
+                <button onClick={e => { e.stopPropagation(); toggleGroup(gid) }} className="p-0.5">
+                  {isCollapsed ? <ChevronRight className="w-3 h-3 text-editor-text-label" /> : <ChevronDown className="w-3 h-3 text-editor-text-label" />}
                 </button>
+                {isCollapsed
+                  ? <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  : <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                <span className="text-[11px] text-amber-300 font-bold flex-1 truncate">
+                  {tr('layer.group', '图元组合')} <span className="text-editor-text-dim font-normal">({groupMembers.length})</span>
+                </span>
+                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
+                  <button onClick={e => { e.stopPropagation(); updateNodes(groupMembers.map(el => el.id), { groupId: undefined }) }}
+                    className="text-[10px] text-editor-text-label hover:text-white px-1 rounded">{tr('layer.ungroup', '解除组合')}</button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(groupMembers.map(el => el.id), `${groupMembers.length} ${tr('layer.elements', '个元素')}`) }}
+                    className="p-0.5 rounded hover:text-red-400">
+                    <Trash2 className="w-3 h-3 text-editor-text-dim" />
+                  </button>
+                </div>
               </div>
+              {/* Drop indicator - after group */}
+              {dropTarget?.id === `group:${gid}` && dropTarget?.position === 'after' && (
+                <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 z-10 rounded-full shadow-[0_0_6px_rgba(59,130,246,0.5)]">
+                  <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-blue-500" />
+                </div>
+              )}
+              {!isCollapsed && groupMembers.map(el => (
+                <NodeRow key={el.id} el={el} depth={1} onSelect={handleSelect} onDelete={handleDelete} {...dragProps} />
+              ))}
             </div>
-            {/* Drop indicator - after group */}
-            {dropTarget?.id === `group:${gid}` && dropTarget?.position === 'after' && (
-              <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 z-10 rounded-full shadow-[0_0_6px_rgba(59,130,246,0.5)]">
-                <div className="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-blue-500" />
-              </div>
-            )}
-            {!isCollapsed && groupMembers.map(el => (
-              <NodeRow key={el.id} el={el} depth={1} onSelect={handleSelect} onDelete={handleDelete} {...dragProps} />
-            ))}
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
+
+      {/* MiniMap anchored at bottom */}
+      <div className="p-3 border-t border-editor-darker shrink-0 bg-editor-deep/40">
+        <MiniMap />
+      </div>
     </div>
   )
 }

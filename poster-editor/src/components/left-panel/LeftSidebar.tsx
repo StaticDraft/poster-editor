@@ -32,17 +32,17 @@ export function LeftSidebar() {
   return (
     <div className="flex h-full shrink-0 border-r border-editor-darker bg-editor text-editor-text">
       {/* Icon navigation */}
-      <div className="w-14 border-r border-editor-darker bg-editor-deep flex flex-col items-center py-4 gap-6 text-[11px] font-bold">
+      <div className="w-16 border-r border-editor-darker bg-editor-deep flex flex-col items-center py-4 gap-5 text-[10px] font-bold shrink-0">
         {ICON_NAV_KEYS.map(({ icon: Icon, labelKey, fallbackLabel, tab }) => (
           <div
             key={tab}
             onClick={() => setSidebarTab(tab)}
-            className={`flex flex-col items-center cursor-pointer transition-all px-1 py-1 rounded ${
+            className={`w-full flex flex-col items-center cursor-pointer transition-all px-1 py-1 rounded text-center leading-tight tracking-tighter ${
               sidebarTab === tab ? 'text-blue-400 bg-blue-500/10' : 'hover:text-editor-text'
             }`}
           >
-            <Icon className="w-5 h-5 mb-1" />
-            {tr(labelKey, fallbackLabel)}
+            <Icon className="w-4.5 h-4.5 mb-1 shrink-0" />
+            <span className="truncate max-w-full px-0.5">{tr(labelKey, fallbackLabel)}</span>
           </div>
         ))}
       </div>
@@ -71,11 +71,11 @@ export function LeftSidebar() {
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          {sidebarTab === 'templates' && <TemplatePanel searchFilter={search} />}
-          {sidebarTab === 'components' && <MaterialPanel searchFilter={search} mode="components" />}
-          {sidebarTab === 'system' && <MaterialPanel searchFilter={search} mode="assets" />}
-          {sidebarTab === 'myScenes' && <SceneList />}
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+          {sidebarTab === 'templates' && <div className="flex-1 overflow-y-auto"><TemplatePanel searchFilter={search} /></div>}
+          {sidebarTab === 'components' && <div className="flex-1 overflow-y-auto"><MaterialPanel searchFilter={search} mode="components" /></div>}
+          {sidebarTab === 'system' && <div className="flex-1 overflow-y-auto"><MaterialPanel searchFilter={search} mode="assets" /></div>}
+          {sidebarTab === 'myScenes' && <div className="flex-1 overflow-y-auto"><SceneList /></div>}
           {sidebarTab === 'structure' && <LayerTree />}
         </div>
       </div>

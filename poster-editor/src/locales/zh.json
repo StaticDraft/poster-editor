@@ -436,5 +436,11 @@
   },
   "layer": {
     "group": "图元组合"
+  },
+  "config": {
+    "tabs": {
+      "appearance": "外观",
+      "animation": "动画"
+    }
   }
 }

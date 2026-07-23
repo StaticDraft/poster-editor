@@ -19,8 +19,8 @@ import {
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between mb-2 gap-2">
-      <span className="text-[11px] text-editor-text-label shrink-0 w-16">{label}</span>
-      <div className="flex-1 flex justify-end">{children}</div>
+      <span className="text-[11px] text-editor-text-label shrink-0 min-w-[70px] max-w-[120px] leading-tight pr-1">{label}</span>
+      <div className="flex-1 flex justify-end min-w-0">{children}</div>
     </div>
   )
 }

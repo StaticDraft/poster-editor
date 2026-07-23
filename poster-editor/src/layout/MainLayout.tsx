@@ -237,7 +237,7 @@ export function MainLayout({ leftPanel, centerCanvas, rightPanel, topToolbar }: 
 
         {/* Right Config Panel */}
         {rightPanel && (
-          <aside className="w-72 border-l border-editor-darker bg-editor flex flex-col overflow-y-auto shrink-0">
+          <aside className="w-72 border-l border-editor-darker bg-editor flex flex-col overflow-y-auto overflow-x-hidden shrink-0">
             {rightPanel}
           </aside>
         )}

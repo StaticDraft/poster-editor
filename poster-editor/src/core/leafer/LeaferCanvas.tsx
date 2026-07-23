@@ -6,12 +6,13 @@ import '@leafer-in/animate'
 import '@leafer-in/view'
 import '@leafer-in/viewport'
 import '@leafer-in/scroll'
+import '@leafer-in/export'
 import { useEditorStore } from '@/store/useEditorStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
-import { MiniMap } from './MiniMap'
 import { applyAnimation, createLeaferNode, syncLeaferNode } from './runtime'
 import { useFeedback } from '@/lib/feedback'
-import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
+import { handleGlobalKeyDown } from './services/KeyboardShortcutManager'
+import { handleNodeDragSnap } from './services/SnapGuideEngine'
 
 export function LeaferCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -36,32 +37,6 @@ export function LeaferCanvas() {
     return text === key ? fallback : text
   }
 
-  const handleKeyboardCopy = () => {
-    const state = useEditorStore.getState()
-    const selectedNodes = state.elements.filter((item) => state.activeIds.includes(item.id))
-    if (selectedNodes.length === 0) {
-      feedback.notify({
-        title: tr('canvas.copyEmpty', 'Nothing to copy'),
-        description: tr('canvas.copyEmptyDesc', 'Select at least one node before copying.'),
-        tone: 'warning',
-      })
-      return
-    }
-    state.copy()
-  }
-
-  const handleKeyboardPaste = () => {
-    const state = useEditorStore.getState()
-    if (state.clipboard.length === 0) {
-      feedback.notify({
-        title: tr('canvas.pasteEmpty', 'Clipboard is empty'),
-        description: tr('canvas.pasteEmptyDesc', 'Copy nodes before pasting.'),
-        tone: 'warning',
-      })
-      return
-    }
-    state.paste()
-  }
 
   const getNodeGeometryUpdates = (node: any): { id: string; attrs: Partial<any> } | null => {
     if (!node?.id || node.id === '__scene_board__' || node.id === '__guide_group__') return null
@@ -351,120 +326,13 @@ export function LeaferCanvas() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) { e.preventDefault(); useEditorStore.getState().undo() }
-      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) { e.preventDefault(); useEditorStore.getState().redo() }
-      const activeElement = document.activeElement
-      const editingField =
-        activeElement instanceof HTMLInputElement ||
-        activeElement instanceof HTMLTextAreaElement ||
-        activeElement instanceof HTMLSelectElement ||
-        (activeElement instanceof HTMLElement && activeElement.isContentEditable)
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !editingField) {
-        e.preventDefault()
-        handleKeyboardCopy()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !editingField) {
-        e.preventDefault()
-        handleKeyboardPaste()
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !editingField) {
-        e.preventDefault()
-        const allElements = useEditorStore.getState().elements
-        const selectableIds = allElements.filter((el) => !el.props?.isLocked).map((el) => el.id)
-        useEditorStore.getState().setActiveIds(selectableIds)
-        if (appRef.current && (appRef.current as any).editor) {
-          const globalNodes = selectableIds.map((id) => nodeMapRef.current.get(id)).filter(Boolean)
-          if (globalNodes.length > 0) (appRef.current as any).editor.target = globalNodes
-        }
-      }
-      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !editingField) {
-        const actives = useEditorStore.getState().activeIds
-        if (actives.length > 0) {
-          e.preventDefault()
-          const step = e.shiftKey ? 10 : 1
-          let dx = 0
-          let dy = 0
-          if (e.key === 'ArrowLeft') dx = -step
-          if (e.key === 'ArrowRight') dx = step
-          if (e.key === 'ArrowUp') dy = -step
-          if (e.key === 'ArrowDown') dy = step
-
-          const state = useEditorStore.getState()
-          const updates = state.elements
-            .filter((el) => actives.includes(el.id))
-            .map((el) => ({
-              id: el.id,
-              attrs: {
-                x: (el.x || 0) + dx,
-                y: (el.y || 0) + dy,
-              },
-            }))
-          state.batchUpdateNodes(updates)
-        }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'g' && !editingField) {
-        e.preventDefault()
-        const state = useEditorStore.getState()
-        const actives = state.activeIds
-        if (e.shiftKey) {
-          state.updateNodes(actives, { groupId: undefined } as any)
-        } else if (actives.length > 1) {
-          const groupId = `group-${Date.now()}`
-          state.updateNodes(actives, { groupId } as any)
-        }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l' && !editingField) {
-        e.preventDefault()
-        const state = useEditorStore.getState()
-        const actives = state.activeIds
-        if (actives.length > 0) {
-          const first = state.elements.find((el) => actives.includes(el.id))
-          const nextLocked = !first?.props?.isLocked
-          state.updateNodes(actives, { props: { ...(first?.props || {}), isLocked: nextLocked } } as any)
-        }
-      }
-      if ((e.ctrlKey || e.metaKey) && (e.key === '[' || e.key === ']') && !editingField) {
-        e.preventDefault()
-        const state = useEditorStore.getState()
-        const actives = state.activeIds
-        if (actives.length > 0) {
-          const currentElements = [...state.elements]
-          const targetId = actives[0]
-          const idx = currentElements.findIndex((el) => el.id === targetId)
-          if (idx !== -1) {
-            const item = currentElements[idx]
-            currentElements.splice(idx, 1)
-            if (e.key === '[') {
-              const newIdx = e.shiftKey ? 0 : Math.max(0, idx - 1)
-              currentElements.splice(newIdx, 0, item)
-            } else {
-              const newIdx = e.shiftKey ? currentElements.length : Math.min(currentElements.length, idx + 1)
-              currentElements.splice(newIdx, 0, item)
-            }
-            state.setElements(currentElements)
-          }
-        }
-      }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && !editingField) {
-        const actives = useEditorStore.getState().activeIds
-        if (actives.length > 0) { e.preventDefault(); void handleKeyboardDelete(actives) }
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault()
-        useEditorStore.getState().saveScene()
-        const state = useEditorStore.getState()
-        markSaved(buildEditorSaveFingerprint({
-          currentSceneId: state.currentSceneId,
-          projectName: state.projectName,
-          projectCategory: state.projectCategory,
-          canvasConfig: state.canvasConfig,
-          elements: state.elements,
-        }))
-        feedback.notify({
-          title: tr('canvasConfig.saved', 'Scene saved'),
-          tone: 'success',
-        })
-      }
+      handleGlobalKeyDown(e, {
+        feedback,
+        tr,
+        appRef,
+        nodeMapRef,
+        handleKeyboardDelete,
+      })
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -503,173 +371,8 @@ export function LeaferCanvas() {
     ;(window as any).__leaferZoomFit = () => useEditorStore.getState().zoomFit()
 
     app.on(DragEvent.DRAG, (e) => {
-      const target = e.target
-      if (target && target.id && target.id !== '__scene_board__' && target.id !== '__guide_group__') {
-        const guideGroup = ensureGuideGroup(app)
-        guideGroup.removeAll()
-
-        const draggingId = target.id
-        const otherNodes: any[] = []
-        nodeMapRef.current.forEach((node, id) => {
-          if (id !== draggingId && node.parent && id !== '__scene_board__' && id !== '__guide_group__') {
-            otherNodes.push(node)
-          }
-        })
-
-        // Also snap to canvas center lines
-        const { width: bWidth, height: bHeight } = useEditorStore.getState().canvasConfig
-        otherNodes.push({
-          x: bWidth / 2,
-          y: bHeight / 2,
-          width: 0,
-          height: 0,
-          id: '__board_center__'
-        } as any)
-
-        if (otherNodes.length === 0) return
-
-        const threshold = 6
-        let targetX = target.x
-        let targetY = target.y
-
-        const dragX_L = target.x
-        const dragX_C = target.x + (target.width || 0) / 2
-        const dragX_R = target.x + (target.width || 0)
-
-        const dragY_T = target.y
-        const dragY_M = target.y + (target.height || 0) / 2
-        const dragY_B = target.y + (target.height || 0)
-
-        let minDiffX = Infinity
-        let alignedOtherX: any = null
-        let matchDragX = 0
-        let matchOtherX = 0
-
-        for (const other of otherNodes) {
-          const otherX_L = other.x
-          const otherX_C = other.x + (other.width || 0) / 2
-          const otherX_R = other.x + (other.width || 0)
-
-          const dragPoints = [
-            { val: dragX_L, ref: 'L' },
-            { val: dragX_C, ref: 'C' },
-            { val: dragX_R, ref: 'R' }
-          ]
-          const otherPoints = [
-            { val: otherX_L, ref: 'L' },
-            { val: otherX_C, ref: 'C' },
-            { val: otherX_R, ref: 'R' }
-          ]
-
-          for (const dp of dragPoints) {
-            for (const op of otherPoints) {
-              const diff = Math.abs(dp.val - op.val)
-              if (diff < threshold && diff < minDiffX) {
-                minDiffX = diff
-                alignedOtherX = other
-                matchDragX = dp.val
-                matchOtherX = op.val
-              }
-            }
-          }
-        }
-
-        if (alignedOtherX) {
-          if (matchDragX === dragX_L) {
-            targetX = matchOtherX
-          } else if (matchDragX === dragX_C) {
-            targetX = matchOtherX - (target.width || 0) / 2
-          } else {
-            targetX = matchOtherX - (target.width || 0)
-          }
-        }
-
-        let minDiffY = Infinity
-        let alignedOtherY: any = null
-        let matchDragY = 0
-        let matchOtherY = 0
-
-        for (const other of otherNodes) {
-          const otherY_T = other.y
-          const otherY_M = other.y + (other.height || 0) / 2
-          const otherY_B = other.y + (other.height || 0)
-
-          const dragPoints = [
-            { val: dragY_T, ref: 'T' },
-            { val: dragY_M, ref: 'M' },
-            { val: dragY_B, ref: 'B' }
-          ]
-          const otherPoints = [
-            { val: otherY_T, ref: 'T' },
-            { val: otherY_M, ref: 'M' },
-            { val: otherY_B, ref: 'B' }
-          ]
-
-          for (const dp of dragPoints) {
-            for (const op of otherPoints) {
-              const diff = Math.abs(dp.val - op.val)
-              if (diff < threshold && diff < minDiffY) {
-                minDiffY = diff
-                alignedOtherY = other
-                matchDragY = dp.val
-                matchOtherY = op.val
-              }
-            }
-          }
-        }
-
-        if (alignedOtherY) {
-          if (matchDragY === dragY_T) {
-            targetY = matchOtherY
-          } else if (matchDragY === dragY_M) {
-            targetY = matchOtherY - (target.height || 0) / 2
-          } else {
-            targetY = matchOtherY - (target.height || 0)
-          }
-        }
-
-        const editorList = ((app as any).editor?.list || []) as any[]
-        const diffX = targetX - target.x
-        const diffY = targetY - target.y
-
-        if (editorList.length > 1 && (diffX !== 0 || diffY !== 0)) {
-          editorList.forEach((n: any) => {
-            if (n && typeof n.set === 'function') {
-              n.set({ x: (n.x || 0) + diffX, y: (n.y || 0) + diffY })
-            }
-          })
-        } else {
-          target.set({ x: targetX, y: targetY })
-        }
-
-        if (alignedOtherX) {
-          const minY = Math.min(targetY, alignedOtherX.y)
-          const maxY = Math.max(targetY + (target.height || 0), alignedOtherX.y + (alignedOtherX.height || 0))
-          guideGroup.add(new Line({
-            points: [matchOtherX, minY - 100, matchOtherX, maxY + 100],
-            stroke: '#ef4444',
-            strokeWidth: 1,
-            dashPattern: [4, 4],
-            hittable: false
-          }))
-        }
-
-        if (alignedOtherY) {
-          const minX = Math.min(targetX, alignedOtherX ? alignedOtherX.x : alignedOtherY.x)
-          const maxX = Math.max(targetX + (target.width || 0), alignedOtherX ? (alignedOtherX.x + (alignedOtherX.width || 0)) : (alignedOtherY.x + (alignedOtherY.width || 0)))
-          guideGroup.add(new Line({
-            points: [minX - 100, matchOtherY, maxX + 100, matchOtherY],
-            stroke: '#ef4444',
-            strokeWidth: 1,
-            dashPattern: [4, 4],
-            hittable: false
-          }))
-        }
-
-        if (app.editor) {
-          app.editor.updateEditBox()
-        }
-      }
+      const guideGroup = ensureGuideGroup(app)
+      handleNodeDragSnap(e.target, app, nodeMapRef.current, guideGroup)
     })
 
     app.on(DragEvent.START, (e) => {
@@ -927,10 +630,6 @@ export function LeaferCanvas() {
       const now = Date.now()
       if (now - lastMiddleClickRef.current < 350) {
         useEditorStore.getState().zoomFit()
-        feedback.notify({
-          title: '画布已自适应居中显示',
-          tone: 'info',
-        })
         lastMiddleClickRef.current = 0
       } else {
         lastMiddleClickRef.current = now
@@ -953,8 +652,6 @@ export function LeaferCanvas() {
       />
 
       {menuPos && <CanvasContextMenu pos={menuPos} onClose={() => setMenuPos(null)} />}
-
-      {!isPreview && <MiniMap />}
     </div>
   )
 }

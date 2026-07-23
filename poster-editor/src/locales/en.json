@@ -470,5 +470,11 @@
   },
   "layer": {
     "group": "Group"
+  },
+  "config": {
+    "tabs": {
+      "appearance": "Appearance",
+      "animation": "Animation"
+    }
   }
 }

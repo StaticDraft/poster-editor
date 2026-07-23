@@ -21,9 +21,9 @@ function Section({ title, children }: { title: string, children: React.ReactNode
 
 function Row({ label, children }: { label: string, children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-2">
-      <span className="text-[11px] text-editor-text-label shrink-0 mr-2">{label}</span>
-      <div className="flex-1 flex justify-end">{children}</div>
+    <div className="flex items-center justify-between mb-2 gap-2">
+      <span className="text-[11px] text-editor-text-label shrink-0 min-w-[70px] max-w-[120px] leading-tight pr-1">{label}</span>
+      <div className="flex-1 flex justify-end min-w-0">{children}</div>
     </div>
   )
 }
@@ -97,7 +97,7 @@ export function CanvasConfigPanel() {
   }
 
   return (
-    <div className="flex flex-col text-editor-text w-full">
+    <div className="flex flex-col text-editor-text w-full overflow-x-hidden">
       <div className="px-4 py-3 border-b border-editor-darker text-xs font-bold text-editor-text">{tr('canvasConfig.title', '海报画布配置')}</div>
 
       {/* File operations */}
@@ -106,14 +106,14 @@ export function CanvasConfigPanel() {
           <input
             value={projectName}
             onChange={e => setProjectName(e.target.value)}
-            className="flex-1 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text focus:outline-none focus:border-blue-500"
+            className="w-full min-w-0 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text focus:outline-none focus:border-blue-500"
           />
         </Row>
         <Row label={tr('canvasConfig.category', '文档项目组')}>
           <input
             value={projectCategory}
             onChange={e => setProjectCategory(e.target.value)}
-            className="flex-1 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text-label focus:outline-none focus:border-blue-500"
+            className="w-full min-w-0 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text-label focus:outline-none focus:border-blue-500"
           />
         </Row>
         {/* Save button */}
@@ -131,7 +131,7 @@ export function CanvasConfigPanel() {
       </Section>
 
       <Section title={tr('canvasConfig.canvasSize', '海报像素尺寸')}>
-        <Row label="常见海报比例">
+        <Row label={tr('canvasConfig.presetRatio', '常用海报比例')}>
           <select
             onChange={e => {
               const val = e.target.value
@@ -141,9 +141,9 @@ export function CanvasConfigPanel() {
                 setCanvasConfig({ width: w, height: h })
               }
             }}
-            className="flex-1 text-xs bg-editor-deep border border-border text-editor-text text-xs rounded px-2 h-7 focus:outline-none focus:border-blue-500 bg-card"
+            className="w-full min-w-0 text-xs bg-editor-deep border border-border text-editor-text rounded px-2 h-7 focus:outline-none focus:border-blue-500 bg-card truncate"
           >
-            <option value="">自定义尺寸</option>
+            <option value="">{tr('canvasConfig.customSize', '自定义尺寸')}</option>
             <option value="800x1200">手机长图海报 (9:16) - 800x1200</option>
             <option value="1200x1200">电商/小红书方图 (1:1) - 1200x1200</option>
             <option value="1920x1080">横版横幅 Banner (16:9) - 1920x1080</option>
@@ -151,10 +151,10 @@ export function CanvasConfigPanel() {
             <option value="500x500">迷你小卡片 (1:1) - 500x500</option>
           </select>
         </Row>
-        <Row label="宽度 (W)">
+        <Row label={tr('canvasConfig.width', '宽度 (W)')}>
           <NumInput value={config.width} onChange={v => set('width', v)} />
         </Row>
-        <Row label="高度 (H)">
+        <Row label={tr('canvasConfig.height', '高度 (H)')}>
           <NumInput value={config.height} onChange={v => set('height', v)} />
         </Row>
         <Row label={tr('canvasConfig.bgColor', '画布背景')}>
@@ -171,15 +171,15 @@ export function CanvasConfigPanel() {
                   <button
                     onClick={() => setCanvasConfig({ bgColor: '#ffffff' })}
                     className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${isSolid ? 'bg-blue-600 text-white' : 'text-editor-text-label hover:text-editor-text'}`}
-                  >纯色</button>
+                  >{tr('canvasConfig.solidColor', '纯色')}</button>
                   <button
                     onClick={() => setCanvasConfig({ bgColor: { type: 'linear', from: 'top', to: 'bottom', stops: ['#667eea', '#764ba2'] } })}
                     className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${isGradient ? 'bg-blue-600 text-white' : 'text-editor-text-label hover:text-editor-text'}`}
-                  >渐变</button>
+                  >{tr('canvasConfig.gradientColor', '渐变')}</button>
                   <button
                     onClick={() => setCanvasConfig({ bgColor: { type: 'image', url: '', mode: 'cover' } })}
                     className={`flex-1 py-1 text-[10px] font-bold rounded transition-colors ${isImage ? 'bg-blue-600 text-white' : 'text-editor-text-label hover:text-editor-text'}`}
-                  >图片</button>
+                  >{tr('canvasConfig.imageBg', '图片')}</button>
                 </div>
 
                 {/* Solid color */}
@@ -337,10 +337,10 @@ export function CanvasConfigPanel() {
         <Row label={tr('canvasConfig.showGrid', '显示画布网格')}>
           <Toggle checked={config.showGrid} onChange={v => set('showGrid', v)} />
         </Row>
-        <Row label="显示 5% 出血安全边距">
+        <Row label={tr('canvasConfig.showBleed', '显示 5% 出血安全边距')}>
           <Toggle checked={!!config.showSafeMargin} onChange={v => set('showSafeMargin', v)} />
         </Row>
-        <Row label="显示三分构图辅助网格">
+        <Row label={tr('canvasConfig.showRuleOfThirds', '显示三分构图辅助网格')}>
           <Toggle checked={!!config.showGridOverlay} onChange={v => set('showGridOverlay', v)} />
         </Row>
       </Section>

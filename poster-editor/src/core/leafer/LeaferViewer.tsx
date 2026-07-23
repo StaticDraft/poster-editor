@@ -4,6 +4,7 @@ import '@leafer-in/animate'
 import '@leafer-in/view'
 import '@leafer-in/viewport'
 import '@leafer-in/scroll'
+import '@leafer-in/export'
 import { useEditorStore, type CanvasConfig, type EditorNode } from '@/store/useEditorStore'
 import { applyAnimation, createLeaferNode, syncLeaferNode } from './runtime'
 

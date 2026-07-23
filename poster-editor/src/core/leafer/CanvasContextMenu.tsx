@@ -204,9 +204,9 @@ export function CanvasContextMenu({ pos, onClose }: Props) {
         disabled={!hasSelection}
         className="text-amber-500"
       />
-      <MenuItem icon={Group} label={tr('contextMenu.group', '编组')} onClick={handleGroup} disabled={activeIds.length < 2} className="text-emerald-500" />
+      <MenuItem icon={Group} label={tr('contextMenu.group', '编组')} onClick={handleGroup} disabled={activeIds.length < 2} shortcut="Ctrl+G" className="text-emerald-500" />
       {hasGroup && (
-        <MenuItem icon={Ungroup} label={tr('contextMenu.ungroup', '解组')} onClick={handleUngroup} disabled={!hasSelection} className="text-emerald-500" />
+        <MenuItem icon={Ungroup} label={tr('contextMenu.ungroup', '解组')} onClick={handleUngroup} disabled={!hasSelection} shortcut="Ctrl+Shift+G" className="text-emerald-500" />
       )}
 
       <Divider />

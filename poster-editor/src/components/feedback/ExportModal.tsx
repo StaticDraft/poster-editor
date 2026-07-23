@@ -1,60 +1,17 @@
 import { useState } from 'react'
 import { Download, Image as ImageIcon, X } from 'lucide-react'
 import { Leafer } from 'leafer-ui'
+import '@leafer-in/export'
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
 
+import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
+
 interface ExportModalProps {
   open: boolean
   onClose: () => void
-}
-
-function parseExportDataUrl(exportResult: any, mimeType: string, quality?: number): string {
-  if (!exportResult) return ''
-  const item = exportResult.data !== undefined ? exportResult.data : exportResult
-  if (!item) return ''
-
-  if (typeof item === 'string') {
-    return item
-  }
-
-  if (typeof Blob !== 'undefined' && item instanceof Blob) {
-    return URL.createObjectURL(item)
-  }
-
-  if (typeof HTMLCanvasElement !== 'undefined' && item instanceof HTMLCanvasElement) {
-    return item.toDataURL(mimeType, quality)
-  }
-
-  if (typeof item.toDataURL === 'function') {
-    return item.toDataURL(mimeType, quality)
-  }
-
-  if (item.view) {
-    if (typeof HTMLCanvasElement !== 'undefined' && item.view instanceof HTMLCanvasElement) {
-      return item.view.toDataURL(mimeType, quality)
-    }
-    if (typeof item.view.toDataURL === 'function') {
-      return item.view.toDataURL(mimeType, quality)
-    }
-  }
-
-  if (item.canvas) {
-    if (typeof HTMLCanvasElement !== 'undefined' && item.canvas instanceof HTMLCanvasElement) {
-      return item.canvas.toDataURL(mimeType, quality)
-    }
-    if (typeof item.canvas.toDataURL === 'function') {
-      return item.canvas.toDataURL(mimeType, quality)
-    }
-  }
-
-  if (exportResult.url && typeof exportResult.url === 'string') {
-    return exportResult.url
-  }
-
-  return ''
 }
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
@@ -95,6 +52,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         width: posterW,
         height: posterH,
         fill: bgColorToFill(bgColor),
+        pixelRatio: scale,
       })
 
       // Add all poster elements into offscreen Leafer
@@ -124,7 +82,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         quality: format === 'png' ? undefined : quality,
       })
 
-      dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
+      dataUrl = resolveExportDataUrl(exportResult, mimeType, exportQuality)
     } catch (err) {
       console.error('Offscreen export error:', err)
     } finally {
@@ -135,13 +93,15 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     }
 
     if (dataUrl) {
-      const link = document.createElement('a')
-      link.href = dataUrl
-      link.download = fileName
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-      setTimeout(() => document.body.removeChild(link), 500)
+      if (dataUrl !== 'saved') {
+        const link = document.createElement('a')
+        link.href = dataUrl
+        link.download = fileName
+        link.style.display = 'none'
+        document.body.appendChild(link)
+        link.click()
+        setTimeout(() => document.body.removeChild(link), 500)
+      }
 
       try {
         const confetti = (await import('canvas-confetti')).default

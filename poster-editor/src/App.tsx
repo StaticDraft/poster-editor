@@ -12,7 +12,7 @@ function RightPanel() {
   const activeIds = useEditorStore(s => s.activeIds)
   
   return (
-    <div className="flex flex-col w-full bg-editor h-full">
+    <div className="flex flex-col w-full bg-editor h-full overflow-x-hidden min-w-0">
       {activeIds.length > 0 ? <ConfigPanel /> : <CanvasConfigPanel />}
     </div>
   )
