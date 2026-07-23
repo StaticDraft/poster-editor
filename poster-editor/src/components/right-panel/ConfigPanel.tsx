@@ -18,9 +18,9 @@ import {
 // ────────────────────────────────────
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between mb-2 gap-2">
-      <span className="text-[11px] text-editor-text-label shrink-0 min-w-[70px] max-w-[120px] leading-tight pr-1">{label}</span>
-      <div className="flex-1 flex justify-end min-w-0">{children}</div>
+    <div className="flex items-center justify-between mb-2 gap-2 overflow-hidden w-full">
+      <span className="text-[11px] text-editor-text-label shrink-0 min-w-[65px] max-w-[110px] leading-tight pr-1 truncate" title={label}>{label}</span>
+      <div className="flex-1 flex justify-end min-w-0 overflow-hidden">{children}</div>
     </div>
   )
 }
@@ -616,7 +616,7 @@ function ComponentPropsTab({ node }: { node: any }) {
             <input type="text" value={p.lineHeight || '1.2'} onChange={e => u('lineHeight', e.target.value)}
               className="w-20 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 text-right focus:outline-none" />
           </Row>
-          <div className="flex gap-3 mt-3">
+          <div className="flex flex-wrap gap-2 mt-3">
             <ToggleCheck checked={!!p.bold} onChange={v => u('bold', v)} label={tr('config.component.bold', '加粗')} />
             <ToggleCheck checked={!!p.italic} onChange={v => u('italic', v)} label={tr('config.component.italic', '斜体')} />
             <ToggleCheck checked={!!p.underline} onChange={v => u('underline', v)} label={tr('config.component.underline', '下划线')} />
@@ -720,7 +720,7 @@ export function ConfigPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full text-editor-text">
+    <div className="flex flex-col h-full text-editor-text w-full max-w-full overflow-x-hidden">
       {/* Node name + type badge */}
       <div className="px-4 py-2.5 border-b border-editor-darker flex items-center justify-between shrink-0">
         <span className="text-xs font-bold text-editor-text truncate">{getNodeTypeName(activeNode.type)}</span>
@@ -738,7 +738,7 @@ export function ConfigPanel() {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full">
         {tab === 'appearance' && <AppearanceTab node={activeNode} />}
         {tab === 'animation' && <AnimationTab node={activeNode} />}
         <ComponentPropsTab node={activeNode} />

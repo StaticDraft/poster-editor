@@ -1,4 +1,5 @@
 import React from 'react'
+import { useTranslation } from 'react-i18next'
 
 export function parseColorWithAlpha(colorStr: string): { hex: string; alpha: number } {
   if (!colorStr || typeof colorStr !== 'string') return { hex: '#3b82f6', alpha: 1 }
@@ -49,6 +50,7 @@ interface ColorPickerWithAlphaProps {
 }
 
 export function ColorPickerWithAlpha({ value, onChange, showLabel = true, className = '' }: ColorPickerWithAlphaProps) {
+  const { t } = useTranslation()
   const { hex, alpha } = parseColorWithAlpha(value)
 
   const handleHexChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +80,7 @@ export function ColorPickerWithAlpha({ value, onChange, showLabel = true, classN
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-[10px] text-editor-text-dim shrink-0">透明度</span>
+        <span className="text-[10px] text-editor-text-dim shrink-0">{t('config.appearance.opacity')}</span>
         <input
           type="range"
           min="0"
