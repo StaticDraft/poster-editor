@@ -198,8 +198,8 @@ export function CanvasConfigPanel() {
                     <div className="flex gap-1.5 items-center">
                       <select value={bg.type} onChange={e => setCanvasConfig({ bgColor: { ...bg, type: e.target.value } })}
                         className="h-6 text-[10px] bg-editor-deep border border-border text-editor-text rounded px-1 focus:outline-none">
-                        <option value="linear">线性</option>
-                        <option value="radial">径向</option>
+                        <option value="linear">{tr('config.appearance.linearGrad', '线性')}</option>
+                        <option value="radial">{tr('config.appearance.radialGrad', '径向')}</option>
                       </select>
                       {bg.type === 'linear' && (
                         <select value={bg.from || 'top'} onChange={e => {
@@ -207,9 +207,9 @@ export function CanvasConfigPanel() {
                           setCanvasConfig({ bgColor: { ...bg, from: e.target.value, to: dirMap[e.target.value] || 'bottom' } })
                         }}
                           className="h-6 text-[10px] bg-editor-deep border border-border text-editor-text rounded px-1 focus:outline-none">
-                          <option value="top">↓ 从上到下</option>
-                          <option value="left">→ 从左到右</option>
-                          <option value="top-left">↘ 对角线</option>
+                          <option value="top">{tr('config.appearance.topToBottom', '↓ 从上到下')}</option>
+                          <option value="left">{tr('config.appearance.leftToRight', '→ 从左到右')}</option>
+                          <option value="top-left">{tr('config.appearance.diagonal', '↘ 对角线')}</option>
                         </select>
                       )}
                     </div>
@@ -236,14 +236,14 @@ export function CanvasConfigPanel() {
                       type="text"
                       value={bg.url || ''}
                       onChange={e => setCanvasConfig({ bgColor: { ...bg, url: e.target.value } })}
-                      placeholder="https://在线图片地址..."
+                      placeholder={tr('canvasConfig.imageBgUrlPlaceholder', 'https://在线图片地址...')}
                       className="h-7 text-xs bg-editor-deep border border-border text-editor-text rounded px-2 focus:outline-none focus:border-blue-500 w-full font-mono"
                     />
 
                     {/* Local Image Upload Button */}
                     <label className="flex items-center justify-center gap-1.5 py-1.5 px-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded text-[11px] font-bold cursor-pointer transition-colors">
                       <Upload className="w-3.5 h-3.5" />
-                      <span>上传本地图片作为背景</span>
+                      <span>{tr('canvasConfig.uploadLocalBg', '上传本地图片作为背景')}</span>
                       <input
                         type="file"
                         accept="image/*"
@@ -267,14 +267,14 @@ export function CanvasConfigPanel() {
                     {/* Preset background materials gallery */}
                     <div className="space-y-1 mt-1">
                       <div className="text-[10px] text-muted-foreground font-semibold flex items-center justify-between">
-                        <span>从精选素材库选取背景</span>
+                        <span>{tr('canvasConfig.selectFromGallery', '从精选素材库选取背景')}</span>
                       </div>
                       <div className="grid grid-cols-4 gap-1.5">
                         {[
-                          { name: '极光艺术', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600' },
-                          { name: '孟菲斯', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600' },
-                          { name: '大理石白', url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600' },
-                          { name: '炫彩渐变', url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600' },
+                          { name: tr('canvasConfig.auroraArt', '极光艺术'), url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600' },
+                          { name: tr('canvasConfig.memphisArt', '孟菲斯'), url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600' },
+                          { name: tr('canvasConfig.marbleWhite', '大理石白'), url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600' },
+                          { name: tr('canvasConfig.vibrantGrad', '炫彩渐变'), url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600' },
                         ].map((item, idx) => (
                           <button
                             key={idx}
@@ -294,9 +294,9 @@ export function CanvasConfigPanel() {
 
                     <select value={bg.mode || 'cover'} onChange={e => setCanvasConfig({ bgColor: { ...bg, mode: e.target.value } })}
                       className="h-6 text-[10px] bg-editor-deep border border-border text-editor-text rounded px-1 focus:outline-none mt-1">
-                      <option value="cover">铺满裁剪 (Cover)</option>
-                      <option value="contain">完整显示 (Contain)</option>
-                      <option value="repeat">平铺重复 (Repeat)</option>
+                      <option value="cover">{tr('config.component.cover', '铺满裁剪 (Cover)')}</option>
+                      <option value="contain">{tr('config.component.contain', '完整显示 (Contain)')}</option>
+                      <option value="repeat">{tr('canvasConfig.repeatMode', '平铺重复 (Repeat)')}</option>
                     </select>
                   </div>
                 )}
@@ -305,7 +305,7 @@ export function CanvasConfigPanel() {
                   onClick={() => setCanvasConfig({ bgColor: '#ffffff' })}
                   className="mt-2.5 w-full py-1 text-[10px] font-semibold text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/60 border border-border rounded transition-colors"
                 >
-                  重置为默认纯白背景
+                  {tr('canvasConfig.resetBg', '重置为默认纯白背景')}
                 </button>
               </div>
             )
