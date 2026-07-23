@@ -5,22 +5,21 @@ import en from './en.json'
 import zh from './zh.json'
 import { localeOverrides } from './overrides'
 
-// Deep merge overrides into primary translation resources
-const mergedEn = {
-  ...en,
-  ...localeOverrides.en,
-  toolbar: { ...(en as any).toolbar, ...localeOverrides.en.toolbar },
-  canvasConfig: { ...(en as any).canvasConfig, ...localeOverrides.en.canvasConfig },
-  config: { ...(en as any).config, ...localeOverrides.en.config },
+function deepMerge(target: any, source: any): any {
+  if (!source) return target
+  const output = { ...target }
+  for (const key of Object.keys(source)) {
+    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+      output[key] = deepMerge(target[key] || {}, source[key])
+    } else {
+      output[key] = source[key]
+    }
+  }
+  return output
 }
 
-const mergedZh = {
-  ...zh,
-  ...localeOverrides.zh,
-  toolbar: { ...(zh as any).toolbar, ...localeOverrides.zh.toolbar },
-  canvasConfig: { ...(zh as any).canvasConfig, ...localeOverrides.zh.canvasConfig },
-  config: { ...(zh as any).config, ...localeOverrides.zh.config },
-}
+const mergedEn = deepMerge(en, localeOverrides.en)
+const mergedZh = deepMerge(zh, localeOverrides.zh)
 
 const resources = {
   en: { translation: mergedEn },
