@@ -12,12 +12,13 @@ interface ExportModalProps {
 function parseExportDataUrl(exportResult: any, mimeType: string, quality?: number): string {
   if (!exportResult) return ''
   const item = exportResult.data !== undefined ? exportResult.data : exportResult
+  if (!item) return ''
 
   if (typeof item === 'string') {
     return item
   }
 
-  if (item instanceof Blob) {
+  if (typeof Blob !== 'undefined' && item instanceof Blob) {
     return URL.createObjectURL(item)
   }
 
@@ -25,19 +26,29 @@ function parseExportDataUrl(exportResult: any, mimeType: string, quality?: numbe
     return item.toDataURL(mimeType, quality)
   }
 
-  if (item && typeof item.toDataURL === 'function') {
+  if (typeof item.toDataURL === 'function') {
     return item.toDataURL(mimeType, quality)
   }
 
-  if (item && item.view && typeof item.view.toDataURL === 'function') {
-    return item.view.toDataURL(mimeType, quality)
+  if (item.view) {
+    if (typeof HTMLCanvasElement !== 'undefined' && item.view instanceof HTMLCanvasElement) {
+      return item.view.toDataURL(mimeType, quality)
+    }
+    if (typeof item.view.toDataURL === 'function') {
+      return item.view.toDataURL(mimeType, quality)
+    }
   }
 
-  if (item && item.canvas && typeof item.canvas.toDataURL === 'function') {
-    return item.canvas.toDataURL(mimeType, quality)
+  if (item.canvas) {
+    if (typeof HTMLCanvasElement !== 'undefined' && item.canvas instanceof HTMLCanvasElement) {
+      return item.canvas.toDataURL(mimeType, quality)
+    }
+    if (typeof item.canvas.toDataURL === 'function') {
+      return item.canvas.toDataURL(mimeType, quality)
+    }
   }
 
-  if (exportResult?.url && typeof exportResult.url === 'string') {
+  if (exportResult.url && typeof exportResult.url === 'string') {
     return exportResult.url
   }
 
@@ -105,19 +116,23 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       // Attempt 1: Leafer native export constrained to exact poster bounds (0, 0, posterW, posterH)
       const posterBounds = { x: 0, y: 0, width: posterW, height: posterH }
 
-      if (app.tree && typeof app.tree.export === 'function') {
-        try {
-          const exportResult = await app.tree.export(format, {
-            bounds: posterBounds,
-            scale,
-            quality: format === 'png' ? undefined : quality,
-            blob: false,
-            screenshot: false,
-          })
+      const exportOptions = {
+        bounds: posterBounds,
+        scale,
+        quality: format === 'png' ? undefined : quality,
+      }
+
+      try {
+        if (app.tree && typeof app.tree.export === 'function') {
+          const exportResult = await app.tree.export(format, exportOptions)
           dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
-        } catch (_e) {
-          console.warn('Leafer export() failed, falling back to canvas crop:', _e)
         }
+        if (!dataUrl && typeof app.export === 'function') {
+          const exportResult = await app.export(format, exportOptions)
+          dataUrl = parseExportDataUrl(exportResult, mimeType, exportQuality)
+        }
+      } catch (_e) {
+        console.warn('Leafer export() failed, falling back to canvas crop:', _e)
       }
 
       // Attempt 2: Precise DOM page-to-canvas coordinate crop from rendered viewport canvas
@@ -134,36 +149,29 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           offscreen.height = targetH
           const ctx = offscreen.getContext('2d')!
 
-          const posterRatio = posterW / posterH
-
           canvases.forEach((c: HTMLCanvasElement) => {
             try {
               const canvasRect = c.getBoundingClientRect()
+              const ratioX = canvasRect.width > 0 ? c.width / canvasRect.width : 1
+              const ratioY = canvasRect.height > 0 ? c.height / canvasRect.height : 1
+
               let srcX = 0
               let srcY = 0
-              let srcW = c.width
-              let srcH = c.height
+              let srcW = Math.round(posterW * ratioX)
+              let srcH = Math.round(posterH * ratioY)
 
               if (boardBounds && canvasRect.width > 0 && canvasRect.height > 0) {
-                const ratioX = c.width / canvasRect.width
-                const ratioY = c.height / canvasRect.height
+                const calculatedX = Math.round((boardBounds.x - canvasRect.left) * ratioX)
+                const calculatedY = Math.round((boardBounds.y - canvasRect.top) * ratioY)
+                const calculatedW = Math.round(boardBounds.width * ratioX)
+                const calculatedH = Math.round(boardBounds.height * ratioY)
 
-                srcX = Math.max(0, Math.round((boardBounds.x - canvasRect.left) * ratioX))
-                srcY = Math.max(0, Math.round((boardBounds.y - canvasRect.top) * ratioY))
-                srcW = Math.round(boardBounds.width * ratioX)
-                srcH = Math.round(boardBounds.height * ratioY)
-              }
-
-              // Guarantee aspect ratio locking (posterW / posterH) to prevent image squishing/distortion
-              if (srcW <= 0 || srcH <= 0 || Math.abs((srcW / srcH) - posterRatio) > 0.05) {
-                srcH = c.height
-                srcW = Math.round(srcH * posterRatio)
-                if (srcW > c.width) {
-                  srcW = c.width
-                  srcH = Math.round(srcW / posterRatio)
+                if (calculatedW > 0 && calculatedH > 0 && calculatedX >= 0 && calculatedY >= 0) {
+                  srcX = calculatedX
+                  srcY = calculatedY
+                  srcW = calculatedW
+                  srcH = calculatedH
                 }
-                srcX = Math.round((c.width - srcW) / 2)
-                srcY = Math.round((c.height - srcH) / 2)
               }
 
               ctx.drawImage(c, srcX, srcY, srcW, srcH, 0, 0, targetW, targetH)
