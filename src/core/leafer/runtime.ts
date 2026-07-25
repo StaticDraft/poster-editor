@@ -138,7 +138,7 @@ export function loadFont(fontFamily: string) {
 }
 
 export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, options: RuntimeOptions) {
-  const { animation, hidden, locked, props } = el
+  const { hidden, locked, props } = el
   if (props?.fontFamily) {
     loadFont(props.fontFamily)
   }
@@ -182,7 +182,14 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     runtimeProps.scaleX = props?.flipH ? -1 : 1
     runtimeProps.scaleY = props?.flipV ? -1 : 1
   }
-  if (props?.flipH || props?.flipV || animation?.type === 'spin') runtimeProps.around = 'center'
+  // Set anchor point (around), defaulting to center (0.5, 0.5) so rotation does not shift node position
+  const ax = el.anchorX ?? props?.anchorX ?? 0.5
+  const ay = el.anchorY ?? props?.anchorY ?? 0.5
+  if (ax === 0.5 && ay === 0.5) {
+    runtimeProps.around = 'center'
+  } else {
+    runtimeProps.around = { x: ax, y: ay }
+  }
 
   return runtimeProps
 }

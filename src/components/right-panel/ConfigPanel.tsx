@@ -10,8 +10,9 @@ import {
   AlignLeft, AlignCenter, AlignRight,
   AlignStartVertical, AlignCenterVertical, AlignEndVertical,
   AlignHorizontalSpaceAround, AlignVerticalSpaceAround,
-  Lock, Unlock, Wand2
+  Lock, Unlock, Wand2, Target
 } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 // ────────────────────────────────────
 // Sub-components
@@ -234,6 +235,66 @@ function AppearanceTab({ node }: { node: any }) {
             >
               ⇅
             </button>
+          </div>
+        </Row>
+        <Row label={tr('config.appearance.anchor', '锚点配置')}>
+          <div className="flex items-center gap-1 flex-1 justify-end">
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  title={tr('config.appearance.anchorPicker', '九宫格锚点快捷选择')}
+                  className="w-7 h-7 flex items-center justify-center text-xs font-bold rounded border bg-editor-deep border-border hover:border-blue-500 text-blue-400 transition-colors shrink-0"
+                >
+                  <Target className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-40 p-2 bg-card border border-border shadow-xl z-50">
+                <div className="text-[10px] font-bold text-muted-foreground mb-1.5 text-center">
+                  {tr('config.appearance.anchorPreset', '锚点预设位置')}
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {[
+                    { label: '左上', x: 0, y: 0 },
+                    { label: '中上', x: 0.5, y: 0 },
+                    { label: '右上', x: 1, y: 0 },
+                    { label: '左中', x: 0, y: 0.5 },
+                    { label: '中心', x: 0.5, y: 0.5 },
+                    { label: '右中', x: 1, y: 0.5 },
+                    { label: '左下', x: 0, y: 1 },
+                    { label: '中下', x: 0.5, y: 1 },
+                    { label: '右下', x: 1, y: 1 },
+                  ].map((preset) => {
+                    const currentX = node.anchorX ?? 0.5
+                    const currentY = node.anchorY ?? 0.5
+                    const active = Math.abs(currentX - preset.x) < 0.05 && Math.abs(currentY - preset.y) < 0.05
+                    return (
+                      <button
+                        key={`${preset.x}-${preset.y}`}
+                        type="button"
+                        onClick={() => {
+                          u('anchorX', preset.x)
+                          u('anchorY', preset.y)
+                        }}
+                        className={`h-6 text-[10px] font-bold rounded border transition-colors ${
+                          active
+                            ? 'bg-blue-600 border-blue-500 text-white'
+                            : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </PopoverContent>
+            </Popover>
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-editor-text-dim font-mono">X:</span>
+              <NumInput value={node.anchorX ?? 0.5} onChange={v => u('anchorX', v)} w="w-12" />
+              <span className="text-[9px] text-editor-text-dim font-mono">Y:</span>
+              <NumInput value={node.anchorY ?? 0.5} onChange={v => u('anchorY', v)} w="w-12" />
+            </div>
           </div>
         </Row>
         <Row label={tr('config.appearance.opacity', '透明度')}>

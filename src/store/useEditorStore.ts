@@ -34,6 +34,8 @@ export interface EditorNode {
   locked?: boolean
   opacity?: number
   rotation?: number
+  anchorX?: number
+  anchorY?: number
   props?: Record<string, any>
   animation?: {
     type: 'spin' | 'breathe' | 'none'
