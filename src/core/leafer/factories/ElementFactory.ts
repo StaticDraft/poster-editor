@@ -36,7 +36,21 @@ const elementStrategies: Record<string, ElementStrategy> = {
     create: (props) => new Star(props),
   },
   Image: {
-    create: (props) => new Image(props),
+    create: (props) => {
+      if (props.fill && typeof props.fill === 'object' && props.fill.type === 'image') {
+        return new Rect(props)
+      }
+      if (props.url && typeof props.url === 'string') {
+        const imageUrl = props.url
+        const imageMode = props.mode || (props.contain ? 'contain' : 'cover')
+        const { url: _u, mode: _m, contain: _c, ...rest } = props
+        return new Rect({
+          ...rest,
+          fill: { type: 'image', url: imageUrl, mode: imageMode },
+        })
+      }
+      return new Image(props)
+    },
   },
   QRCode: {
     create: (props) => new Image(props),
