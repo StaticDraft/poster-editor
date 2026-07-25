@@ -161,15 +161,11 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   const runtimeProps: Record<string, any> = {
     ...base,
     ...pickVisualProps(props),
+    origin: ax === 0.5 && ay === 0.5 ? 'center' : { x: ax, y: ay },
     editable: options.editable && !locked,
     draggable: options.draggable && !hidden && !locked && !props?.noMove,
     visible: !hidden,
     hittable: !hidden,
-  }
-
-  // Set around anchor point only if non-center custom anchor is set
-  if (ax !== 0.5 || ay !== 0.5) {
-    runtimeProps.around = { x: ax, y: ay }
   }
 
   // Ensure shadow is sanitized to CSS string format
