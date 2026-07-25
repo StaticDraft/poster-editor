@@ -478,6 +478,8 @@ export const localeOverrides = {
       exportSuccessDesc: 'Successfully exported and downloaded {{scale}}x {{format}} file.',
       exportFailed: 'Export Failed: Render Generation Error',
       webmHint: '✨ WEBM format records a 3-second animated video clip at 30fps for digital signage and stories.',
+      gifHint: '✨ GIF format captures a looping animated GIF image for WeChat, RED, and web posts.',
+      recordingGif: 'Capturing GIF frames ({{progress}}%)...',
     },
     canvas: {
       copyEmpty: 'Nothing to copy',
@@ -1011,6 +1013,8 @@ export const localeOverrides = {
       exportSuccessDesc: '已成功导出并下载 {{scale}}x {{format}} 文件',
       exportFailed: '导出失败：渲染生成错误',
       webmHint: '✨ WEBM 格式将自动录制 3 秒 30fps 高清动态短视频，完美兼容电子水牌与朋友圈动态卡片。',
+      gifHint: '✨ GIF 格式将自动生成无缝循环的动态 GIF 动图，完美兼容微信公众号、小红书与网页贴图。',
+      recordingGif: '正在合成动态 GIF 动图 ({{progress}}%)...',
     },
     contextMenu: {
       copy: '复制',

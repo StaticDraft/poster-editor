@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, Image as ImageIcon, Video, X, Sparkles } from 'lucide-react'
+import { Download, Image as ImageIcon, Video, X, Sparkles, FileImage } from 'lucide-react'
 import { Leafer } from 'leafer-ui'
 import '@leafer-in/export'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
+import { createAnimatedGifBlob } from '@/lib/gifEncoder'
 
 interface ExportModalProps {
   open: boolean
@@ -16,7 +17,7 @@ interface ExportModalProps {
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
   const { t } = useTranslation()
-  const [format, setFormat] = useState<'png' | 'jpg' | 'webp' | 'webm'>('png')
+  const [format, setFormat] = useState<'png' | 'jpg' | 'webp' | 'webm' | 'gif'>('png')
   const [scale, setScale] = useState<number>(2)
   const [quality, setQuality] = useState<number>(0.92)
   const [isExporting, setIsExporting] = useState(false)
@@ -38,7 +39,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     const { width: posterW, height: posterH, bgColor } = canvasConfig
 
     const fileName = `${projectName || 'my_poster'}.${format}`
-    const mimeType = format === 'jpg' ? 'image/jpeg' : format === 'webm' ? 'video/webm' : `image/${format}`
+    const mimeType = format === 'jpg' ? 'image/jpeg' : format === 'webm' ? 'video/webm' : format === 'gif' ? 'image/gif' : `image/${format}`
     const exportQuality = format === 'png' ? undefined : quality
     let dataUrl = ''
 
@@ -124,9 +125,31 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             }, intervalMs)
           })
         } else {
-          // Fallback static export if MediaRecorder unsupported
           const exportResult = await offscreenLeafer.export(fileName, { scale })
           dataUrl = resolveExportDataUrl(exportResult, 'image/png', 0.95)
+        }
+      } else if (format === 'gif') {
+        // Animated GIF Image Mode (15 frames over 1.8 seconds)
+        const canvas = container.querySelector('canvas') as HTMLCanvasElement | null
+        if (canvas) {
+          const ctx = canvas.getContext('2d')
+          const frames: ImageData[] = []
+          const frameCount = 15
+          const frameDelay = 120
+
+          for (let i = 0; i < frameCount; i++) {
+            setRecordProgress(Math.round(((i + 1) / frameCount) * 100))
+            if (ctx) {
+              const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+              frames.push(frameData)
+            }
+            await new Promise(r => setTimeout(r, frameDelay))
+          }
+
+          if (frames.length > 0) {
+            const gifBlob = createAnimatedGifBlob(frames, canvas.width, canvas.height, frameDelay)
+            dataUrl = URL.createObjectURL(gifBlob)
+          }
         }
       } else {
         // Pure Offscreen Image Export
@@ -178,7 +201,13 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       <div className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl overflow-hidden p-5">
         <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            {format === 'webm' ? <Video className="w-4 h-4 text-purple-500" /> : <ImageIcon className="w-4 h-4 text-rose-500" />}
+            {format === 'webm' ? (
+              <Video className="w-4 h-4 text-purple-500" />
+            ) : format === 'gif' ? (
+              <FileImage className="w-4 h-4 text-amber-500" />
+            ) : (
+              <ImageIcon className="w-4 h-4 text-rose-500" />
+            )}
             <span>{tr('exportModal.title', '导出海报图片与动画视频')}</span>
           </div>
           <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={onClose}>
@@ -190,27 +219,29 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           {/* Format selection */}
           <div>
             <label className="block text-muted-foreground font-medium mb-1.5">{tr('exportModal.imageFormat', '导出格式')}</label>
-            <div className="grid grid-cols-4 gap-2">
-              {(['png', 'jpg', 'webp', 'webm'] as const).map((fmt) => (
+            <div className="grid grid-cols-5 gap-1.5">
+              {(['png', 'jpg', 'webp', 'webm', 'gif'] as const).map((fmt) => (
                 <button
                   key={fmt}
                   type="button"
                   onClick={() => setFormat(fmt)}
-                  className={`py-2 text-xs font-bold rounded-lg border transition-colors uppercase ${
+                  className={`py-2 text-[11px] font-bold rounded-lg border transition-colors uppercase ${
                     format === fmt
                       ? fmt === 'webm'
                         ? 'bg-purple-600 border-purple-500 text-white shadow-md'
+                        : fmt === 'gif'
+                        ? 'bg-amber-500 border-amber-400 text-white shadow-md'
                         : 'bg-rose-500 border-rose-500 text-white shadow-md'
                       : 'bg-muted/40 border-border text-foreground hover:bg-muted'
                   }`}
                 >
-                  {fmt === 'webm' ? '🎬 WEBM' : fmt}
+                  {fmt === 'webm' ? '🎬 WEBM' : fmt === 'gif' ? '✨ GIF' : fmt}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Animated WebM hint badge */}
+          {/* Animated WebM / GIF hint badges */}
           {format === 'webm' && (
             <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] flex items-start gap-2">
               <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
@@ -218,6 +249,18 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
                 {tr(
                   'exportModal.webmHint',
                   '✨ WEBM 格式将自动录制 3 秒 30fps 高清动态短视频，完美兼容电子水牌与朋友圈动态卡片。',
+                )}
+              </span>
+            </div>
+          )}
+
+          {format === 'gif' && (
+            <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                {tr(
+                  'exportModal.gifHint',
+                  '✨ GIF 格式将自动生成无缝循环的动态 GIF 动图，完美兼容微信公众号、小红书与网页贴图。',
                 )}
               </span>
             </div>
@@ -245,7 +288,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           </div>
 
           {/* Quality slider for JPG/WebP */}
-          {format !== 'png' && format !== 'webm' && (
+          {format !== 'png' && format !== 'webm' && format !== 'gif' && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-muted-foreground font-medium">{tr('exportModal.quality', '压缩质量')}</label>
@@ -273,12 +316,20 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             size="sm"
             onClick={handleExport}
             disabled={isExporting}
-            className={`font-bold text-xs shadow-md ${format === 'webm' ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-rose-500 hover:bg-rose-600 text-white'}`}
+            className={`font-bold text-xs shadow-md ${
+              format === 'webm'
+                ? 'bg-purple-600 hover:bg-purple-500 text-white'
+                : format === 'gif'
+                ? 'bg-amber-500 hover:bg-amber-400 text-white'
+                : 'bg-rose-500 hover:bg-rose-600 text-white'
+            }`}
           >
             <Download className="w-3.5 h-3.5 mr-1" />
             {isExporting
               ? format === 'webm'
                 ? tr('exportModal.recording', `正在录制 3 秒动态视频 (${recordProgress}%)...`).replace('{{progress}}', String(recordProgress))
+                : format === 'gif'
+                ? tr('exportModal.recordingGif', `正在合成动态 GIF 动图 (${recordProgress}%)...`).replace('{{progress}}', String(recordProgress))
                 : tr('exportModal.exporting', '生成导出中...')
               : tr('exportModal.downloadNow', '立即下载导出文件')}
           </Button>
