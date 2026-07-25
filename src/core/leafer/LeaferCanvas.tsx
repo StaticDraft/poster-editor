@@ -45,9 +45,11 @@ export function LeaferCanvas() {
     if (!current) return null
 
     // Isolate animation preview state from persistent editor store
-    const isAnimating = Boolean(node.__animationRef) || isPreview
+    const hasAnimation = Boolean(current.animation && current.animation.type && current.animation.type !== 'none')
+    const isAnimating = hasAnimation || Boolean(node.__animationRef) || isPreview
+
     const targetRotation = isAnimating
-      ? (node.__initialRotation !== undefined ? node.__initialRotation : (current.rotation ?? 0))
+      ? (current.rotation ?? 0)
       : Math.round(Number(node.rotation ?? current.rotation ?? 0) * 100) / 100
 
     const next = {

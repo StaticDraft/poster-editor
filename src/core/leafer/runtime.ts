@@ -218,6 +218,14 @@ export function syncLeaferNode(node: LeaferNode, el: EditorNode & Record<string,
   if (!runtimeProps.shadow && node.shadow) {
     node.shadow = undefined
   }
+
+  // Forcefully restore exact rotation from store when node is not actively playing an animation
+  if (!node.__animationRef) {
+    runtimeProps.rotation = el.rotation ?? 0
+  } else {
+    delete runtimeProps.rotation
+  }
+
   node.set(runtimeProps)
 }
 
