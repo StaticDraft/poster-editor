@@ -96,14 +96,22 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
             >
               {/* Cover Card */}
               <div
-                className="w-full aspect-[16/9] relative flex items-center justify-center p-3 overflow-hidden"
+                className="w-full aspect-[16/9] relative flex items-center justify-center p-3 overflow-hidden bg-slate-950"
                 style={{ background: tpl.coverBg }}
               >
-                <div className="text-center space-y-1 pointer-events-none drop-shadow-md">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20">
+                {tpl.elements.find((e: any) => e.type === 'Image')?.url && (
+                  <img
+                    src={tpl.elements.find((e: any) => e.type === 'Image')?.url}
+                    alt={tpl.name}
+                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
+                <div className="relative text-center space-y-1 pointer-events-none z-10 drop-shadow-md">
+                  <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-white bg-purple-600/90 backdrop-blur-md rounded-full shadow-xs">
                     {tpl.categoryName}
                   </span>
-                  <div className="text-sm font-black text-white px-2 leading-tight drop-shadow">
+                  <div className="text-xs font-black text-white px-2 leading-tight drop-shadow">
                     {tpl.name}
                   </div>
                 </div>
