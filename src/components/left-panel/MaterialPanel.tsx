@@ -86,19 +86,6 @@ const CATEGORIES = [
     ]
   },
   {
-    id: 'stickers',
-    titleKey: 'material.categories.stickers',
-    fallbackTitle: '潮酷矢量贴纸',
-    items: [
-      { type: 'Path', nameKey: 'material.items.retroStar', fallbackName: '极光闪烁星', fill: '#fcd34d', unitPath: PATHS.retroStar, width: 80, height: 80 },
-      { type: 'Path', nameKey: 'material.items.blob1', fallbackName: '酸性液体 01', fill: '#10b981', unitPath: PATHS.blob1, width: 180, height: 150 },
-      { type: 'Path', nameKey: 'material.items.blob2', fallbackName: '微光流体 02', fill: '#6366f1', unitPath: PATHS.blob2, width: 160, height: 160 },
-      { type: 'Path', nameKey: 'material.items.crossLine', fallbackName: '潮流交叉线', fill: '#c084fc', unitPath: PATHS.crossLine, width: 60, height: 60 },
-      { type: 'Path', nameKey: 'material.items.frameCorner', fallbackName: '摄影取景框', fill: '#ffffff', unitPath: PATHS.frameCorner, width: 200, height: 200 },
-      { type: 'Path', nameKey: 'material.items.badge', fallbackName: '设计徽章', fill: '#f59e0b', unitPath: PATHS.badge, width: 90, height: 90 },
-    ]
-  },
-  {
     id: 'preset-hd-images',
     titleKey: 'material.categories.presetHdImages',
     fallbackTitle: '海报摄影高清原画集',
@@ -115,16 +102,6 @@ const CATEGORIES = [
       { type: 'Image', nameKey: 'material.items.hd10', fallbackName: '招聘 · 极客科技机房', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=2000', width: 800, height: 1200 },
       { type: 'Image', nameKey: 'material.items.hd11', fallbackName: '美食 · 深夜食堂夜市', url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=90&w=2000', width: 800, height: 1200 },
       { type: 'Image', nameKey: 'material.items.hd12', fallbackName: '美食 · 阳光棕榈海滩', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=2000', width: 800, height: 1200 },
-    ]
-  },
-  {
-    id: 'backgrounds',
-    titleKey: 'material.categories.backgrounds',
-    fallbackTitle: '精选用图背景',
-    items: [
-      { type: 'Image', nameKey: 'material.items.bg1', fallbackName: '极光艺术背景', url: 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=600', width: 800, height: 1200 },
-      { type: 'Image', nameKey: 'material.items.bg2', fallbackName: '孟菲斯磨砂图', url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600', width: 800, height: 1200 },
-      { type: 'Image', nameKey: 'material.items.bg3', fallbackName: '大理石白纹理', url: 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600', width: 800, height: 1200 },
     ]
   }
 ]
