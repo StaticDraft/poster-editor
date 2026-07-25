@@ -177,7 +177,7 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     delete runtimeProps.shadow
   }
 
-  if (props?.contain !== undefined || props?.mode) {
+  if (el.type === 'Image' || props?.contain !== undefined || props?.mode) {
     runtimeProps.mode = props?.contain ? 'contain' : (props?.mode || 'cover')
   }
 

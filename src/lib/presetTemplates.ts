@@ -1,4 +1,4 @@
-// Preset Poster Templates organized by Categories for User One-Click Import & Secondary Editing
+// Preset Poster Templates organized by Categories with Ultra-HD 4K Photos & Anti-Stretch Cover Mode
 
 export interface TemplateCategory {
   id: string
@@ -36,7 +36,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'festival',
     categoryName: '节气节日',
     name: '清明 · 踏青思故人',
-    description: '清新春绿柳竹风韵，传统二十四节气经典海报',
+    description: '高清春绿竹风雨意，二十四节气原画大片',
     coverBg: 'linear-gradient(135deg, #15803d 0%, #065f46 100%)',
     canvasConfig: {
       width: 800,
@@ -47,7 +47,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -125,7 +125,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'hero-photo-nature',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=1600',
         x: 100,
         y: 230,
         width: 600,
@@ -172,7 +172,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'festival',
     categoryName: '节气节日',
     name: '今日元宵 · 汤圆团圆',
-    description: '中国红灯笼剪纸大片，喜庆元宵佳节活动海报',
+    description: '高清中国红灯笼，喜庆元宵佳节原画海报',
     coverBg: 'linear-gradient(135deg, #991b1b 0%, #7f1d1d 100%)',
     canvasConfig: {
       width: 800,
@@ -183,7 +183,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-lantern',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -239,7 +239,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'tangyuan-hero-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=90&w=1600',
         x: 100,
         y: 260,
         width: 600,
@@ -286,7 +286,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'festival',
     categoryName: '节气节日',
     name: 'Happy Children\'s Day 儿童节',
-    description: '彩虹与童趣 3D 字体，欢度六一儿童节派对海报',
+    description: '高清彩虹天空背景，欢度六一儿童节派对海报',
     coverBg: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
     canvasConfig: {
       width: 800,
@@ -297,7 +297,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-sky',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -332,7 +332,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'gift-hero-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=90&w=1600',
         x: 100,
         y: 270,
         width: 600,
@@ -377,7 +377,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'festival',
     categoryName: '节气节日',
     name: '情人节 · 浪漫臻爱 LOVE',
-    description: '深红玫瑰花瓣与心形框，浪漫情人节活动海报',
+    description: '4K 高清玫瑰花瓣与心形框，浪漫情人节海报',
     coverBg: 'linear-gradient(135deg, #881337 0%, #e11d48 100%)',
     canvasConfig: {
       width: 800,
@@ -388,7 +388,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-roses',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -423,7 +423,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'rose-hero-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=90&w=1600',
         x: 100,
         y: 260,
         width: 600,
@@ -472,7 +472,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'ecommerce',
     categoryName: '电商大促',
     name: '618 狂欢年终大促',
-    description: '红金大促大片，支持价格与标签自由修改',
+    description: '4K 金致光芒红金大促大片',
     coverBg: 'linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%)',
     canvasConfig: {
       width: 800,
@@ -483,7 +483,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-sparkles',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -530,7 +530,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'sneaker-hero-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=90&w=1600',
         x: 100,
         y: 280,
         width: 600,
@@ -565,7 +565,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'ecommerce',
     categoryName: '电商大促',
     name: '新品极简发售海报',
-    description: '赛博夜景风格，适合科技与潮牌新品发布',
+    description: '赛博夜景大片，适合科技与潮牌新品发布',
     coverBg: 'linear-gradient(135deg, #0f172a 0%, #06b6d4 100%)',
     canvasConfig: {
       width: 800,
@@ -576,7 +576,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-cyberpunk-photo',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -611,7 +611,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'headphone-hero-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=90&w=1600',
         x: 100,
         y: 260,
         width: 600,
@@ -636,7 +636,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'guochao',
     categoryName: '国潮古风',
     name: '国潮崛起 匠心造物',
-    description: '朱红典雅金相间国潮传承招牌海报',
+    description: '4K 古风宫殿原图，朱红典雅金国潮招牌海报',
     coverBg: 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)',
     canvasConfig: {
       width: 800,
@@ -647,7 +647,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-temple',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -694,7 +694,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'porcelain-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=90&w=1600',
         x: 100,
         y: 280,
         width: 600,
@@ -719,7 +719,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'recruitment',
     categoryName: '招聘招募',
     name: 'WE WANT YOU · 极客招聘',
-    description: '酷炫黑金科技感，适合互联网/技术团队招募',
+    description: '4K 科技机房背景，适合互联网/技术团队招募',
     coverBg: 'linear-gradient(135deg, #090d16 0%, #1e293b 100%)',
     canvasConfig: {
       width: 800,
@@ -730,7 +730,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-server',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -753,7 +753,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'team-photo-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=90&w=1600',
         x: 60,
         y: 200,
         width: 680,
@@ -814,7 +814,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
     categoryId: 'food',
     categoryName: '餐饮美食',
     name: '夏日冰爽特饮促销',
-    description: '夏日冷饮果汁大片，买一送一活动海报',
+    description: '4K 热带海滩背景，冷饮买一送一活动海报',
     coverBg: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
     canvasConfig: {
       width: 800,
@@ -825,7 +825,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-beach',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200',
+        url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -836,7 +836,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'drink-photo-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800',
+        url: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=90&w=1600',
         x: 80,
         y: 260,
         width: 640,
