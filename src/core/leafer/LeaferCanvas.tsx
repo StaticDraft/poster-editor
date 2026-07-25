@@ -9,7 +9,7 @@ import '@leafer-in/scroll'
 import '@leafer-in/export'
 import { useEditorStore } from '@/store/useEditorStore'
 import { CanvasContextMenu } from './CanvasContextMenu'
-import { applyAnimation, createLeaferNode, syncLeaferNode } from './runtime'
+import { createLeaferNode, syncLeaferNode } from './runtime'
 import { useFeedback } from '@/lib/feedback'
 import { handleGlobalKeyDown } from './services/KeyboardShortcutManager'
 import { handleNodeDragSnap } from './services/SnapGuideEngine'
@@ -458,29 +458,6 @@ export function LeaferCanvas() {
   useEffect(() => {
     const app = appRef.current
     if (!app) return
-    const toggleAnim = (node: any) => {
-       const currentEl = useEditorStore.getState().elements.find((item) => item.id === node.id)
-       const baseRotation = currentEl?.rotation ?? 0
-       const baseOpacity = currentEl?.opacity ?? 1
-
-       if (node.__animationRef) {
-           try {
-             if (isPreview) {
-               node.__animationRef.play()
-             } else {
-               node.__animationRef.stop()
-               try { node.__animationRef.destroy() } catch {}
-               node.__animationRef = null
-               node.rotation = baseRotation
-               node.opacity = baseOpacity
-               delete node.__initialRotation
-               delete node.__initialOpacity
-               delete (node as any).__animationType
-             }
-           } catch(e){}
-       }
-    }
-    nodeMapRef.current.forEach(toggleAnim)
     elements.forEach((el) => {
       const node = nodeMapRef.current.get(el.id)
       if (node) {
@@ -488,11 +465,7 @@ export function LeaferCanvas() {
       }
     })
     if ((app as any).editor) {
-       if (isPreview) {
-           (app as any).editor.visible = false
-       } else {
-           (app as any).editor.visible = true
-       }
+      ;(app as any).editor.visible = !isPreview
     }
   }, [mode, isPreview, elements])
 
@@ -543,7 +516,7 @@ export function LeaferCanvas() {
     })
   }, [rulerGuides])
 
-  // Node sync
+  // Node sync (pure, static, un-mutated DOM nodes)
   useEffect(() => {
     if (!appRef.current) return
     const app = appRef.current
@@ -555,17 +528,11 @@ export function LeaferCanvas() {
       const existingNode = currentMap.get(el.id)
       if (existingNode) {
         syncLeaferNode(existingNode, { ...el, zIndex: index }, runtimeOptions)
-        if ((existingNode as any).__animationType !== el.animation?.type) {
-          applyAnimation(existingNode, el.animation, useEditorStore.getState().isPreview, el.rotation ?? 0, el.opacity ?? 1)
-          ;(existingNode as any).__animationType = el.animation?.type
-        }
       } else {
         const node = createLeaferNode({ ...el, zIndex: index }, runtimeOptions)
         node.zIndex = index
         app.tree.add(node)
         currentMap.set(el.id, node)
-        ;(node as any).__animationType = el.animation?.type
-        applyAnimation(node, el.animation, useEditorStore.getState().isPreview, el.rotation ?? 0, el.opacity ?? 1)
       }
     })
 

@@ -7,6 +7,7 @@ import { TopToolbar } from './components/top-toolbar/TopToolbar'
 import { useEditorStore } from './store/useEditorStore'
 import { buildEditorSaveFingerprint, markDirty, markSaveError, markSaved, markSaving, useSaveStatusStore } from './lib/saveStatus'
 import { useEffect, useMemo, useRef } from 'react'
+import { PreviewModal } from './components/feedback/PreviewModal'
 
 function RightPanel() {
   const activeIds = useEditorStore(s => s.activeIds)
@@ -72,12 +73,15 @@ function App() {
   }, [currentSceneId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene])
 
   return (
-    <MainLayout
-      topToolbar={<TopToolbar />}
-      leftPanel={!isPreview ? <Sidebar /> : null}
-      centerCanvas={<LeaferCanvas />}
-      rightPanel={!isPreview ? <RightPanel /> : null}
-    />
+    <>
+      <MainLayout
+        topToolbar={<TopToolbar />}
+        leftPanel={<Sidebar />}
+        centerCanvas={<LeaferCanvas />}
+        rightPanel={<RightPanel />}
+      />
+      <PreviewModal />
+    </>
   )
 }
 
