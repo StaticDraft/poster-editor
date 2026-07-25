@@ -99,6 +99,25 @@ const CATEGORIES = [
     ]
   },
   {
+    id: 'preset-hd-images',
+    titleKey: 'material.categories.presetHdImages',
+    fallbackTitle: '海报摄影高清原画集',
+    items: [
+      { type: 'Image', nameKey: 'material.items.hd1', fallbackName: '清明 · 春绿竹风背景', url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd2', fallbackName: '元宵 · 红灯笼喜庆', url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd3', fallbackName: '中秋 · 金色明月宫殿', url: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd4', fallbackName: '新春 · 烫金祥龙剪纸', url: 'https://images.unsplash.com/photo-1548625361-185121c27c62?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd5', fallbackName: '六一 · 彩虹梦幻天空', url: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd6', fallbackName: '双11 · 霓虹时尚光轨', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd7', fallbackName: '618 · 爆款潮流球鞋', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=90&w=1600', width: 600, height: 480 },
+      { type: 'Image', nameKey: 'material.items.hd8', fallbackName: '新品 · 赛博夜景都市', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd9', fallbackName: '国潮 · 水墨禅意茶道', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd10', fallbackName: '招聘 · 极客科技机房', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd11', fallbackName: '美食 · 深夜食堂夜市', url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=90&w=2000', width: 800, height: 1200 },
+      { type: 'Image', nameKey: 'material.items.hd12', fallbackName: '美食 · 阳光棕榈海滩', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=2000', width: 800, height: 1200 },
+    ]
+  },
+  {
     id: 'backgrounds',
     titleKey: 'material.categories.backgrounds',
     fallbackTitle: '精选用图背景',

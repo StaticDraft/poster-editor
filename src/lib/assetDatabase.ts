@@ -21,7 +21,39 @@ const DB_NAME = 'PosterCraft_AssetDB'
 const DB_VERSION = 2
 const STORE_ASSETS = 'user_assets'
 const STORE_FOLDERS = 'asset_folders'
-const DEFAULT_FOLDER_ID = 'folder-default'
+export const DEFAULT_FOLDER_ID = 'folder-default'
+export const PRESET_POSTER_FOLDER_ID = 'folder-preset-poster-hd'
+
+export const PRESET_POSTER_HD_IMAGES = [
+  { id: 'img-hd-qingming-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '清明 · 春绿竹风', url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=400', width: 800, height: 1200, createdAt: 1000 },
+  { id: 'img-hd-qingming-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '清明 · 踏青风光', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=400', width: 600, height: 480, createdAt: 2000 },
+  { id: 'img-hd-yuanxiao-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '元宵 · 红灯笼海报', url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=80&w=400', width: 800, height: 1200, createdAt: 3000 },
+  { id: 'img-hd-yuanxiao-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '元宵 · 吉祥汤圆', url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=400', width: 600, height: 480, createdAt: 4000 },
+  { id: 'img-hd-midautumn-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '中秋 · 金色明月', url: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?q=80&w=400', width: 800, height: 1200, createdAt: 5000 },
+  { id: 'img-hd-midautumn-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '中秋 · 月饼大图', url: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=80&w=400', width: 600, height: 480, createdAt: 6000 },
+  { id: 'img-hd-cny-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '新春 · 烫金祥龙', url: 'https://images.unsplash.com/photo-1548625361-185121c27c62?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1548625361-185121c27c62?q=80&w=400', width: 800, height: 1200, createdAt: 7000 },
+  { id: 'img-hd-children-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '六一 · 彩虹天空', url: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=400', width: 800, height: 1200, createdAt: 8000 },
+  { id: 'img-hd-children-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '六一 · 童趣礼盒', url: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=400', width: 600, height: 480, createdAt: 9000 },
+  { id: 'img-hd-valentine-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '情人节 · 玫瑰花瓣', url: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=400', width: 800, height: 1200, createdAt: 10000 },
+  { id: 'img-hd-valentine-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '情人节 · 定情鲜花', url: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1562690868-60bbe7293e94?q=80&w=400', width: 600, height: 480, createdAt: 11000 },
+  { id: 'img-hd-double11-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '双11 · 霓虹光轨', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400', width: 800, height: 1200, createdAt: 12000 },
+  { id: 'img-hd-double11-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '双11 · 奢品美妆礼盒', url: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400', width: 600, height: 480, createdAt: 13000 },
+  { id: 'img-hd-sneaker-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '618 · 爆款潮流球鞋', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400', width: 600, height: 480, createdAt: 14000 },
+  { id: 'img-hd-cyberpunk-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '新品 · 赛博夜景背景', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=400', width: 800, height: 1200, createdAt: 15000 },
+  { id: 'img-hd-headphone-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '新品 · 无线概念耳机', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400', width: 600, height: 480, createdAt: 16000 },
+  { id: 'img-hd-tea-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 水墨禅茶', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400', width: 800, height: 1200, createdAt: 17000 },
+  { id: 'img-hd-teapot-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 紫砂茶器', url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=400', width: 600, height: 480, createdAt: 18000 },
+  { id: 'img-hd-temple-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 宫殿原图', url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=80&w=400', width: 800, height: 1200, createdAt: 19000 },
+  { id: 'img-hd-porcelain-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 青花瓷器', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=400', width: 600, height: 480, createdAt: 20000 },
+  { id: 'img-hd-studio-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 工作室办公台', url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=400', width: 800, height: 1200, createdAt: 21000 },
+  { id: 'img-hd-designer-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 设计师工作区', url: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?q=80&w=400', width: 680, height: 420, createdAt: 22000 },
+  { id: 'img-hd-server-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 极客科技机房', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400', width: 800, height: 1200, createdAt: 23000 },
+  { id: 'img-hd-team-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 研发团队合影', url: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=400', width: 680, height: 420, createdAt: 24000 },
+  { id: 'img-hd-bbq-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '美食 · 深夜食堂夜市', url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=400', width: 800, height: 1200, createdAt: 25000 },
+  { id: 'img-hd-bbq-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '美食 · 炭火烧烤串烧', url: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?q=80&w=400', width: 640, height: 480, createdAt: 26000 },
+  { id: 'img-hd-beach-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '美食 · 阳光棕榈海滩', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=400', width: 800, height: 1200, createdAt: 27000 },
+  { id: 'img-hd-drink-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '美食 · 特调夏日冰饮', url: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=400', width: 640, height: 480, createdAt: 28000 },
+]
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -49,17 +81,31 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onsuccess = async (e: any) => {
       const db = e.target.result as IDBDatabase
-      // Ensure default folder exists
+      // Ensure default folders & preset assets exist
       try {
-        const tx = db.transaction(STORE_FOLDERS, 'readwrite')
-        const store = tx.objectStore(STORE_FOLDERS)
-        const getReq = store.get(DEFAULT_FOLDER_ID)
-        getReq.onsuccess = () => {
-          if (!getReq.result) {
-            store.add({
+        const tx = db.transaction([STORE_FOLDERS, STORE_ASSETS], 'readwrite')
+        const folderStore = tx.objectStore(STORE_FOLDERS)
+        const assetStore = tx.objectStore(STORE_ASSETS)
+
+        folderStore.get(DEFAULT_FOLDER_ID).onsuccess = (ev: any) => {
+          if (!ev.target.result) {
+            folderStore.add({
               id: DEFAULT_FOLDER_ID,
               name: '默认素材分类',
               createdAt: Date.now(),
+            })
+          }
+        }
+
+        folderStore.get(PRESET_POSTER_FOLDER_ID).onsuccess = (ev: any) => {
+          if (!ev.target.result) {
+            folderStore.add({
+              id: PRESET_POSTER_FOLDER_ID,
+              name: '海报摄影高清原画集',
+              createdAt: Date.now() + 1,
+            })
+            PRESET_POSTER_HD_IMAGES.forEach((item) => {
+              assetStore.put(item)
             })
           }
         }
