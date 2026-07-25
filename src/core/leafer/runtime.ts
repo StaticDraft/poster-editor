@@ -56,6 +56,7 @@ export function bgColorToFill(bgColor: any): any {
 }
 
 const VISUAL_PROP_KEYS = [
+  'fill',
   'stroke',
   'strokeWidth',
   'cornerRadius',
@@ -186,6 +187,13 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
     runtimeProps.scaleX = props?.flipH ? -1 : 1
     runtimeProps.scaleY = props?.flipV ? -1 : 1
   }
+
+  // Remove any keys with undefined value so node.set(...) does not accidentally clear existing attributes
+  Object.keys(runtimeProps).forEach((key) => {
+    if (runtimeProps[key] === undefined) {
+      delete runtimeProps[key]
+    }
+  })
 
   return runtimeProps
 }
