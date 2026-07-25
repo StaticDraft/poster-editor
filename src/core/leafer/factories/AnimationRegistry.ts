@@ -7,8 +7,10 @@ interface AnimationStrategy {
 const animationStrategies: Record<string, AnimationStrategy> = {
   spin: {
     apply: (node, anim, autoplay) => {
-      node.around = 'center'
-      node.__animationRef = node.animate({ rotation: 360 }, { duration: anim.duration || 2, loop: true })
+      node.__animationRef = node.animate(
+        { rotation: 360 },
+        { duration: anim.duration || 2, loop: true, around: 'center' }
+      )
       if (!autoplay && node.__animationRef) {
         setTimeout(() => {
           try { node.__animationRef.pause() } catch {}
@@ -18,7 +20,10 @@ const animationStrategies: Record<string, AnimationStrategy> = {
   },
   breathe: {
     apply: (node, anim, autoplay) => {
-      node.__animationRef = node.animate({ opacity: 0.2 }, { duration: anim.duration || 1, loop: true, yoyo: true })
+      node.__animationRef = node.animate(
+        { opacity: 0.2 },
+        { duration: anim.duration || 1, loop: true, yoyo: true, around: 'center' }
+      )
       if (!autoplay && node.__animationRef) {
         setTimeout(() => {
           try { node.__animationRef.pause() } catch {}
