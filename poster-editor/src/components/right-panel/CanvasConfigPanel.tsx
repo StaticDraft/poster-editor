@@ -326,16 +326,16 @@ export function CanvasConfigPanel() {
           </select>
         </Row>
         <Row label={tr('canvasConfig.lockPan', '禁止平移拖拽')}>
-          <Toggle checked={config.lockPan} onChange={v => set('lockPan', v)} />
+          <Toggle checked={!!config.lockPan} onChange={v => set('lockPan', v)} />
         </Row>
         <Row label={tr('canvasConfig.lockZoom', '禁止滚轮缩放')}>
-          <Toggle checked={config.lockZoom} onChange={v => set('lockZoom', v)} />
+          <Toggle checked={!!config.lockZoom} onChange={v => set('lockZoom', v)} />
         </Row>
       </Section>
 
       <Section title={tr('canvasConfig.auxSettings', '辅助视图控制')}>
         <Row label={tr('canvasConfig.showGrid', '显示画布网格')}>
-          <Toggle checked={config.showGrid} onChange={v => set('showGrid', v)} />
+          <Toggle checked={!!config.showGrid} onChange={v => set('showGrid', v)} />
         </Row>
         <Row label={tr('canvasConfig.showBleed', '显示 5% 出血安全边距')}>
           <Toggle checked={!!config.showSafeMargin} onChange={v => set('showSafeMargin', v)} />

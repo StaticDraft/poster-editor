@@ -29,6 +29,7 @@ import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack'
 import { ExportModal } from '@/components/feedback/ExportModal'
+import { BatchExportModal } from '@/components/feedback/BatchExportModal'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
 import { COLOR_PALETTES, type ColorPalette } from '@/lib/colorPalettes'
 import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
@@ -36,6 +37,7 @@ import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
 export function TopToolbar() {
   const { t, i18n } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showBatchExportModal, setShowBatchExportModal] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
   const clearNodes = useEditorStore((state) => state.clearNodes)
   const undo = useEditorStore((state) => state.undo)
@@ -409,6 +411,16 @@ export function TopToolbar() {
           <ImageIcon className="w-3.5 h-3.5 mr-1" /> {tr('toolbar.exportImage', '导出图片')}
         </Button>
 
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowBatchExportModal(true)}
+          className="h-7 text-xs px-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-semibold shrink-0"
+          title={tr('toolbar.batchExport', '批量套打')}
+        >
+          <Scaling className="w-3.5 h-3.5 mr-1 text-indigo-400" /> {tr('toolbar.batchExport', '批量套打')}
+        </Button>
+
         {/* Secondary Operations Popover / More Menu */}
         <Popover>
           <PopoverTrigger asChild>
@@ -476,6 +488,7 @@ export function TopToolbar() {
       </div>
 
       <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
+      <BatchExportModal open={showBatchExportModal} onClose={() => setShowBatchExportModal(false)} />
       <ShortcutsDialog open={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
     </div>
   )

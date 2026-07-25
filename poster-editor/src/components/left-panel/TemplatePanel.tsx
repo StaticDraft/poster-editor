@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Eye, Sparkles, X, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -10,11 +11,18 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 
 export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) {
+  const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
   const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
   const setElements = useEditorStore((state) => state.setElements)
+  const setProjectName = useEditorStore((state) => state.setProjectName)
+
+  const tr = (key: string, fallback: string) => {
+    const val = t(key)
+    return val === key ? fallback : val
+  }
 
   const filteredTemplates = useMemo(() => {
     let list = PRESET_TEMPLATES
@@ -33,8 +41,6 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     return list
   }, [activeCategory, searchFilter])
 
-  const setProjectName = useEditorStore((state) => state.setProjectName)
-
   const handleApplyTemplate = (tpl: PresetTemplate) => {
     setCanvasConfig(tpl.canvasConfig)
     setProjectName(tpl.name)
@@ -45,8 +51,8 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     setElements(clonedElements)
 
     feedback.notify({
-      title: `正载入海报模板「${tpl.name}」`,
-      description: '已在主画布载入模板组件！右键点击画布选择「转为场景」即可另存存入页面目录',
+      title: tr('template.loadedTitle', `已载入海报模板「${tpl.name}」`),
+      description: tr('template.loadedDesc', '已在主画布载入模板组件！右键点击画布选择「转为场景」即可另存存入页面目录'),
       tone: 'success',
     })
     setPreviewTemplate(null)
@@ -65,7 +71,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
               : 'bg-card text-muted-foreground hover:bg-muted border border-border'
           }`}
         >
-          全部 ({PRESET_TEMPLATES.length})
+          {tr('template.allCategories', '全部')} ({PRESET_TEMPLATES.length})
         </button>
         {TEMPLATE_CATEGORIES.map((cat) => {
           const count = PRESET_TEMPLATES.filter((t) => t.categoryId === cat.id).length
@@ -89,7 +95,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
       {/* Template Cards List */}
       <div className="flex-1 p-3 overflow-y-auto space-y-3">
         {filteredTemplates.length === 0 ? (
-          <div className="text-center text-editor-text-dim text-xs py-8">未找到相关海报模板</div>
+          <div className="text-center text-editor-text-dim text-xs py-8">{tr('template.noMatch', '未找到相关海报模板')}</div>
         ) : (
           filteredTemplates.map((tpl) => (
             <div
@@ -118,7 +124,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
                     className="px-2.5 py-1 text-[11px] font-bold bg-white text-slate-900 rounded shadow hover:bg-slate-100 flex items-center gap-1"
                   >
                     <Eye className="w-3 h-3 text-purple-600" />
-                    预览
+                    {tr('template.previewBtn', '预览')}
                   </button>
                   <button
                     type="button"
@@ -126,7 +132,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
                     className="px-2.5 py-1 text-[11px] font-bold bg-purple-600 text-white rounded shadow hover:bg-purple-500 flex items-center gap-1"
                   >
                     <Sparkles className="w-3 h-3" />
-                    使用模板
+                    {tr('template.useTemplate', '使用模板')}
                   </button>
                 </div>
               </div>
@@ -153,7 +159,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
             <div className="flex items-center justify-between border-b border-border pb-2.5">
               <div className="flex items-center gap-1.5">
                 <Sparkles className="w-4 h-4 text-purple-500" />
-                <span className="font-bold text-xs text-foreground">海报模板预览 - {previewTemplate.name}</span>
+                <span className="font-bold text-xs text-foreground">{tr('template.previewTitle', '海报模板预览')} - {previewTemplate.name}</span>
               </div>
               <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={() => setPreviewTemplate(null)}>
                 <X className="w-4 h-4" />
@@ -173,19 +179,19 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
                   {previewTemplate.name}
                 </div>
                 <div className="text-[11px] text-white/80 max-w-xs mx-auto">
-                  包含 {previewTemplate.elements.length} 个图元组件
+                  {tr('template.elementCount', `包含 ${previewTemplate.elements.length} 个图元组件`)}
                 </div>
               </div>
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>规格: {previewTemplate.canvasConfig.width} x {previewTemplate.canvasConfig.height} px</span>
-              <span>图元: {previewTemplate.elements.length} 个</span>
+              <span>{tr('template.dimensions', '规格')}: {previewTemplate.canvasConfig.width} x {previewTemplate.canvasConfig.height} px</span>
+              <span>{tr('template.elements', '图元')}: {previewTemplate.elements.length}</span>
             </div>
 
             <div className="flex justify-end gap-2 pt-2 border-t border-border">
               <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)} className="text-xs">
-                返回
+                {tr('common.cancel', '返回')}
               </Button>
               <Button
                 variant="default"
@@ -194,7 +200,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md"
               >
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                载入此模板场景
+                {tr('template.applyConfirm', '载入此模板场景')}
               </Button>
             </div>
           </div>
