@@ -6,7 +6,7 @@ import '@leafer-in/export'
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
-import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
+import { bgColorToFill, createLeaferNode, applyAnimation } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
 import { createAnimatedGifBlob } from '@/lib/gifEncoder'
 
@@ -43,6 +43,9 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
     const exportQuality = format === 'png' ? undefined : quality
     let dataUrl = ''
 
+    // Optimize GIF scale (max 480px width) so file size is < 1MB for WeChat chat bubble auto-play
+    const exportScale = format === 'gif' ? Math.min(1, Math.round((480 / posterW) * 100) / 100) || 0.5 : scale
+
     // 1. Offscreen Isolated Container Creation
     const container = document.createElement('div')
     container.style.position = 'fixed'
@@ -62,15 +65,19 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         width: posterW,
         height: posterH,
         fill: bgColorToFill(bgColor),
-        pixelRatio: scale,
+        pixelRatio: exportScale,
       })
 
-      // Add all poster elements into offscreen Leafer
+      // Add all poster elements into offscreen Leafer and trigger autoplay animations
       elements.forEach((el, index) => {
         try {
           const node = createLeaferNode({ ...el, zIndex: index }, { editable: false, draggable: false })
           node.zIndex = index
           offscreenLeafer?.add(node)
+
+          if (el.animation && el.animation.type && el.animation.type !== 'none') {
+            applyAnimation(node, el.animation, true)
+          }
         } catch (_err) {
           console.warn('Failed to add node to offscreen Leafer:', el, _err)
         }
@@ -137,13 +144,16 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           const frameCount = 15
           const frameDelay = 120
 
+          // Allow offscreen animation ticks to warm up
+          await new Promise((r) => setTimeout(r, 120))
+
           for (let i = 0; i < frameCount; i++) {
             setRecordProgress(Math.round(((i + 1) / frameCount) * 100))
             if (ctx) {
               const frameData = ctx.getImageData(0, 0, canvas.width, canvas.height)
               frames.push(frameData)
             }
-            await new Promise(r => setTimeout(r, frameDelay))
+            await new Promise((r) => setTimeout(r, frameDelay))
           }
 
           if (frames.length > 0) {
