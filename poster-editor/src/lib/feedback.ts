@@ -66,18 +66,19 @@ export const useFeedbackStore = create<FeedbackState>((set, get) => ({
   dialog: null,
   pushToast: (options) => {
     const id = createId('toast')
-    set((state) => ({
-      toasts: [
+    set((state) => {
+      const nextToasts = [
         ...state.toasts,
         {
           id,
           createdAt: Date.now(),
           tone: options.tone || 'info',
-          duration: options.duration ?? 3200,
+          duration: options.duration ?? 2500,
           ...options,
         },
-      ],
-    }))
+      ].slice(-2) // Keep at most 2 toasts to avoid UI blockage
+      return { toasts: nextToasts }
+    })
     return id
   },
   dismissToast: (id) => {

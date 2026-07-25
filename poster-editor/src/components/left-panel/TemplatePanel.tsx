@@ -8,13 +8,11 @@ import {
   type PresetTemplate,
 } from '@/lib/presetTemplates'
 import { useEditorStore } from '@/store/useEditorStore'
-import { useFeedback } from '@/lib/feedback'
 
 export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) {
   const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
-  const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
   const setElements = useEditorStore((state) => state.setElements)
   const setProjectName = useEditorStore((state) => state.setProjectName)
@@ -49,12 +47,6 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
       id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     }))
     setElements(clonedElements)
-
-    feedback.notify({
-      title: tr('template.loadedTitle', `已载入海报模板「${tpl.name}」`),
-      description: tr('template.loadedDesc', '已在主画布载入模板组件！右键点击画布选择「转为场景」即可另存存入页面目录'),
-      tone: 'success',
-    })
     setPreviewTemplate(null)
   }
 

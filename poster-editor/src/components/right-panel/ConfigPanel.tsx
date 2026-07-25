@@ -550,15 +550,15 @@ function AnimationTab({ node }: { node: any }) {
   return (
     <div className="p-3">
       <Section title={tr('config.animation.title', '动效状态')}>
-        <Row label={tr('config.animation.type', '动画类型')}>
+        <Row label={tr('config.animation.type', '动画特效')}>
           <select value={anim.type || ''} onChange={e => {
               const val = e.target.value
               updateNode(node.id, { animation: val ? { type: val as 'spin' | 'breathe', duration: anim.duration || 2 } : undefined })
             }}
             className="flex-1 h-7 bg-editor-deep border border-border text-editor-text text-xs rounded px-2 focus:outline-none bg-card">
-            <option value="">{tr('config.animation.none', '静止')}</option>
+            <option value="">{tr('config.animation.none', '静止 (无动画)')}</option>
             <option value="spin">{tr('config.animation.spin', '旋转 (Spin)')}</option>
-            <option value="breathe">{tr('config.animation.breathe', '呼吸泡泡 (Breathe)')}</option>
+            <option value="breathe">{tr('config.animation.breathe', '呼吸灯 (Breathe)')}</option>
           </select>
         </Row>
         {anim.type && (

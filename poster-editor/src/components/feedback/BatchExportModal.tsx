@@ -184,7 +184,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
         {/* Action bar */}
         <div className="p-3 border-b border-border bg-muted/10 flex items-center justify-between">
           <span className="text-xs font-bold text-foreground flex items-center gap-1">
-            待替换数据列表 ({rows.length} 组)
+            {tr('batch.pendingList', `待替换数据列表 (${rows.length} 组)`).replace('{{count}}', String(rows.length))}
           </span>
           <Button size="sm" variant="outline" onClick={handleAddRow} className="text-xs h-7 gap-1">
             <Plus className="w-3.5 h-3.5" />
@@ -202,7 +202,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
 
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 flex-1 w-full text-xs">
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">主标题文本</label>
+                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('batch.mainTitle', '主标题文本')}</label>
                   <input
                     type="text"
                     value={row.title}
@@ -211,7 +211,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">价格 / 优惠数值</label>
+                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('batch.price', '价格 / 优惠数值')}</label>
                   <input
                     type="text"
                     value={row.price}
@@ -220,7 +220,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">副标题 / 描述</label>
+                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('batch.subTitle', '副标题 / 描述')}</label>
                   <input
                     type="text"
                     value={row.subTitle}
@@ -229,7 +229,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">二维码跳转 URL</label>
+                  <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('batch.qrUrl', '二维码跳转 URL')}</label>
                   <input
                     type="text"
                     value={row.qrUrl}
@@ -262,7 +262,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
             </div>
           ) : (
             <span className="text-xs text-muted-foreground">
-              共将批量离屏渲染并下载 <strong className="text-foreground font-bold">{rows.length}</strong> 张高清海报图
+              {tr('batch.renderingHint', `共将批量离屏渲染并下载 ${rows.length} 张高清海报图`).replace('{{count}}', String(rows.length))}
             </span>
           )}
 
@@ -278,7 +278,9 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
               className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
-              {isExporting ? `正在生成 (${exportProgress}%)...` : tr('batch.startBatchExport', '🚀 开始批量一键导出')}
+              {isExporting
+                ? tr('batch.exporting', `正在生成 (${exportProgress}%)...`).replace('{{progress}}', String(exportProgress))
+                : tr('batch.startBatchExport', '🚀 开始批量一键导出')}
             </Button>
           </div>
         </div>
