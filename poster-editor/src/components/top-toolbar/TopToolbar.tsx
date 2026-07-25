@@ -298,7 +298,9 @@ export function TopToolbar() {
                   onClick={() => handleApplyPalette(pal)}
                   className="w-full p-1.5 rounded-lg border border-border/60 hover:border-amber-500 bg-muted/20 hover:bg-muted transition-all flex items-center justify-between group"
                 >
-                  <span className="text-xs font-bold text-foreground group-hover:text-amber-400">{pal.name}</span>
+                  <span className="text-xs font-bold text-foreground group-hover:text-amber-400">
+                    {tr(`palettes.${pal.id}`, pal.name)}
+                  </span>
                   <div className="flex items-center gap-1">
                     {pal.swatches.map((color, idx) => (
                       <span
@@ -339,13 +341,15 @@ export function TopToolbar() {
                   className="w-full p-2 rounded-lg border border-border/60 hover:border-cyan-500 bg-muted/20 hover:bg-muted transition-all flex flex-col text-left group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-foreground group-hover:text-cyan-400">{preset.name}</span>
+                    <span className="text-xs font-bold text-foreground group-hover:text-cyan-400">
+                      {tr(`presets.${preset.id}`, preset.name)}
+                    </span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-card border border-border text-muted-foreground">
                       {preset.ratio}
                     </span>
                   </div>
                   <span className="text-[10px] text-muted-foreground truncate mt-0.5">
-                    {preset.description} ({preset.width}x{preset.height})
+                    {tr(`presets.${preset.id}Desc`, preset.description)} ({preset.width}x{preset.height})
                   </span>
                 </button>
               ))}

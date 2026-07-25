@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Download, Image as ImageIcon, X } from 'lucide-react'
+import { Download, Image as ImageIcon, Video, X, Sparkles } from 'lucide-react'
 import { Leafer } from 'leafer-ui'
 import '@leafer-in/export'
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
-
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
 
 interface ExportModalProps {
@@ -17,10 +16,11 @@ interface ExportModalProps {
 
 export function ExportModal({ open, onClose }: ExportModalProps) {
   const { t } = useTranslation()
-  const [format, setFormat] = useState<'png' | 'jpg' | 'webp'>('png')
+  const [format, setFormat] = useState<'png' | 'jpg' | 'webp' | 'webm'>('png')
   const [scale, setScale] = useState<number>(2)
   const [quality, setQuality] = useState<number>(0.92)
   const [isExporting, setIsExporting] = useState(false)
+  const [recordProgress, setRecordProgress] = useState(0)
   const feedback = useFeedback()
 
   const tr = (key: string, fallback: string) => {
@@ -32,11 +32,13 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
   const handleExport = async () => {
     setIsExporting(true)
+    setRecordProgress(0)
+
     const { elements, canvasConfig, projectName } = useEditorStore.getState()
     const { width: posterW, height: posterH, bgColor } = canvasConfig
 
     const fileName = `${projectName || 'my_poster'}.${format}`
-    const mimeType = format === 'jpg' ? 'image/jpeg' : `image/${format}`
+    const mimeType = format === 'jpg' ? 'image/jpeg' : format === 'webm' ? 'video/webm' : `image/${format}`
     const exportQuality = format === 'png' ? undefined : quality
     let dataUrl = ''
 
@@ -83,13 +85,57 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         }
       })
 
-      // Perform pure offscreen export
-      const exportResult = await offscreenLeafer.export(fileName, {
-        scale,
-        quality: format === 'png' ? undefined : quality,
-      })
+      if (format === 'webm') {
+        // Animated WebM Video Recording Mode (3 seconds clip at 30fps)
+        const canvas = container.querySelector('canvas') as HTMLCanvasElement | null
+        if (canvas && typeof (canvas as any).captureStream === 'function' && typeof MediaRecorder !== 'undefined') {
+          const stream = (canvas as any).captureStream(30)
+          const supportedMime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9'
+            : 'video/webm'
+          const recorder = new MediaRecorder(stream, { mimeType: supportedMime })
+          const chunks: Blob[] = []
 
-      dataUrl = resolveExportDataUrl(exportResult, mimeType, exportQuality)
+          recorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              chunks.push(e.data)
+            }
+          }
+
+          const durationMs = 3000
+          const intervalMs = 100
+          let elapsed = 0
+
+          recorder.start(100)
+
+          await new Promise<void>((resolve) => {
+            const timer = setInterval(() => {
+              elapsed += intervalMs
+              setRecordProgress(Math.min(99, Math.round((elapsed / durationMs) * 100)))
+              if (elapsed >= durationMs) {
+                clearInterval(timer)
+                recorder.onstop = () => {
+                  const videoBlob = new Blob(chunks, { type: 'video/webm' })
+                  dataUrl = URL.createObjectURL(videoBlob)
+                  resolve()
+                }
+                recorder.stop()
+              }
+            }, intervalMs)
+          })
+        } else {
+          // Fallback static export if MediaRecorder unsupported
+          const exportResult = await offscreenLeafer.export(fileName, { scale })
+          dataUrl = resolveExportDataUrl(exportResult, 'image/png', 0.95)
+        }
+      } else {
+        // Pure Offscreen Image Export
+        const exportResult = await offscreenLeafer.export(fileName, {
+          scale,
+          quality: format === 'png' ? undefined : quality,
+        })
+        dataUrl = resolveExportDataUrl(exportResult, mimeType, exportQuality)
+      }
     } catch (err) {
       console.error('Offscreen export error:', err)
     } finally {
@@ -117,7 +163,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
       feedback.notify({
         title: tr('exportModal.exportSuccess', '海报导出成功'),
-        description: t('exportModal.exportSuccessDesc', { scale, format: format.toUpperCase() }) || `已成功导出并下载 ${scale}x ${format.toUpperCase()} 图片`,
+        description: t('exportModal.exportSuccessDesc', { scale, format: format.toUpperCase() }) || `已成功导出并下载 ${scale}x ${format.toUpperCase()} 文件`,
         tone: 'success',
       })
       onClose()
@@ -132,8 +178,8 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
       <div className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl overflow-hidden p-5">
         <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <ImageIcon className="w-4 h-4 text-rose-500" />
-            <span>{tr('exportModal.title', '导出海报图片')}</span>
+            {format === 'webm' ? <Video className="w-4 h-4 text-purple-500" /> : <ImageIcon className="w-4 h-4 text-rose-500" />}
+            <span>{tr('exportModal.title', '导出海报图片与动画视频')}</span>
           </div>
           <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -143,20 +189,39 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         <div className="space-y-4 text-xs">
           {/* Format selection */}
           <div>
-            <label className="block text-muted-foreground font-medium mb-1.5">{tr('exportModal.imageFormat', '图片格式')}</label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['png', 'jpg', 'webp'] as const).map((fmt) => (
+            <label className="block text-muted-foreground font-medium mb-1.5">{tr('exportModal.imageFormat', '导出格式')}</label>
+            <div className="grid grid-cols-4 gap-2">
+              {(['png', 'jpg', 'webp', 'webm'] as const).map((fmt) => (
                 <button
                   key={fmt}
                   type="button"
                   onClick={() => setFormat(fmt)}
-                  className={`py-2 text-xs font-bold rounded-lg border transition-colors uppercase ${format === fmt ? 'bg-rose-500 border-rose-500 text-white shadow-md' : 'bg-muted/40 border-border text-foreground hover:bg-muted'}`}
+                  className={`py-2 text-xs font-bold rounded-lg border transition-colors uppercase ${
+                    format === fmt
+                      ? fmt === 'webm'
+                        ? 'bg-purple-600 border-purple-500 text-white shadow-md'
+                        : 'bg-rose-500 border-rose-500 text-white shadow-md'
+                      : 'bg-muted/40 border-border text-foreground hover:bg-muted'
+                  }`}
                 >
-                  {fmt}
+                  {fmt === 'webm' ? '🎬 WEBM' : fmt}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Animated WebM hint badge */}
+          {format === 'webm' && (
+            <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-[11px] flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+              <span>
+                {tr(
+                  'exportModal.webmHint',
+                  '✨ WEBM 格式将自动录制 3 秒 30fps 高清动态短视频，完美兼容电子水牌与朋友圈动态卡片。',
+                )}
+              </span>
+            </div>
+          )}
 
           {/* Scale selection */}
           <div>
@@ -180,7 +245,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           </div>
 
           {/* Quality slider for JPG/WebP */}
-          {format !== 'png' && (
+          {format !== 'png' && format !== 'webm' && (
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="text-muted-foreground font-medium">{tr('exportModal.quality', '压缩质量')}</label>
@@ -200,7 +265,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         </div>
 
         <div className="mt-6 pt-3 border-t border-border flex justify-end gap-2">
-          <Button variant="outline" size="sm" onClick={onClose} className="text-xs">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={isExporting} className="text-xs">
             {tr('exportModal.cancel', '取消')}
           </Button>
           <Button
@@ -208,10 +273,14 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             size="sm"
             onClick={handleExport}
             disabled={isExporting}
-            className="bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-md"
+            className={`font-bold text-xs shadow-md ${format === 'webm' ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-rose-500 hover:bg-rose-600 text-white'}`}
           >
             <Download className="w-3.5 h-3.5 mr-1" />
-            {isExporting ? tr('exportModal.exporting', '生成导出中...') : tr('exportModal.downloadNow', '立即下载图片')}
+            {isExporting
+              ? format === 'webm'
+                ? tr('exportModal.recording', `正在录制 3 秒动态视频 (${recordProgress}%)...`).replace('{{progress}}', String(recordProgress))
+                : tr('exportModal.exporting', '生成导出中...')
+              : tr('exportModal.downloadNow', '立即下载导出文件')}
           </Button>
         </div>
       </div>
