@@ -38,11 +38,25 @@ export function executeAnimationStrategy(node: any, anim: any, autoplay: boolean
     try { node.__animationRef.stop() } catch {}
     try { node.__animationRef.destroy() } catch {}
     node.__animationRef = null
-    node.rotation = 0
-    node.opacity = 1
+
+    if (node.__initialRotation !== undefined) {
+      node.rotation = node.__initialRotation
+      delete node.__initialRotation
+    }
+    if (node.__initialOpacity !== undefined) {
+      node.opacity = node.__initialOpacity
+      delete node.__initialOpacity
+    }
   }
 
   if (!anim || !anim.type || anim.type === 'none') return
+
+  if (node.__initialRotation === undefined) {
+    node.__initialRotation = node.rotation ?? 0
+  }
+  if (node.__initialOpacity === undefined) {
+    node.__initialOpacity = node.opacity ?? 1
+  }
 
   const strategy = animationStrategies[anim.type]
   if (strategy) {

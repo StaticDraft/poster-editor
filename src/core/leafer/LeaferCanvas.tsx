@@ -44,12 +44,18 @@ export function LeaferCanvas() {
     const current = useEditorStore.getState().elements.find((item) => item.id === node.id)
     if (!current) return null
 
+    // Isolate animation preview state from persistent editor store
+    const isAnimating = Boolean(node.__animationRef) || isPreview
+    const targetRotation = isAnimating
+      ? (node.__initialRotation !== undefined ? node.__initialRotation : (current.rotation ?? 0))
+      : Math.round(Number(node.rotation ?? current.rotation ?? 0) * 100) / 100
+
     const next = {
       x: Math.round(Number(node.x ?? current.x) * 100) / 100,
       y: Math.round(Number(node.y ?? current.y) * 100) / 100,
       width: Math.round(Number(node.width ?? current.width ?? 0) * 100) / 100 || current.width,
       height: Math.round(Number(node.height ?? current.height ?? 0) * 100) / 100 || current.height,
-      rotation: Math.round(Number(node.rotation ?? current.rotation ?? 0) * 100) / 100,
+      rotation: targetRotation,
     }
 
     const unchanged =
@@ -450,9 +456,23 @@ export function LeaferCanvas() {
   useEffect(() => {
     const app = appRef.current
     if (!app) return
-    const toggleAnim = (el: any) => {
-       if (el.__animationRef) {
-           try { isPreview ? el.__animationRef.play() : el.__animationRef.pause() } catch(e){}
+    const toggleAnim = (node: any) => {
+       if (node.__animationRef) {
+           try {
+             if (isPreview) {
+               node.__animationRef.play()
+             } else {
+               node.__animationRef.stop()
+               if (node.__initialRotation !== undefined) {
+                 node.rotation = node.__initialRotation
+                 delete node.__initialRotation
+               }
+               if (node.__initialOpacity !== undefined) {
+                 node.opacity = node.__initialOpacity
+                 delete node.__initialOpacity
+               }
+             }
+           } catch(e){}
        }
     }
     nodeMapRef.current.forEach(toggleAnim)
