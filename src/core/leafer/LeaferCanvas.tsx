@@ -343,7 +343,7 @@ export function LeaferCanvas() {
     if (!containerRef.current) return
     const app = new App({
       view: containerRef.current,
-      editor: {},
+      editor: { rotateAround: 'center' },
       wheel: { zoomMode: true, zoomSpeed: 0.02 }
     })
     appRef.current = app
