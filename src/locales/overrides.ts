@@ -108,6 +108,14 @@ export const localeOverrides = {
       close: 'Close',
       loading: 'Loading...',
     },
+    template: {
+      summerDrink: 'Summer Refreshing Drink Promo',
+      newProduct: 'Cyberpunk Flagship Product Launch',
+      ecommerceSale: '618 Grand Shopping Festival',
+      techRecruitment: '2026 Tech & Visual Design Gala',
+      businessCard: 'Premium Business Portfolio Card',
+      xiaohongshuCard: 'RED Trending Knowledge Card',
+    },
     material: {
       folderGallery: 'Material Library',
       newDirectory: 'New Folder',
@@ -782,6 +790,12 @@ export const localeOverrides = {
       nameRequired: '场景名称不能为空',
     },
     template: {
+      summerDrink: '夏日冰爽特饮促销',
+      newProduct: '新品极致发售海报',
+      ecommerceSale: '618 狂欢大促盛典',
+      techRecruitment: '2026 视觉设计与技术盛典',
+      businessCard: '高端商务个人名片',
+      xiaohongshuCard: '小红书潮流干货卡片',
       title: '模板',
       empty: '暂无模板',
       hint: '通过 文件 -> 保存为模板，可将当前画布保存为可复用模板。',
