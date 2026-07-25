@@ -155,9 +155,13 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   delete base.shadowX
   delete base.shadowY
 
+  const ax = el.anchorX ?? props?.anchorX ?? 0.5
+  const ay = el.anchorY ?? props?.anchorY ?? 0.5
+
   const runtimeProps: Record<string, any> = {
     ...base,
     ...pickVisualProps(props),
+    around: ax === 0.5 && ay === 0.5 ? 'center' : { x: ax, y: ay },
     editable: options.editable && !locked,
     draggable: options.draggable && !hidden && !locked && !props?.noMove,
     visible: !hidden,
@@ -181,14 +185,6 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   if (el.type !== 'Path') {
     runtimeProps.scaleX = props?.flipH ? -1 : 1
     runtimeProps.scaleY = props?.flipV ? -1 : 1
-  }
-  // Set anchor point (around), defaulting to center (0.5, 0.5) so rotation does not shift node position
-  const ax = el.anchorX ?? props?.anchorX ?? 0.5
-  const ay = el.anchorY ?? props?.anchorY ?? 0.5
-  if (ax === 0.5 && ay === 0.5) {
-    runtimeProps.around = 'center'
-  } else {
-    runtimeProps.around = { x: ax, y: ay }
   }
 
   return runtimeProps
