@@ -457,20 +457,23 @@ export function LeaferCanvas() {
     const app = appRef.current
     if (!app) return
     const toggleAnim = (node: any) => {
+       const currentEl = useEditorStore.getState().elements.find((item) => item.id === node.id)
+       const baseRotation = currentEl?.rotation ?? 0
+       const baseOpacity = currentEl?.opacity ?? 1
+
        if (node.__animationRef) {
            try {
              if (isPreview) {
                node.__animationRef.play()
              } else {
                node.__animationRef.stop()
-               if (node.__initialRotation !== undefined) {
-                 node.rotation = node.__initialRotation
-                 delete node.__initialRotation
-               }
-               if (node.__initialOpacity !== undefined) {
-                 node.opacity = node.__initialOpacity
-                 delete node.__initialOpacity
-               }
+               try { node.__animationRef.destroy() } catch {}
+               node.__animationRef = null
+               node.rotation = baseRotation
+               node.opacity = baseOpacity
+               delete node.__initialRotation
+               delete node.__initialOpacity
+               delete (node as any).__animationType
              }
            } catch(e){}
        }
@@ -551,7 +554,7 @@ export function LeaferCanvas() {
       if (existingNode) {
         syncLeaferNode(existingNode, { ...el, zIndex: index }, runtimeOptions)
         if ((existingNode as any).__animationType !== el.animation?.type) {
-          applyAnimation(existingNode, el.animation, useEditorStore.getState().isPreview)
+          applyAnimation(existingNode, el.animation, useEditorStore.getState().isPreview, el.rotation ?? 0, el.opacity ?? 1)
           ;(existingNode as any).__animationType = el.animation?.type
         }
       } else {
@@ -560,7 +563,7 @@ export function LeaferCanvas() {
         app.tree.add(node)
         currentMap.set(el.id, node)
         ;(node as any).__animationType = el.animation?.type
-        applyAnimation(node, el.animation, useEditorStore.getState().isPreview)
+        applyAnimation(node, el.animation, useEditorStore.getState().isPreview, el.rotation ?? 0, el.opacity ?? 1)
       }
     })
 

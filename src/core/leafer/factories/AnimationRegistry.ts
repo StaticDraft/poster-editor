@@ -33,7 +33,13 @@ const animationStrategies: Record<string, AnimationStrategy> = {
   },
 }
 
-export function executeAnimationStrategy(node: any, anim: any, autoplay: boolean) {
+export function executeAnimationStrategy(
+  node: any,
+  anim: any,
+  autoplay: boolean,
+  storeRotation?: number,
+  storeOpacity?: number
+) {
   if (node.__animationRef) {
     try { node.__animationRef.stop() } catch {}
     try { node.__animationRef.destroy() } catch {}
@@ -49,14 +55,14 @@ export function executeAnimationStrategy(node: any, anim: any, autoplay: boolean
     }
   }
 
-  if (!anim || !anim.type || anim.type === 'none') return
+  if (!anim || !anim.type || anim.type === 'none') {
+    if (storeRotation !== undefined) node.rotation = storeRotation
+    if (storeOpacity !== undefined) node.opacity = storeOpacity
+    return
+  }
 
-  if (node.__initialRotation === undefined) {
-    node.__initialRotation = node.rotation ?? 0
-  }
-  if (node.__initialOpacity === undefined) {
-    node.__initialOpacity = node.opacity ?? 1
-  }
+  node.__initialRotation = storeRotation !== undefined ? storeRotation : (node.rotation ?? 0)
+  node.__initialOpacity = storeOpacity !== undefined ? storeOpacity : (node.opacity ?? 1)
 
   const strategy = animationStrategies[anim.type]
   if (strategy) {

@@ -198,8 +198,14 @@ export function buildLeaferNodeProps(el: EditorNode & Record<string, any>, optio
   return runtimeProps
 }
 
-export function applyAnimation(node: LeaferNode, anim: any, autoplay: boolean) {
-  executeAnimationStrategy(node, anim, autoplay)
+export function applyAnimation(
+  node: LeaferNode,
+  anim: any,
+  autoplay: boolean,
+  storeRotation?: number,
+  storeOpacity?: number
+) {
+  executeAnimationStrategy(node, anim, autoplay, storeRotation, storeOpacity)
 }
 
 export function createLeaferNode(el: EditorNode & Record<string, any>, options: RuntimeOptions) {
