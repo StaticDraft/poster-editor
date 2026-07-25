@@ -109,9 +109,11 @@ export const localeOverrides = {
       loading: 'Loading...',
     },
     template: {
+      guochao: 'Guochao Cultural Heritage Exhibition',
       summerDrink: 'Summer Refreshing Drink Promo',
       newProduct: 'Cyberpunk Flagship Product Launch',
       ecommerceSale: '618 Grand Shopping Festival',
+      partyNight: 'Cyberpunk Electro Party Night',
       techRecruitment: '2026 Tech & Visual Design Gala',
       businessCard: 'Premium Business Portfolio Card',
       xiaohongshuCard: 'RED Trending Knowledge Card',
@@ -790,9 +792,11 @@ export const localeOverrides = {
       nameRequired: '场景名称不能为空',
     },
     template: {
+      guochao: '国潮崛起 · 匠心造物展',
       summerDrink: '夏日冰爽特饮促销',
       newProduct: '新品极致发售海报',
       ecommerceSale: '618 狂欢大促盛典',
+      partyNight: '赛博电音狂欢夜 Party',
       techRecruitment: '2026 视觉设计与技术盛典',
       businessCard: '高端商务个人名片',
       xiaohongshuCard: '小红书潮流干货卡片',
