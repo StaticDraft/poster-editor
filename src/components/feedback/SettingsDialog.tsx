@@ -42,8 +42,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               {tr('settings.editor', '编辑器')}
             </h3>
-            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-3">
-              <div className="pr-4">
+            <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/30 px-3 py-3">
+              <div className="min-w-0 flex-1 pr-2">
                 <div className="text-xs font-semibold">{tr('settings.autoSave', '实时保存')}</div>
                 <div className="mt-1 text-[10px] text-muted-foreground">
                   {tr('settings.autoSaveDesc', '开启后会在编辑变更后自动保存当前场景')}
@@ -54,10 +54,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 role="switch"
                 aria-checked={autoSave}
                 onClick={() => setAutoSave(!autoSave)}
-                className={`relative h-5 w-10 shrink-0 rounded-full transition-colors ${autoSave ? 'bg-blue-600' : 'bg-muted-foreground/30'}`}
+                className={`relative h-6 w-11 shrink-0 overflow-hidden rounded-full border border-border/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60 ${autoSave ? 'bg-blue-600' : 'bg-muted-foreground/30'}`}
                 title={tr('settings.autoSave', '实时保存')}
               >
-                <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${autoSave ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                <span className={`absolute top-1 left-1 h-4 w-4 rounded-full bg-white shadow transition-[left] duration-200 ${autoSave ? 'left-6' : ''}`} />
               </button>
             </div>
           </section>

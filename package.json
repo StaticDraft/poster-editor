@@ -1,6 +1,6 @@
 {
   "name": "poster-editor",
-  "description": "PosterCraft - 轻量级海报排版设计编辑器",
+  "description": "画成 - 轻量级海报排版设计编辑器",
   "author": "StaticDraft",
   "private": true,
   "version": "1.0.0",
@@ -13,11 +13,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "electron:dev": "concurrently \"vite\" \"electron .\"",
-    "electron:build": "node -e \"try{require('fs').rmSync('dist-electron',{recursive:true,force:true})}catch(e){}\" && tsc && vite build && electron-packager . PosterCraft --platform=win32 --arch=x64 --out=dist-electron --overwrite"
+    "electron:build": "node -e \"try{require('fs').rmSync('dist-electron',{recursive:true,force:true})}catch(e){}\" && tsc && vite build && electron-packager . 画成 --platform=win32 --arch=x64 --out=dist-electron --overwrite"
   },
   "build": {
     "appId": "com.postercraft.editor",
-    "productName": "PosterCraft",
+    "productName": "画成",
     "directories": {
       "output": "dist-electron"
     },
@@ -30,7 +30,7 @@
       "target": "portable"
     },
     "portable": {
-      "artifactName": "PosterCraft-Portable-${version}.exe"
+      "artifactName": "画成-Portable-${version}.exe"
     }
   },
   "dependencies": {

@@ -5,6 +5,7 @@ import { Play, Pause, RotateCcw, X, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
 import { bgColorToFill, createLeaferNode, applyAnimation } from '@/core/leafer/runtime'
+import { createBrandWatermark } from '@/core/branding'
 
 export function PreviewModal() {
   const { t } = useTranslation()
@@ -64,6 +65,7 @@ export function PreviewModal() {
         console.warn('Failed to add preview node:', el, err)
       }
     })
+    app.add(createBrandWatermark(posterW, posterH))
 
     nodeMapRef.current = nodeMap
     setIsPlaying(true)

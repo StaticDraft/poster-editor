@@ -7,6 +7,7 @@ import { useFeedback } from '@/lib/feedback'
 import { Leafer } from 'leafer-ui'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
+import { createExportWatermark } from '@/core/branding'
 
 interface BatchRow {
   id: string
@@ -67,6 +68,7 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
 
     const { elements, canvasConfig, projectName } = useEditorStore.getState()
     const { width: posterW, height: posterH, bgColor } = canvasConfig
+    const exportBounds = { x: 0, y: 0, width: posterW, height: posterH }
     const scale = 2
 
     let successCount = 0
@@ -122,10 +124,14 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
             offscreenLeafer?.add(node)
           } catch (_err) {}
         })
+        offscreenLeafer.add(createExportWatermark(posterW, posterH))
 
         await new Promise(r => setTimeout(r, 100))
 
-        const exportResult = await offscreenLeafer.export(`${projectName || 'batch'}_${i + 1}.png`, { scale })
+        const exportResult = await offscreenLeafer.export(`${projectName || 'batch'}_${i + 1}.png`, {
+          scale,
+          screenshot: exportBounds,
+        })
         const dataUrl = resolveExportDataUrl(exportResult, 'image/png', 0.95)
 
         if (dataUrl && dataUrl !== 'saved') {

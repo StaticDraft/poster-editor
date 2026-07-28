@@ -3,6 +3,7 @@ import { Leafer } from 'leafer-ui'
 import '@leafer-in/view'
 import type { CanvasConfig, EditorNode } from '@/store/useEditorStore'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
+import { createBrandWatermark } from '@/core/branding'
 
 export interface CanvasThumbnailSnapshot {
   canvasConfig: CanvasConfig
@@ -79,6 +80,7 @@ function LeaferThumbnailScene({ snapshot }: { snapshot: CanvasThumbnailSnapshot 
         console.warn('[CanvasThumbnail] Failed to render element:', element.id, error)
       }
     })
+    leafer.add(createBrandWatermark(canvasWidth, canvasHeight))
 
     leafer.forceRender?.(undefined, true)
 

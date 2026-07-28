@@ -13,6 +13,7 @@ import { createLeaferNode, syncLeaferNode } from './runtime'
 import { useFeedback } from '@/lib/feedback'
 import { handleGlobalKeyDown } from './services/KeyboardShortcutManager'
 import { handleNodeDragSnap } from './services/SnapGuideEngine'
+import { createBrandWatermark, syncBrandWatermark } from '@/core/branding'
 
 export function LeaferCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -22,6 +23,7 @@ export function LeaferCanvas() {
   const nodeMapRef = useRef(new Map<string, any>())
   const guideGroupRef = useRef<Group | null>(null)
   const gridOverlayGroupRef = useRef<Group | null>(null)
+  const brandWatermarkRef = useRef<Group | null>(null)
 
   const elements = useEditorStore((state) => state.elements)
   const mode = useEditorStore((state) => state.mode)
@@ -182,6 +184,26 @@ export function LeaferCanvas() {
     return boardRef.current
   }
 
+  const ensureBrandWatermark = (app: App) => {
+    if (brandWatermarkRef.current && brandWatermarkRef.current.destroyed) {
+      brandWatermarkRef.current = null
+    }
+    if (brandWatermarkRef.current) {
+      try {
+        if (brandWatermarkRef.current.parent && brandWatermarkRef.current.parent !== app.tree) {
+          brandWatermarkRef.current = null
+        }
+      } catch {
+        brandWatermarkRef.current = null
+      }
+    }
+    if (!brandWatermarkRef.current) {
+      brandWatermarkRef.current = createBrandWatermark(canvasConfig.width, canvasConfig.height)
+      app.tree.add(brandWatermarkRef.current)
+    }
+    return brandWatermarkRef.current
+  }
+
   const ensureGuideGroup = (app: App) => {
     if (guideGroupRef.current && guideGroupRef.current.destroyed) guideGroupRef.current = null
     if (!guideGroupRef.current) {
@@ -219,6 +241,11 @@ export function LeaferCanvas() {
         height: canvasConfig.height,
         zIndex: -100001,
       })
+      syncBrandWatermark(
+        ensureBrandWatermark(app),
+        canvasConfig.width,
+        canvasConfig.height,
+      )
     } catch (e) {
       console.error('Board background sync error:', e)
     }
@@ -357,7 +384,9 @@ export function LeaferCanvas() {
     appRef.current = app
     // Force-clear any stale board from a previous App instance (React Strict Mode remount)
     boardRef.current = null
+    brandWatermarkRef.current = null
     ensureBoard(app)
+    ensureBrandWatermark(app)
     useEditorStore.getState().setLeaferApp(app)
 
     // Auto-fit artboard to viewport on first load & layout settle
@@ -450,6 +479,7 @@ export function LeaferCanvas() {
     return () => {
       ro.disconnect()
       boardRef.current = null
+      brandWatermarkRef.current = null
       app.destroy()
     }
   }, [])

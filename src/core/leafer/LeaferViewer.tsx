@@ -7,6 +7,7 @@ import '@leafer-in/scroll'
 import '@leafer-in/export'
 import { useEditorStore, type CanvasConfig, type EditorNode } from '@/store/useEditorStore'
 import { applyAnimation, createLeaferNode, syncLeaferNode } from './runtime'
+import { createBrandWatermark, syncBrandWatermark } from '@/core/branding'
 
 interface LeaferViewerProps {
   elements?: EditorNode[]
@@ -21,6 +22,7 @@ function resolveSceneLayer(leafer: any) {
 export function LeaferViewer({ elements: inputElements, canvasConfig: inputCanvasConfig, onRuntimeAction }: LeaferViewerProps = {}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const leaferRef = useRef<Leafer | null>(null)
+  const watermarkRef = useRef<any>(null)
   const engineVersionRef = useRef(0)
   const nodeMapRef = useRef(new Map<string, any>())
   const runtimeActionRef = useRef<typeof onRuntimeAction>(onRuntimeAction)
@@ -86,6 +88,8 @@ export function LeaferViewer({ elements: inputElements, canvasConfig: inputCanva
       wheel: { zoomMode: false },
     })
     leaferRef.current = leafer
+    watermarkRef.current = createBrandWatermark(canvasConfig.width, canvasConfig.height)
+    leafer.add(watermarkRef.current)
 
     if ((leafer as any).interaction) {
       const config = (leafer as any).interaction.config
@@ -109,6 +113,7 @@ export function LeaferViewer({ elements: inputElements, canvasConfig: inputCanva
         try { node.remove?.() } catch {}
       })
       nodeMapRef.current.clear()
+      watermarkRef.current = null
       leafer.destroy()
     }
   }, [])
@@ -122,6 +127,9 @@ export function LeaferViewer({ elements: inputElements, canvasConfig: inputCanva
         height: canvasConfig.height,
         fill: canvasConfig.bgColor,
       })
+      if (watermarkRef.current) {
+        syncBrandWatermark(watermarkRef.current, canvasConfig.width, canvasConfig.height)
+      }
     } catch {}
   }, [canvasConfig.width, canvasConfig.height, canvasConfig.bgColor])
 

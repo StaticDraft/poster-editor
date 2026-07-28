@@ -9,6 +9,7 @@ import { useFeedback } from '@/lib/feedback'
 import { bgColorToFill, createLeaferNode, applyAnimation } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
 import { createAnimatedGifBlob } from '@/lib/gifEncoder'
+import { createExportWatermark } from '@/core/branding'
 
 interface ExportModalProps {
   open: boolean
@@ -37,6 +38,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
     const { elements, canvasConfig, projectName } = useEditorStore.getState()
     const { width: posterW, height: posterH, bgColor } = canvasConfig
+    const exportBounds = { x: 0, y: 0, width: posterW, height: posterH }
 
     const fileName = `${projectName || 'my_poster'}.${format}`
     const mimeType = format === 'jpg' ? 'image/jpeg' : format === 'webm' ? 'video/webm' : format === 'gif' ? 'image/gif' : `image/${format}`
@@ -82,6 +84,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
           console.warn('Failed to add node to offscreen Leafer:', el, _err)
         }
       })
+      offscreenLeafer.add(createExportWatermark(posterW, posterH))
 
       // Wait for offscreen Leafer view to be ready & images loaded
       await new Promise((resolve) => {
@@ -132,7 +135,10 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
             }, intervalMs)
           })
         } else {
-          const exportResult = await offscreenLeafer.export(fileName, { scale })
+          const exportResult = await offscreenLeafer.export(fileName, {
+            scale,
+            screenshot: exportBounds,
+          })
           dataUrl = resolveExportDataUrl(exportResult, 'image/png', 0.95)
         }
       } else if (format === 'gif') {
@@ -166,6 +172,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         const exportResult = await offscreenLeafer.export(fileName, {
           scale,
           quality: format === 'png' ? undefined : quality,
+          screenshot: exportBounds,
         })
         dataUrl = resolveExportDataUrl(exportResult, mimeType, exportQuality)
       }

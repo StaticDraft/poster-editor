@@ -223,7 +223,7 @@ export function MainNavbar() {
           label: tr('navbar.menu.about', '关于'),
           action: () => {
             feedback.notify({
-              title: tr('navbar.menu.about', '关于 Poster Editor'),
+              title: tr('navbar.menu.about', '关于画成'),
               description: tr('navbar.aboutMsg', '基于 Leafer.js 高效渲染引擎构建的极简海报编辑器。'),
               tone: 'info',
             })
@@ -241,7 +241,7 @@ export function MainNavbar() {
     >
       <div className="flex items-center gap-6" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center text-sm font-bold tracking-widest text-[#fb7185] shrink-0">
-          <Hexagon className="mr-2 h-5 w-5 fill-[#rose-500/20] shrink-0" /> Poster Editor
+          <Hexagon className="mr-2 h-5 w-5 fill-[#rose-500/20] shrink-0" /> 画成
         </div>
         <div className="flex gap-1">
           {menus.map((menu) => (

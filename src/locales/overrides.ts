@@ -1,7 +1,7 @@
 export const localeOverrides = {
   en: {
     header: {
-      title: 'Visual Dashboard Editor',
+      title: '画成',
     },
     navbar: {
       copyEmpty: 'Nothing to copy',
@@ -538,7 +538,7 @@ export const localeOverrides = {
   },
   zh: {
     header: {
-      title: '可视化大屏编辑器',
+      title: '画成 - 海报编辑器',
     },
     navbar: {
       file: '文件',
