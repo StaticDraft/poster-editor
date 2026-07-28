@@ -52,11 +52,11 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
 
   return (
     <div className="flex flex-col w-full h-full pb-4">
-      {/* Royalty-Free Copyright License Notice */}
+      {/* Template asset usage notice */}
       <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-950/40 border-b border-emerald-800/40 text-[10px] text-emerald-400 font-bold shrink-0">
         <span className="flex items-center gap-1 truncate">
           <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-          {tr('template.copyrightNotice', '素材均来自 Unsplash 协议 · 100% 无版权风险可商用')}
+          {tr('template.copyrightNotice', '示例模板素材用于演示，正式商用前请核验授权')}
         </span>
       </div>
       {/* Category Folders Filter */}

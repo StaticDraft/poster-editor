@@ -48,7 +48,7 @@ function App() {
     if (saveFingerprint !== lastSavedFingerprint) markDirty()
   }, [isPreview, lastSavedFingerprint, saveFingerprint])
 
-  // Auto-save logic
+  // Auto-save logic: debounced 1.5s after any canvas change
   useEffect(() => {
     if (!currentSceneId || isPreview || saveFingerprint === lastSavedFingerprint) return
     

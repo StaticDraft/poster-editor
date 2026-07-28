@@ -44,6 +44,8 @@ export function SceneList() {
   }
   const scenes = useEditorStore((state) => state.scenes)
   const currentSceneId = useEditorStore((state) => state.currentSceneId)
+  const currentElements = useEditorStore((state) => state.elements)
+  const currentCanvasConfig = useEditorStore((state) => state.canvasConfig)
   const loadScene = useEditorStore((state) => state.loadScene)
   const deleteScene = useEditorStore((state) => state.deleteScene)
   const createScene = useEditorStore((state) => state.createScene)
@@ -58,6 +60,13 @@ export function SceneList() {
     })
     setScenePreviews(nextPreviews)
   }, [scenes])
+
+  const getSceneSnapshot = (sceneId: string): CanvasThumbnailSnapshot | null => {
+    if (sceneId === currentSceneId) {
+      return { canvasConfig: currentCanvasConfig, elements: currentElements }
+    }
+    return scenePreviews[sceneId] || null
+  }
 
   const handleSelect = (id: string) => {
     window.history.pushState(null, '', `?scene=${id}`)
@@ -161,6 +170,12 @@ export function SceneList() {
     })
     if (!confirmed) return
     deleteScene(id)
+    // Remove in-memory thumbnail entry
+    setScenePreviews((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
     feedback.notify({
       title: tr('scene.deleteSuccess', '设计图已清除'),
       description: name,
@@ -209,7 +224,7 @@ export function SceneList() {
               )}
             >
               <CanvasThumbnail
-                snapshot={scenePreviews[scene.id] || null}
+                snapshot={getSceneSnapshot(scene.id)}
                 emptyLabel={tr('scene.previewEmpty', '空白画布')}
               />
 

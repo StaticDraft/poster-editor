@@ -263,29 +263,27 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     }
   }
 
-  const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>, targetFolderId?: string) => {
+  const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const folderId = targetFolderId || activeFolderId
+    const folderId = activeFolderId || folders[0]?.id || 'folder-default'
     setIsUploading(true)
     try {
       for (let i = 0; i < files.length; i++) {
         await saveUserAsset(files[i], folderId)
       }
-      if (activeFolderId !== folderId) {
-        setActiveFolderId(folderId)
-      } else {
-        await loadPageData(folderId, 1, true)
-      }
+      setActiveFolderId(folderId)
+      await loadPageData(folderId, 1, true)
       feedback.notify({
-        title: '素材上传保存成功',
-        description: '已压缩存入选定素材目录，可在面板中随时拖拽使用',
+        title: tr('material.uploadSuccess', '素材已导入'),
+        description: tr('material.uploadSuccessDesc', '已保存到当前素材目录，可拖拽到画布使用。'),
         tone: 'success',
       })
     } catch (err) {
       console.error(err)
       feedback.notify({
-        title: '素材保存失败',
+        title: tr('material.uploadFailed', '素材导入失败'),
+        description: tr('material.uploadFailedDesc', '请确认文件为可读取的图片格式。'),
         tone: 'error',
       })
     } finally {
@@ -322,13 +320,8 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   }
 
   const filtered = useMemo(() => {
+    if (mode === 'assets') return []
     let cats = CATEGORIES
-    if (mode === 'components') {
-      cats = CATEGORIES.filter(cat => ['qrcodes', 'text-nodes', 'basic-shapes', 'marketing-stamps'].includes(cat.id))
-    } else if (mode === 'assets') {
-      cats = CATEGORIES.filter(cat => ['stickers', 'backgrounds'].includes(cat.id))
-    }
-
     if (!searchFilter.trim()) return cats
     const q = searchFilter.toLowerCase()
     return cats.map(cat => ({
@@ -345,14 +338,15 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   }
 
   const toggle = (id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
+  const activeFolderName = folders.find((folder) => folder.id === activeFolderId)?.name || tr('material.defaultFolder', '默认素材目录')
 
   return (
-    <div className="flex flex-col w-full pb-4">
+    <div className="flex flex-col w-full h-full min-h-0">
       {/* IndexedDB User Asset Gallery Section with Folder Directories */}
       {(mode === 'assets' || !mode) && (
-        <div className="mb-3 border-b border-border/60 pb-3">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Header & Create Folder */}
-          <div className="flex items-center justify-between px-3 py-1.5 mb-1.5">
+          <div className="flex items-center justify-between px-3 py-1.5 mb-1.5 shrink-0">
             <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>{tr('material.folderGallery', '素材目录库')}</span>
@@ -369,7 +363,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
 
           {/* New Folder Inline Form */}
           {showFolderInput && (
-            <div className="mx-2 mb-2 p-2 bg-muted/40 border border-border rounded-md flex items-center gap-1.5 animate-in fade-in-0">
+            <div className="mx-2 mb-2 p-2 bg-muted/40 border border-border rounded-md flex items-center gap-1.5 animate-in fade-in-0 shrink-0">
               <input
                 type="text"
                 value={newFolderName}
@@ -388,21 +382,50 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
             </div>
           )}
 
-          {/* Foldable Folder Directories */}
-          <div className="space-y-1 px-1">
+          <div className="mx-2 mb-2 flex items-center gap-2 rounded-md border border-border/60 bg-editor-deep/70 px-2 py-1.5 shrink-0">
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[11px] font-bold text-editor-text">
+                {tr('material.currentFolder', '当前目录')}: {activeFolderName}
+              </div>
+              <div className="truncate text-[10px] text-editor-text-dim">
+                {tr('material.uploadHint', '先选择目录，再导入 Logo、商品图或贴纸。')}
+              </div>
+            </div>
+            <label
+              className={`inline-flex h-7 shrink-0 items-center gap-1 rounded border px-2 text-[11px] font-bold transition-colors ${
+                isUploading
+                  ? 'cursor-wait border-blue-500/30 bg-blue-500/10 text-blue-300'
+                  : 'cursor-pointer border-blue-500/40 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200'
+              }`}
+            >
+              <Upload className="h-3 w-3" />
+              {isUploading ? tr('material.uploading', '导入中') : tr('material.uploadToCurrent', '导入素材')}
+              <input
+                type="file"
+                accept="image/*,.svg"
+                multiple
+                className="hidden"
+                onChange={handleUploadAsset}
+                disabled={isUploading || folders.length === 0}
+              />
+            </label>
+          </div>
+
+          {/* Foldable Folder Directories - Stretch to Fill Height */}
+          <div className="flex-1 flex flex-col min-h-0 space-y-1.5 px-1 pb-2 overflow-y-auto">
             {folders.map((folder) => {
               const isExpanded = expanded[folder.id] ?? (folder.id === activeFolderId)
               const isActive = folder.id === activeFolderId
 
               return (
-                <div key={folder.id} className="border border-border/60 rounded-md overflow-hidden bg-card/60">
+                <div key={folder.id} className={`border border-border/60 rounded-md overflow-hidden bg-card/60 flex flex-col ${isActive && isExpanded ? 'flex-1 min-h-0' : 'shrink-0'}`}>
                   {/* Folder Header Bar */}
                   <div
                     onClick={() => {
                       setActiveFolderId(folder.id)
                       toggle(folder.id)
                     }}
-                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs font-bold cursor-pointer transition-colors ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs font-bold cursor-pointer transition-colors shrink-0 ${
                       isActive ? 'bg-blue-600/10 text-blue-400 border-b border-blue-500/20' : 'text-foreground hover:bg-muted'
                     }`}
                   >
@@ -414,22 +437,6 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      {/* Upload Button Dedicated to this Folder */}
-                      <label className="cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          className="hidden"
-                          onChange={(e) => handleUploadAsset(e, folder.id)}
-                          disabled={isUploading}
-                        />
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-500 rounded shadow-xs transition-colors">
-                          <Upload className="w-2.5 h-2.5" />
-                          {tr('material.uploadImage', '上传图片')}
-                        </span>
-                      </label>
-
                       {folder.id !== 'folder-default' && (
                         <button
                           type="button"
@@ -443,17 +450,13 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                     </div>
                   </div>
 
-                  {/* Folder Asset Grid (Expanded View) */}
+                  {/* Folder Asset Grid (Expanded View - Stretches to Fill Panel Bottom) */}
                   {isExpanded && isActive && (
-                    <div className="p-2 bg-muted/10">
-                      {userAssets.length === 0 ? (
-                        <div className="p-3 text-center border border-dashed border-border/50 rounded bg-background/50 text-muted-foreground text-[10px]">
-                          {tr('material.emptyDirHint', '目录下暂无图片，点击右侧「上传图片」保存新素材')}
-                        </div>
-                      ) : (
+                    <div className="flex-1 flex flex-col min-h-0 p-2 bg-muted/10">
+                      {userAssets.length > 0 && (
                         <div
                           onScroll={handleScrollWaterfall}
-                          className="max-h-[220px] overflow-y-auto pr-0.5 flex flex-col gap-1.5"
+                          className="flex-1 overflow-y-auto pr-0.5 flex flex-col gap-1.5 min-h-0"
                         >
                           {/* Masonry Waterfall Grid */}
                           <div className="columns-2 gap-1.5 space-y-1.5">
@@ -534,10 +537,8 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
           </div>
         </div>
       )}
-      {filtered.length === 0 && (
-        <div className="text-center text-editor-text-dim text-xs py-8">{tr('material.noMatch', '未找到匹配')}</div>
-      )}
-      {filtered.map(cat => {
+
+      {mode === 'components' && filtered.map(cat => {
         const isCatExpanded = expanded[cat.id] ?? true
         return (
           <div key={cat.id} className="mb-0.5">
@@ -585,25 +586,6 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
         </div>
       )
     })}
-
-      {mode === 'assets' && (
-        <div className="mx-3 mt-3 border border-dashed border-border rounded hover:border-blue-500 transition-colors">
-          <label className="flex flex-col items-center justify-center py-3 cursor-pointer text-xs text-muted-foreground hover:text-blue-400 transition-colors">
-            <Upload className="w-4 h-4 mb-1" />
-            <span className="text-[10px]">{tr('material.uploadImage', '上传外部贴纸')}</span>
-            <input type="file" accept="image/*,.svg" className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]; if (!file) return
-                const reader = new FileReader()
-                reader.onload = (ev) => {
-                  useEditorStore.getState().addNode({ id: `image-${Date.now()}`, type: 'Image', url: ev.target?.result as string, x: 50, y: 50, width: 250, height: 250 })
-                }
-                reader.readAsDataURL(file)
-              }}
-            />
-          </label>
-        </div>
-      )}
 
     </div>
   )

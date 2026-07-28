@@ -74,7 +74,7 @@ export function LeftSidebar() {
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           {sidebarTab === 'templates' && <div className="flex-1 overflow-y-auto"><TemplatePanel searchFilter={search} /></div>}
           {sidebarTab === 'components' && <div className="flex-1 overflow-y-auto"><MaterialPanel searchFilter={search} mode="components" /></div>}
-          {sidebarTab === 'system' && <div className="flex-1 overflow-y-auto"><MaterialPanel searchFilter={search} mode="assets" /></div>}
+          {sidebarTab === 'system' && <div className="flex-1 min-h-0 overflow-hidden"><MaterialPanel searchFilter={search} mode="assets" /></div>}
           {sidebarTab === 'myScenes' && <div className="flex-1 overflow-y-auto"><SceneList /></div>}
           {sidebarTab === 'structure' && <LayerTree />}
         </div>

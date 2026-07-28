@@ -149,6 +149,22 @@
       "charts": "Charts",
       "textNodes": "Text Annotations"
     },
+    "folderGallery": "Material Library",
+    "newDirectory": "New Folder",
+    "directoryNamePlaceholder": "Folder name (e.g. Sales Logo)",
+    "currentFolder": "Current folder",
+    "defaultFolder": "Default assets",
+    "uploadHint": "Select a folder first, then import logos, product images, or stickers.",
+    "uploadToCurrent": "Import assets",
+    "uploading": "Importing",
+    "uploadSuccess": "Assets imported",
+    "uploadSuccessDesc": "Saved to the current material folder and ready to drag onto the canvas.",
+    "uploadFailed": "Import failed",
+    "uploadFailedDesc": "Please use a readable image file.",
+    "deleteDirHint": "Delete folder and all materials inside",
+    "addSuccess": "Material added successfully",
+    "dragToUse": "Drag to canvas",
+    "deleteFromDb": "Delete material from database",
     "items": {
       "rect": "Rectangle",
       "square": "Square",
@@ -197,9 +213,7 @@
       "numberLabel": "Number Label",
       "statusLabel": "Status Label",
       "titleText": "Title Text"
-    },
-    "noMatch": "No matching components found",
-    "uploadImage": "Upload Image / SVG"
+    }
   },
   "layer": {
     "title": "Layers",
@@ -232,6 +246,7 @@
   },
   "template": {
     "title": "Templates",
+    "copyrightNotice": "Template assets are demos; verify licensing before commercial use",
     "empty": "No templates yet",
     "hint": "Use File -> Save as Template to store the current canvas as a reusable template.",
     "search": "Search templates...",
