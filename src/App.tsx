@@ -8,6 +8,7 @@ import { useEditorStore } from './store/useEditorStore'
 import { buildEditorSaveFingerprint, markDirty, markSaveError, markSaved, markSaving, useSaveStatusStore } from './lib/saveStatus'
 import { useEffect, useMemo, useRef } from 'react'
 import { PreviewModal } from './components/feedback/PreviewModal'
+import { useAppSettingsStore } from './store/useAppSettingsStore'
 
 function RightPanel() {
   const activeIds = useEditorStore(s => s.activeIds)
@@ -27,6 +28,7 @@ function App() {
   const cat = useEditorStore(s => s.projectCategory)
   const saveScene = useEditorStore(s => s.saveScene)
   const currentSceneId = useEditorStore(s => s.currentSceneId)
+  const autoSaveEnabled = useAppSettingsStore(s => s.autoSave)
   const lastSavedFingerprint = useSaveStatusStore(s => s.lastFingerprint)
   const didInitRef = useRef(false)
 
@@ -50,7 +52,7 @@ function App() {
 
   // Auto-save logic: debounced 1.5s after any canvas change
   useEffect(() => {
-    if (!currentSceneId || isPreview || saveFingerprint === lastSavedFingerprint) return
+    if (!autoSaveEnabled || !currentSceneId || isPreview || saveFingerprint === lastSavedFingerprint) return
     
     const timer = setTimeout(() => {
       try {
@@ -70,7 +72,7 @@ function App() {
     }, 1500) // 1.5s debounce
 
     return () => clearTimeout(timer)
-  }, [currentSceneId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene])
+  }, [autoSaveEnabled, currentSceneId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene])
 
   return (
     <>

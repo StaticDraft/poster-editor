@@ -7,9 +7,6 @@ import {
   Save,
   Play,
   Download,
-  Languages,
-  Sun,
-  Moon,
   ZoomIn,
   ZoomOut,
   Maximize2,
@@ -21,6 +18,7 @@ import {
   MoreHorizontal,
   Palette,
   Scaling,
+  Settings2,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { Button } from '@/components/ui/button'
@@ -31,14 +29,16 @@ import { exportTemplatePackage, importTemplatePackage } from '@/lib/templatePack
 import { ExportModal } from '@/components/feedback/ExportModal'
 import { BatchExportModal } from '@/components/feedback/BatchExportModal'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
+import { SettingsDialog } from '@/components/feedback/SettingsDialog'
 import { COLOR_PALETTES, type ColorPalette } from '@/lib/colorPalettes'
 import { CANVAS_PRESETS, type CanvasPreset } from '@/lib/canvasPresets'
 
 export function TopToolbar() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const [showExportModal, setShowExportModal] = useState(false)
   const [showBatchExportModal, setShowBatchExportModal] = useState(false)
   const [showShortcutsModal, setShowShortcutsModal] = useState(false)
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false)
   const clearNodes = useEditorStore((state) => state.clearNodes)
   const undo = useEditorStore((state) => state.undo)
   const redo = useEditorStore((state) => state.redo)
@@ -51,10 +51,6 @@ export function TopToolbar() {
     const text = t(key)
     return text === key ? fallback : text
   }
-
-  const [isDark, setIsDark] = useState(
-    document.documentElement.classList.contains('dark') || false
-  )
 
   const handleClearCanvas = async () => {
     const confirmed = await feedback.confirm({
@@ -124,16 +120,6 @@ export function TopToolbar() {
     })
   }
 
-  const toggleTheme = () => {
-    const nextTheme = !isDark
-    if (nextTheme) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-    setIsDark(nextTheme)
-  }
-
   const handleApplyPalette = (palette: ColorPalette) => {
     const state = useEditorStore.getState()
     state.setCanvasConfig({ bgColor: palette.bg })
@@ -170,10 +156,6 @@ export function TopToolbar() {
     setTimeout(() => {
       state.zoomFit()
     }, 50)
-  }
-
-  const toggleLanguage = () => {
-    i18n.changeLanguage(i18n.language.startsWith('zh') ? 'en' : 'zh')
   }
 
   return (
@@ -367,13 +349,6 @@ export function TopToolbar() {
           <Command className="w-3.5 h-3.5 mr-1 text-blue-400" /> {tr('toolbar.shortcuts', '快捷键')}
         </Button>
 
-        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleLanguage} title={t('toolbar.lang')}>
-          <Languages className="w-3.5 h-3.5" />
-        </Button>
-        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={toggleTheme} title={t('toolbar.theme')}>
-          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-        </Button>
-
         <div className="w-px h-4 bg-border mx-0.5" />
 
         <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={undo} disabled={!canUndo}>
@@ -481,6 +456,14 @@ export function TopToolbar() {
             <div className="my-1 border-t border-border" />
 
             <button
+              onClick={() => setShowSettingsDialog(true)}
+              className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-foreground rounded hover:bg-muted transition-colors"
+            >
+              <Settings2 className="w-3.5 h-3.5 text-slate-400" />
+              {tr('settings.title', '设置')}
+            </button>
+
+            <button
               onClick={handleClearCanvas}
               className="flex w-full items-center gap-2 px-2.5 py-1.5 text-xs text-red-400 rounded hover:bg-red-500/10 transition-colors"
             >
@@ -494,6 +477,7 @@ export function TopToolbar() {
       <ExportModal open={showExportModal} onClose={() => setShowExportModal(false)} />
       <BatchExportModal open={showBatchExportModal} onClose={() => setShowBatchExportModal(false)} />
       <ShortcutsDialog open={showShortcutsModal} onClose={() => setShowShortcutsModal(false)} />
+      <SettingsDialog open={showSettingsDialog} onClose={() => setShowSettingsDialog(false)} />
     </div>
   )
 }

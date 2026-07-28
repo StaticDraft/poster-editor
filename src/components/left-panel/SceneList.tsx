@@ -6,6 +6,7 @@ import { useFeedback } from '@/lib/feedback'
 import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { cn } from '@/lib/utils'
 import { CanvasThumbnail, type CanvasThumbnailSnapshot } from './CanvasThumbnail'
+import { useAppSettingsStore } from '@/store/useAppSettingsStore'
 
 type SceneRecord = {
   canvasConfig?: CanvasConfig
@@ -46,6 +47,7 @@ export function SceneList() {
   const currentSceneId = useEditorStore((state) => state.currentSceneId)
   const currentElements = useEditorStore((state) => state.elements)
   const currentCanvasConfig = useEditorStore((state) => state.canvasConfig)
+  const autoSaveEnabled = useAppSettingsStore((state) => state.autoSave)
   const loadScene = useEditorStore((state) => state.loadScene)
   const deleteScene = useEditorStore((state) => state.deleteScene)
   const createScene = useEditorStore((state) => state.createScene)
@@ -282,6 +284,16 @@ export function SceneList() {
       </div>
 
       <div className="border-t border-editor-darker bg-editor-deep/50 p-3 text-[9px] text-editor-text-dim">
+        <span className="font-semibold text-editor-text-label">
+          {autoSaveEnabled
+            ? tr('settings.autoSave', '实时保存')
+            : tr('settings.manualSave', '手动保存')}
+        </span>
+      </div>
+      <div className="hidden">
+        <span className="mb-1 block font-semibold text-editor-text-label">
+          {autoSaveEnabled ? 'Auto-save on' : 'Manual save'}
+        </span>
         {tr('scene.autoSaveHint', '* 画布进度自动本地存档，不用担心网络中断。')}
       </div>
     </div>
