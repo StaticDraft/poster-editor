@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen, Grid } from 'lucide-react'
+import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen, Grid, Pencil } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import {
   getAssetFolders,
@@ -9,10 +9,12 @@ import {
   getUserAssetsPaged,
   saveUserAsset,
   deleteUserAsset,
+  renameUserAsset,
   type UserAsset,
   type AssetFolder,
 } from '@/lib/assetDatabase'
 import { useFeedback } from '@/lib/feedback'
+import { ListContextMenu } from '@/components/ui/list-context-menu'
 
 // ─────────────────────────────────────────────────
 // SVG path definitions for graphic design elements
@@ -176,6 +178,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
   const [hasMore, setHasMore] = useState(false)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [assetContextMenu, setAssetContextMenu] = useState<{ x: number; y: number; asset: UserAsset } | null>(null)
 
   const reloadFolders = async () => {
     try {
@@ -292,8 +295,8 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     }
   }
 
-  const handleDeleteAsset = async (asset: UserAsset, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleDeleteAsset = async (asset: UserAsset, e?: React.MouseEvent) => {
+    e?.stopPropagation()
     const confirmed = await feedback.confirm({
       title: '删除素材确认',
       description: `确定要从素材数据库中移除「${asset.name}」吗？`,
@@ -311,6 +314,28 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
       })
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const handleRenameAsset = async (asset: UserAsset) => {
+    const nextName = await feedback.prompt({
+      title: '重命名素材',
+      description: '请输入素材名称，方便后续查找和使用。',
+      defaultValue: asset.name,
+      placeholder: '素材名称',
+      confirmLabel: '保存',
+      cancelLabel: '取消',
+      tone: 'info',
+      validate: (value) => (value.trim() ? null : '名称不能为空'),
+    })
+    if (!nextName || nextName.trim() === asset.name) return
+    try {
+      await renameUserAsset(asset.id, nextName)
+      await loadPageData(activeFolderId, 1, true)
+      feedback.notify({ title: '素材名称已更新', description: nextName.trim(), tone: 'success' })
+    } catch (error) {
+      console.error(error)
+      feedback.notify({ title: '素材重命名失败', tone: 'error' })
     }
   }
 
@@ -491,27 +516,30 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
                                     tone: 'success',
                                   })
                                 }}
+                                onContextMenu={(event) => {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+                                  setAssetContextMenu({ x: event.clientX, y: event.clientY, asset })
+                                }}
                                 className="group relative break-inside-avoid flex flex-col items-center justify-center p-1 bg-card border border-border hover:border-blue-500 rounded cursor-grab active:cursor-grabbing hover:shadow-md transition-all overflow-hidden mb-1.5"
                                 title={`${asset.name} (${asset.width}x${asset.height}) - ${tr('material.dragToUse', '拖拽至画布使用')}`}
                               >
                                 <img
                                   src={asset.thumbnailUrl}
                                   alt={asset.name}
-                                  className="w-full h-auto object-cover rounded"
+                                  className="block w-full h-auto object-cover rounded"
                                 />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 p-1">
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleDeleteAsset(asset, e)}
-                                    className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-full shadow"
-                                    title={tr('material.deleteFromDb', '从数据库删除素材')}
+                                <div className="w-full min-w-0 px-0.5 pt-1 text-left">
+                                  <div
+                                    className="truncate text-[10px] font-medium leading-4 text-foreground"
+                                    title={asset.name}
                                   >
-                                    <Trash2 className="w-3 h-3" />
-                                  </button>
+                                    {asset.name}
+                                  </div>
+                                  <div className="truncate text-[9px] font-mono leading-3 text-muted-foreground" title={`${asset.width}x${asset.height}`}>
+                                    {asset.width}x{asset.height}
+                                  </div>
                                 </div>
-                                <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5 truncate px-0.5 pointer-events-none font-mono">
-                                  {asset.width}x{asset.height}
-                                </span>
                               </div>
                             ))}
                           </div>
@@ -585,7 +613,27 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
           )}
         </div>
       )
-    })}
+      })}
+
+      {assetContextMenu && (
+        <ListContextMenu
+          pos={assetContextMenu}
+          onClose={() => setAssetContextMenu(null)}
+          actions={[
+            {
+              label: '重命名素材',
+              icon: Pencil,
+              onClick: () => { void handleRenameAsset(assetContextMenu.asset) },
+            },
+            {
+              label: '删除素材',
+              icon: Trash2,
+              tone: 'danger',
+              onClick: () => { void handleDeleteAsset(assetContextMenu.asset) },
+            },
+          ]}
+        />
+      )}
 
     </div>
   )

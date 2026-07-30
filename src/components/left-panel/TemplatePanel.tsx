@@ -1,21 +1,39 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, Sparkles, X, CheckCircle2 } from 'lucide-react'
+import { Eye, Sparkles, X, CheckCircle2, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  PRESET_TEMPLATES,
   TEMPLATE_CATEGORIES,
   type PresetTemplate,
 } from '@/lib/presetTemplates'
-import { useEditorStore } from '@/store/useEditorStore'
+import { cmdManager, useEditorStore } from '@/store/useEditorStore'
+import { useFeedback } from '@/lib/feedback'
+import { ListContextMenu } from '@/components/ui/list-context-menu'
+import { CanvasThumbnail } from './CanvasThumbnail'
+import {
+  getVisibleTemplates,
+  loadTemplatePreferences,
+  saveTemplatePreferences,
+  TEMPLATE_PREFERENCES_UPDATED_EVENT,
+  type TemplatePreferences,
+} from '@/lib/templatePreferences'
 
 export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) {
   const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
+  const [templatePreferences, setTemplatePreferences] = useState<TemplatePreferences>(() => loadTemplatePreferences())
+  const [templateContextMenu, setTemplateContextMenu] = useState<{ x: number; y: number; template: PresetTemplate } | null>(null)
+  const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
   const setElements = useEditorStore((state) => state.setElements)
   const setProjectName = useEditorStore((state) => state.setProjectName)
+
+  useEffect(() => {
+    const refreshPreferences = () => setTemplatePreferences(loadTemplatePreferences())
+    window.addEventListener(TEMPLATE_PREFERENCES_UPDATED_EVENT, refreshPreferences)
+    return () => window.removeEventListener(TEMPLATE_PREFERENCES_UPDATED_EVENT, refreshPreferences)
+  }, [])
 
   const tr = (key: string, fallback: string) => {
     const val = t(key)
@@ -23,7 +41,7 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
   }
 
   const filteredTemplates = useMemo(() => {
-    let list = PRESET_TEMPLATES
+    let list = getVisibleTemplates(templatePreferences)
     if (activeCategory !== 'all') {
       list = list.filter((t) => t.categoryId === activeCategory)
     }
@@ -37,17 +55,86 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
       )
     }
     return list
-  }, [activeCategory, searchFilter])
+  }, [activeCategory, searchFilter, templatePreferences])
+
+  const visibleTemplates = useMemo(
+    () => getVisibleTemplates(templatePreferences),
+    [templatePreferences],
+  )
+
+  const updateTemplatePreferences = (next: TemplatePreferences) => {
+    setTemplatePreferences(next)
+    saveTemplatePreferences(next)
+  }
+
+  const cloneTemplateElements = (tpl: PresetTemplate) => tpl.elements.map((el) => ({
+    ...el,
+    id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  }))
 
   const handleApplyTemplate = (tpl: PresetTemplate) => {
+    const store = useEditorStore.getState()
+    store.setEditingTemplateId(null)
     setCanvasConfig(tpl.canvasConfig)
     setProjectName(tpl.name)
-    const clonedElements = tpl.elements.map((el) => ({
-      ...el,
-      id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    }))
-    setElements(clonedElements)
+    setElements(cloneTemplateElements(tpl))
     setPreviewTemplate(null)
+  }
+
+  const handleOpenTemplate = (tpl: PresetTemplate) => {
+    const store = useEditorStore.getState()
+    // Template editing is a separate draft and must not create or overwrite a scene.
+    store.setCurrentSceneId(null)
+    store.setEditingTemplateId(tpl.id)
+    store.setCanvasConfig({ ...tpl.canvasConfig, lockPan: false, lockZoom: false })
+    store.setProjectName(tpl.name)
+    store.setProjectCategory(tpl.categoryName)
+    store.setElements(cloneTemplateElements(tpl))
+    store.setActiveIds([])
+    cmdManager.clear()
+    window.history.pushState(null, '', `?template=${encodeURIComponent(tpl.id)}`)
+    setPreviewTemplate(null)
+    feedback.notify({
+      title: '模板已打开',
+      description: `已载入「${tpl.name}」，现在可以继续编辑。`,
+      tone: 'success',
+    })
+  }
+
+  const handleRenameTemplate = async (tpl: PresetTemplate) => {
+    const nextName = await feedback.prompt({
+      title: '重命名模板',
+      description: '请输入模板名称，名称只影响当前浏览器中的模板库。',
+      defaultValue: tpl.name,
+      placeholder: '模板名称',
+      confirmLabel: '保存',
+      cancelLabel: '取消',
+      tone: 'info',
+      validate: (value) => (value.trim() ? null : '名称不能为空'),
+    })
+    if (!nextName || nextName.trim() === tpl.name) return
+    updateTemplatePreferences({
+      ...templatePreferences,
+      names: { ...templatePreferences.names, [tpl.id]: nextName.trim() },
+    })
+    feedback.notify({ title: '模板名称已更新', description: nextName.trim(), tone: 'success' })
+  }
+
+  const handleDeleteTemplate = async (tpl: PresetTemplate) => {
+    const confirmed = await feedback.confirm({
+      title: '删除模板',
+      description: `确定要从模板库中移除「${tpl.name}」吗？`,
+      confirmLabel: '删除',
+      cancelLabel: '取消',
+      tone: 'warning',
+    })
+    if (!confirmed) return
+    updateTemplatePreferences({
+      ...templatePreferences,
+      deletedIds: [...new Set([...templatePreferences.deletedIds, tpl.id])],
+    })
+    if (previewTemplate?.id === tpl.id) setPreviewTemplate(null)
+    feedback.notify({ title: '模板已删除', description: tpl.name, tone: 'success' })
   }
 
   return (
@@ -70,10 +157,10 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
               : 'bg-card text-muted-foreground hover:bg-muted border border-border'
           }`}
         >
-          {tr('template.allCategories', '全部')} ({PRESET_TEMPLATES.length})
+          {tr('template.allCategories', '全部')} ({visibleTemplates.length})
         </button>
         {TEMPLATE_CATEGORIES.map((cat) => {
-          const count = PRESET_TEMPLATES.filter((t) => t.categoryId === cat.id).length
+          const count = visibleTemplates.filter((t) => t.categoryId === cat.id).length
           return (
             <button
               key={cat.id}
@@ -99,32 +186,35 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
           filteredTemplates.map((tpl) => (
             <div
               key={tpl.id}
+              onDoubleClick={() => handleOpenTemplate(tpl)}
+              onContextMenu={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                setTemplateContextMenu({ x: event.clientX, y: event.clientY, template: tpl })
+              }}
               className="group relative bg-card border border-border hover:border-purple-500 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
             >
-              {/* Cover Card */}
-              <div
-                className="w-full aspect-[16/9] relative flex items-center justify-center p-3 overflow-hidden bg-slate-950"
-                style={{ background: tpl.coverBg }}
-              >
-                {tpl.elements.find((e: any) => e.type === 'Image')?.url && (
-                  <img
-                    src={tpl.elements.find((e: any) => e.type === 'Image')?.url}
-                    alt={tpl.name}
-                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300 pointer-events-none"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none" />
-                <div className="relative text-center space-y-1 pointer-events-none z-10 drop-shadow-md">
-                  <span className="inline-block px-2 py-0.5 text-[9px] font-bold text-white bg-purple-600/90 backdrop-blur-md rounded-full shadow-xs">
-                    {tpl.categoryName}
-                  </span>
-                  <div className="text-xs font-black text-white px-2 leading-tight drop-shadow">
-                    {tpl.name}
-                  </div>
+              {/* Real Leafer template preview, shared with scene thumbnails */}
+              <div className="relative w-full overflow-hidden bg-slate-950">
+                <CanvasThumbnail
+                  snapshot={{ canvasConfig: tpl.canvasConfig, elements: tpl.elements }}
+                  emptyLabel={tr('template.previewEmpty', '空白模板')}
+                  height={180}
+                />
+                <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                  {tpl.categoryName}
                 </div>
 
                 {/* Hover Quick Action Buttons */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenTemplate(tpl)}
+                    className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 text-white rounded shadow hover:bg-blue-500 flex items-center gap-1"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    打开编辑
+                  </button>
                   <button
                     type="button"
                     onClick={() => setPreviewTemplate(tpl)}
@@ -175,20 +265,13 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
 
             {/* Preview Box */}
             <div
-              className="w-full aspect-[2/3] max-h-[320px] rounded-lg border border-border flex flex-col items-center justify-center p-4 shadow-inner relative overflow-hidden"
-              style={{ background: previewTemplate.coverBg }}
+              className="w-full max-h-[320px] rounded-lg border border-border shadow-inner relative overflow-hidden"
             >
-              <div className="text-center space-y-2 drop-shadow-xl">
-                <span className="px-2.5 py-0.5 text-[10px] font-bold text-white bg-black/50 rounded-full border border-white/20">
-                  {previewTemplate.categoryName}
-                </span>
-                <div className="text-xl font-black text-white leading-tight drop-shadow-2xl">
-                  {previewTemplate.name}
-                </div>
-                <div className="text-[11px] text-white/80 max-w-xs mx-auto">
-                  {tr('template.elementCount', `包含 ${previewTemplate.elements.length} 个图元组件`)}
-                </div>
-              </div>
+              <CanvasThumbnail
+                snapshot={{ canvasConfig: previewTemplate.canvasConfig, elements: previewTemplate.elements }}
+                emptyLabel={tr('template.previewEmpty', '空白模板')}
+                height={320}
+              />
             </div>
 
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -203,15 +286,47 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => handleApplyTemplate(previewTemplate)}
+                onClick={() => handleOpenTemplate(previewTemplate)}
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md"
               >
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                {tr('template.applyConfirm', '载入此模板场景')}
+                打开并编辑模板
               </Button>
             </div>
           </div>
         </div>
+      )}
+
+      {templateContextMenu && (
+        <ListContextMenu
+          pos={templateContextMenu}
+          onClose={() => setTemplateContextMenu(null)}
+          actions={[
+            {
+              label: '打开编辑',
+              icon: Pencil,
+              tone: 'accent',
+              onClick: () => handleOpenTemplate(templateContextMenu.template),
+            },
+            {
+              label: '应用到场景',
+              icon: Sparkles,
+              tone: 'accent',
+              onClick: () => handleApplyTemplate(templateContextMenu.template),
+            },
+            {
+              label: '重命名模板',
+              icon: Pencil,
+              onClick: () => { void handleRenameTemplate(templateContextMenu.template) },
+            },
+            {
+              label: '删除模板',
+              icon: Trash2,
+              tone: 'danger',
+              onClick: () => { void handleDeleteTemplate(templateContextMenu.template) },
+            },
+          ]}
+        />
       )}
     </div>
   )

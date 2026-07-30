@@ -15,6 +15,7 @@ type SaveStatusState = {
 
 type EditorSaveSnapshot = {
   currentSceneId: string | null
+  editingTemplateId?: string | null
   projectName: string
   projectCategory: string
   canvasConfig: unknown
@@ -49,6 +50,7 @@ export const useSaveStatusStore = create<SaveStatusState>((set) => ({
 export function buildEditorSaveFingerprint(snapshot: EditorSaveSnapshot) {
   return JSON.stringify({
     currentSceneId: snapshot.currentSceneId,
+    editingTemplateId: snapshot.editingTemplateId ?? null,
     projectName: snapshot.projectName,
     projectCategory: snapshot.projectCategory,
     canvasConfig: snapshot.canvasConfig,

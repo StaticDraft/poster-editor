@@ -70,17 +70,24 @@ export function TopToolbar() {
   }
 
   const handleSaveScene = () => {
-    useEditorStore.getState().saveScene()
+    const store = useEditorStore.getState()
+    const isTemplate = Boolean(store.editingTemplateId)
+    if (isTemplate) {
+      store.saveTemplate()
+    } else {
+      store.saveScene()
+    }
     const state = useEditorStore.getState()
     markSaved(buildEditorSaveFingerprint({
       currentSceneId: state.currentSceneId,
+      editingTemplateId: state.editingTemplateId,
       projectName: state.projectName,
       projectCategory: state.projectCategory,
       canvasConfig: state.canvasConfig,
       elements: state.elements,
     }))
     feedback.notify({
-      title: tr('canvasConfig.saved', '海报已保存'),
+      title: isTemplate ? '模板已保存' : tr('canvasConfig.saved', '海报已保存'),
       tone: 'success',
     })
   }

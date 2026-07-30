@@ -7,6 +7,7 @@ import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
 import { cn } from '@/lib/utils'
 import { CanvasThumbnail, type CanvasThumbnailSnapshot } from './CanvasThumbnail'
 import { useAppSettingsStore } from '@/store/useAppSettingsStore'
+import { ListContextMenu } from '@/components/ui/list-context-menu'
 
 type SceneRecord = {
   canvasConfig?: CanvasConfig
@@ -54,6 +55,7 @@ export function SceneList() {
   const renameScene = useEditorStore((state) => state.renameScene)
   const duplicateScene = useEditorStore((state) => state.duplicateScene)
   const [scenePreviews, setScenePreviews] = useState<Record<string, CanvasThumbnailSnapshot | null>>({})
+  const [sceneContextMenu, setSceneContextMenu] = useState<{ x: number; y: number; scene: typeof scenes[number] } | null>(null)
 
   useEffect(() => {
     const nextPreviews: Record<string, CanvasThumbnailSnapshot | null> = {}
@@ -218,6 +220,11 @@ export function SceneList() {
             <div
               key={scene.id}
               onClick={() => handleSelect(scene.id)}
+              onContextMenu={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                setSceneContextMenu({ x: event.clientX, y: event.clientY, scene })
+              }}
               className={cn(
                 'group flex cursor-pointer flex-col gap-2 rounded-md border border-transparent p-2.5 transition-all',
                 currentSceneId === scene.id
@@ -296,6 +303,25 @@ export function SceneList() {
         </span>
         {tr('scene.autoSaveHint', '* 画布进度自动本地存档，不用担心网络中断。')}
       </div>
+      {sceneContextMenu && (
+        <ListContextMenu
+          pos={sceneContextMenu}
+          onClose={() => setSceneContextMenu(null)}
+          actions={[
+            {
+              label: tr('scene.rename', '重命名'),
+              icon: Pencil,
+              onClick: () => { void handleRename(sceneContextMenu.scene.id, sceneContextMenu.scene.name) },
+            },
+            {
+              label: tr('common.delete', '删除'),
+              icon: Trash2,
+              tone: 'danger',
+              onClick: () => { void handleDelete(sceneContextMenu.scene.id, sceneContextMenu.scene.name) },
+            },
+          ]}
+        />
+      )}
     </div>
   )
 }

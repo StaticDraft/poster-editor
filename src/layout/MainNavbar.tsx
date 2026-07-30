@@ -123,6 +123,8 @@ export function MainNavbar() {
     })
     if (confirmed) {
       clearNodes()
+      useEditorStore.getState().setCurrentSceneId(null)
+      useEditorStore.getState().setEditingTemplateId(null)
       setProjectName(tr('navbar.newProject', '新设定海报'))
     }
     setActiveMenu(null)
@@ -162,6 +164,7 @@ export function MainNavbar() {
       projectName: data.projectName || data.name || projectName,
       projectCategory: data.projectCategory || projectCategory,
       currentSceneId: null,
+      editingTemplateId: null,
       activeIds: [],
     })
 

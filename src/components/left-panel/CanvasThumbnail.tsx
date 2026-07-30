@@ -110,9 +110,11 @@ function LeaferThumbnailScene({ snapshot }: { snapshot: CanvasThumbnailSnapshot 
 export function CanvasThumbnail({
   snapshot,
   emptyLabel,
+  height = 120,
 }: {
   snapshot: CanvasThumbnailSnapshot | null
   emptyLabel: string
+  height?: number
 }) {
   if (!snapshot) {
     return (
@@ -125,7 +127,7 @@ export function CanvasThumbnail({
   const aspectRatio = getAspectRatio(snapshot.canvasConfig)
   const posterStyle = getPosterStyle(aspectRatio)
   const hasContent = snapshot.elements.some((element) => !element.hidden)
-  const frameStyle: React.CSSProperties = { height: '120px', width: '100%' }
+  const frameStyle: React.CSSProperties = { height: `${height}px`, width: '100%' }
 
   if (!hasContent) {
     return (

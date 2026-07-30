@@ -27,18 +27,21 @@ function App() {
   const name = useEditorStore(s => s.projectName)
   const cat = useEditorStore(s => s.projectCategory)
   const saveScene = useEditorStore(s => s.saveScene)
+  const saveTemplate = useEditorStore(s => s.saveTemplate)
   const currentSceneId = useEditorStore(s => s.currentSceneId)
+  const editingTemplateId = useEditorStore(s => s.editingTemplateId)
   const autoSaveEnabled = useAppSettingsStore(s => s.autoSave)
   const lastSavedFingerprint = useSaveStatusStore(s => s.lastFingerprint)
   const didInitRef = useRef(false)
 
   const saveFingerprint = useMemo(() => buildEditorSaveFingerprint({
     currentSceneId,
+    editingTemplateId,
     projectName: name,
     projectCategory: cat,
     canvasConfig: config,
     elements,
-  }), [cat, config, currentSceneId, elements, name])
+  }), [cat, config, currentSceneId, editingTemplateId, elements, name])
 
   useEffect(() => {
     if (isPreview) return
@@ -52,15 +55,17 @@ function App() {
 
   // Auto-save logic: debounced 1.5s after any canvas change
   useEffect(() => {
-    if (!autoSaveEnabled || !currentSceneId || isPreview || saveFingerprint === lastSavedFingerprint) return
+    if (!autoSaveEnabled || (!currentSceneId && !editingTemplateId) || isPreview || saveFingerprint === lastSavedFingerprint) return
     
     const timer = setTimeout(() => {
       try {
         markSaving()
-        saveScene()
+        if (editingTemplateId) saveTemplate()
+        else saveScene()
         const state = useEditorStore.getState()
         markSaved(buildEditorSaveFingerprint({
           currentSceneId: state.currentSceneId,
+          editingTemplateId: state.editingTemplateId,
           projectName: state.projectName,
           projectCategory: state.projectCategory,
           canvasConfig: state.canvasConfig,
@@ -72,7 +77,7 @@ function App() {
     }, 1500) // 1.5s debounce
 
     return () => clearTimeout(timer)
-  }, [autoSaveEnabled, currentSceneId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene])
+  }, [autoSaveEnabled, currentSceneId, editingTemplateId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene, saveTemplate])
 
   return (
     <>

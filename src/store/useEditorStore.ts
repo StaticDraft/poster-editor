@@ -18,6 +18,7 @@ import {
   MoveBackwardCommand,
   CutCommand,
 } from './commands/layoutCommands'
+import { saveTemplateOverride } from '@/lib/templatePreferences'
 
 export interface EditorNode {
   id: string
@@ -96,9 +97,12 @@ interface EditorState {
 
   scenes: { id: string; name: string; category: string; lastModified: string }[]
   currentSceneId: string | null
+  editingTemplateId: string | null
   setCurrentSceneId: (id: string | null) => void
+  setEditingTemplateId: (id: string | null) => void
   loadScene: (id: string) => void
   saveScene: () => void
+  saveTemplate: () => boolean
   createScene: (name?: string) => void
   createSceneFromCurrent: (name?: string) => string
   renameScene: (id: string, name: string) => void
@@ -251,7 +255,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
     scenes: [],
     currentSceneId: null,
+    editingTemplateId: null,
     setCurrentSceneId: (id) => set({ currentSceneId: id }),
+    setEditingTemplateId: (id) => set({ editingTemplateId: id }),
     initScenes: () => {
       const raw = localStorage.getItem('poster_scenes_index')
       if (raw) {
@@ -270,6 +276,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
           elements: data.elements || [],
           canvasConfig: data.canvasConfig || get().canvasConfig,
           currentSceneId: id,
+          editingTemplateId: null,
           activeIds: [],
         })
         cmdManager.clear()
@@ -303,10 +310,25 @@ export const useEditorStore = create<EditorState>((set, get) => {
       localStorage.setItem('poster_scenes_index', JSON.stringify(newIndex))
       set({ scenes: newIndex, currentSceneId: id })
     },
+    saveTemplate: () => {
+      const state = get()
+      if (!state.editingTemplateId) return false
+
+      saveTemplateOverride(state.editingTemplateId, {
+        canvasConfig: {
+          width: state.canvasConfig.width,
+          height: state.canvasConfig.height,
+          bgColor: state.canvasConfig.bgColor,
+        },
+        elements: state.elements,
+      })
+      return true
+    },
     createScene: (name = 'New Poster') => {
       const id = createSceneId(new Set(get().scenes.map((scene) => scene.id)))
       set({
         currentSceneId: id,
+        editingTemplateId: null,
         projectName: name,
         projectCategory: 'Posters',
         elements: [],
@@ -320,6 +342,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
       const sceneName = name?.trim() || get().projectName || '转换海报场景'
       set({
         currentSceneId: id,
+        editingTemplateId: null,
         projectName: sceneName,
         projectCategory: 'Posters',
       })

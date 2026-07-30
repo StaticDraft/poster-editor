@@ -1,13 +1,19 @@
-import { useState, useMemo } from 'react'
-import { LayoutTemplate, Eye, Sparkles, X, CheckCircle2 } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { LayoutTemplate, Eye, Sparkles, X, CheckCircle2, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
-  PRESET_TEMPLATES,
   TEMPLATE_CATEGORIES,
   type PresetTemplate,
 } from '@/lib/presetTemplates'
-import { useEditorStore } from '@/store/useEditorStore'
+import { cmdManager, useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
+import {
+  getVisibleTemplates,
+  loadTemplatePreferences,
+  TEMPLATE_PREFERENCES_UPDATED_EVENT,
+  type TemplatePreferences,
+} from '@/lib/templatePreferences'
+import { CanvasThumbnail } from '@/components/left-panel/CanvasThumbnail'
 
 interface TemplateModalProps {
   open: boolean
@@ -17,20 +23,39 @@ interface TemplateModalProps {
 export function TemplateModal({ open, onClose }: TemplateModalProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all')
   const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
+  const [templatePreferences, setTemplatePreferences] = useState<TemplatePreferences>(() => loadTemplatePreferences())
   const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
   const setElements = useEditorStore((state) => state.setElements)
 
+  useEffect(() => {
+    const refreshPreferences = () => {
+      // Keep the modal preview in sync after saving a template from the canvas.
+      const next = loadTemplatePreferences()
+      setTemplatePreferences(next)
+    }
+    window.addEventListener(TEMPLATE_PREFERENCES_UPDATED_EVENT, refreshPreferences)
+    return () => window.removeEventListener(TEMPLATE_PREFERENCES_UPDATED_EVENT, refreshPreferences)
+  }, [])
+
   const filteredTemplates = useMemo(() => {
-    if (activeCategory === 'all') return PRESET_TEMPLATES
-    return PRESET_TEMPLATES.filter((t) => t.categoryId === activeCategory)
-  }, [activeCategory])
+    const templates = getVisibleTemplates(templatePreferences)
+    if (activeCategory === 'all') return templates
+    return templates.filter((t) => t.categoryId === activeCategory)
+  }, [activeCategory, templatePreferences])
+
+  const visibleTemplates = useMemo(
+    () => getVisibleTemplates(templatePreferences),
+    [templatePreferences],
+  )
 
   if (!open) return null
 
   const setProjectName = useEditorStore((state) => state.setProjectName)
 
   const handleApplyTemplate = (tpl: PresetTemplate) => {
+    const store = useEditorStore.getState()
+    store.setEditingTemplateId(null)
     // 1. Update Canvas config & Project Name
     setCanvasConfig(tpl.canvasConfig)
     setProjectName(tpl.name)
@@ -50,6 +75,26 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
     onClose()
   }
 
+  const handleOpenTemplate = (tpl: PresetTemplate) => {
+    const store = useEditorStore.getState()
+    // Template editing is a separate draft and must not create or overwrite a scene.
+    store.setCurrentSceneId(null)
+    store.setEditingTemplateId(tpl.id)
+    store.setCanvasConfig({ ...tpl.canvasConfig, lockPan: false, lockZoom: false })
+    store.setProjectName(tpl.name)
+    store.setProjectCategory(tpl.categoryName)
+    store.setElements(tpl.elements.map((el) => ({
+      ...el,
+      id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    })))
+    store.setActiveIds([])
+    cmdManager.clear()
+    window.history.pushState(null, '', `?template=${encodeURIComponent(tpl.id)}`)
+    feedback.notify({ title: '模板已打开', description: `已载入「${tpl.name}」，现在可以继续编辑。`, tone: 'success' })
+    setPreviewTemplate(null)
+    onClose()
+  }
+
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in-0">
       <div className="relative w-full max-w-4xl max-h-[85vh] bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col">
@@ -59,7 +104,7 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
             <LayoutTemplate className="w-5 h-5 text-purple-500" />
             <span className="text-base font-bold text-foreground">海报模板库 - 分类模版全集</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-mono font-bold">
-              {PRESET_TEMPLATES.length} 款内置海报
+              {visibleTemplates.length} 款内置海报
             </span>
           </div>
           <Button variant="ghost" size="icon" className="w-8 h-8 rounded-full" onClick={onClose}>
@@ -78,10 +123,10 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
                 : 'bg-muted/40 border-border text-foreground hover:bg-muted'
             }`}
           >
-            全部分类 ({PRESET_TEMPLATES.length})
+            全部分类 ({visibleTemplates.length})
           </button>
           {TEMPLATE_CATEGORIES.map((cat) => {
-            const count = PRESET_TEMPLATES.filter((t) => t.categoryId === cat.id).length
+            const count = visibleTemplates.filter((t) => t.categoryId === cat.id).length
             return (
               <button
                 key={cat.id}
@@ -107,21 +152,27 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
               className="group relative flex flex-col bg-muted/20 border border-border hover:border-purple-500 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all"
             >
               {/* Cover Card */}
-              <div
-                className="w-full aspect-[2/3] relative flex items-center justify-center p-4 transition-transform group-hover:scale-[1.02]"
-                style={{ background: tpl.coverBg }}
-              >
-                <div className="text-center space-y-2 pointer-events-none drop-shadow-md">
-                  <span className="inline-block px-2.5 py-1 text-[10px] font-bold text-white bg-black/40 backdrop-blur-md rounded-full border border-white/20">
-                    {tpl.categoryName}
-                  </span>
-                  <div className="text-lg font-black text-white px-2 leading-tight drop-shadow-lg">
-                    {tpl.name}
-                  </div>
+              <div className="relative w-full overflow-hidden bg-slate-950">
+                <CanvasThumbnail
+                  snapshot={{ canvasConfig: tpl.canvasConfig, elements: tpl.elements }}
+                  emptyLabel="空白模板"
+                  height={300}
+                />
+                <div className="pointer-events-none absolute left-3 top-3 z-10 rounded bg-black/50 px-2 py-1 text-[10px] font-bold text-white backdrop-blur-sm">
+                  {tpl.categoryName}
                 </div>
 
                 {/* Action Hover Overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleOpenTemplate(tpl)}
+                    className="w-36 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1" />
+                    打开编辑
+                  </Button>
                   <Button
                     variant="secondary"
                     size="sm"
@@ -173,21 +224,12 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
             </div>
 
             {/* Large Preview Canvas Box */}
-            <div
-              className="w-full aspect-[2/3] max-h-[380px] rounded-lg border border-border flex flex-col items-center justify-center p-6 shadow-inner relative overflow-hidden"
-              style={{ background: previewTemplate.coverBg }}
-            >
-              <div className="text-center space-y-3 drop-shadow-xl">
-                <span className="px-3 py-1 text-xs font-bold text-white bg-black/50 rounded-full border border-white/20">
-                  {previewTemplate.categoryName}
-                </span>
-                <div className="text-2xl font-black text-white leading-tight drop-shadow-2xl">
-                  {previewTemplate.name}
-                </div>
-                <div className="text-xs text-white/80 max-w-xs mx-auto">
-                  包含 {previewTemplate.elements.length} 个图元组件（标题、图形、动态二维码/条码）
-                </div>
-              </div>
+            <div className="w-full max-h-[380px] rounded-lg border border-border shadow-inner relative overflow-hidden">
+              <CanvasThumbnail
+                snapshot={{ canvasConfig: previewTemplate.canvasConfig, elements: previewTemplate.elements }}
+                emptyLabel="空白模板"
+                height={380}
+              />
             </div>
 
             <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
@@ -202,11 +244,11 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => handleApplyTemplate(previewTemplate)}
+                onClick={() => handleOpenTemplate(previewTemplate)}
                 className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md"
               >
                 <CheckCircle2 className="w-3 h-3 mr-1" />
-                载入并转换为我的海报场景
+                打开并编辑模板
               </Button>
             </div>
           </div>

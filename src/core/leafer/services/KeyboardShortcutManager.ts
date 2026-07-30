@@ -185,10 +185,13 @@ const keyHandlers: KeyHandler[] = [
   (e, ctx) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault()
-      useEditorStore.getState().saveScene()
+      const store = useEditorStore.getState()
+      if (store.editingTemplateId) store.saveTemplate()
+      else store.saveScene()
       const state = useEditorStore.getState()
       markSaved(buildEditorSaveFingerprint({
         currentSceneId: state.currentSceneId,
+        editingTemplateId: state.editingTemplateId,
         projectName: state.projectName,
         projectCategory: state.projectCategory,
         canvasConfig: state.canvasConfig,

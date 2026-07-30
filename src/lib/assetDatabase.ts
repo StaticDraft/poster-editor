@@ -278,3 +278,23 @@ export async function deleteUserAsset(id: string): Promise<void> {
     request.onerror = (e) => reject(e)
   })
 }
+
+export async function renameUserAsset(id: string, name: string): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_ASSETS, 'readwrite')
+    const store = tx.objectStore(STORE_ASSETS)
+    const request = store.get(id)
+    request.onsuccess = () => {
+      const asset = request.result as UserAsset | undefined
+      if (!asset) {
+        reject(new Error('Asset not found'))
+        return
+      }
+      const updateRequest = store.put({ ...asset, name: name.trim() })
+      updateRequest.onsuccess = () => resolve()
+      updateRequest.onerror = (event) => reject(event)
+    }
+    request.onerror = (event) => reject(event)
+  })
+}
