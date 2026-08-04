@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
-import { LayoutTemplate, Eye, Sparkles, X, CheckCircle2, Pencil } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { Sparkles, Pencil, LayoutTemplate, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   TEMPLATE_CATEGORIES,
@@ -21,8 +22,8 @@ interface TemplateModalProps {
 }
 
 export function TemplateModal({ open, onClose }: TemplateModalProps) {
+  const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState<string>('all')
-  const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
   const [templatePreferences, setTemplatePreferences] = useState<TemplatePreferences>(() => loadTemplatePreferences())
   const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
@@ -30,7 +31,6 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
 
   useEffect(() => {
     const refreshPreferences = () => {
-      // Keep the modal preview in sync after saving a template from the canvas.
       const next = loadTemplatePreferences()
       setTemplatePreferences(next)
     }
@@ -38,10 +38,15 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
     return () => window.removeEventListener(TEMPLATE_PREFERENCES_UPDATED_EVENT, refreshPreferences)
   }, [])
 
+  const tr = (key: string, fallback: string) => {
+    const val = t(key)
+    return val === key ? fallback : val
+  }
+
   const filteredTemplates = useMemo(() => {
     const templates = getVisibleTemplates(templatePreferences)
     if (activeCategory === 'all') return templates
-    return templates.filter((t) => t.categoryId === activeCategory)
+    return templates.filter((tpl) => tpl.categoryId === activeCategory)
   }, [activeCategory, templatePreferences])
 
   const visibleTemplates = useMemo(
@@ -56,10 +61,8 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
   const handleApplyTemplate = (tpl: PresetTemplate) => {
     const store = useEditorStore.getState()
     store.setEditingTemplateId(null)
-    // 1. Update Canvas config & Project Name
     setCanvasConfig(tpl.canvasConfig)
     setProjectName(tpl.name)
-    // 2. Clone elements to ensure fresh unique IDs
     const clonedElements = tpl.elements.map((el) => ({
       ...el,
       id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -71,13 +74,11 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
       description: '已在主画布载入模板！右键点击画布选择「转为场景」即可保存至页面目录',
       tone: 'success',
     })
-    setPreviewTemplate(null)
     onClose()
   }
 
   const handleOpenTemplate = (tpl: PresetTemplate) => {
     const store = useEditorStore.getState()
-    // Template editing is a separate draft and must not create or overwrite a scene.
     store.setCurrentSceneId(null)
     store.setEditingTemplateId(tpl.id)
     store.setCanvasConfig({ ...tpl.canvasConfig, lockPan: false, lockZoom: false })
@@ -91,7 +92,6 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
     cmdManager.clear()
     window.history.pushState(null, '', `?template=${encodeURIComponent(tpl.id)}`)
     feedback.notify({ title: '模板已打开', description: `已载入「${tpl.name}」，现在可以继续编辑。`, tone: 'success' })
-    setPreviewTemplate(null)
     onClose()
   }
 
@@ -163,33 +163,24 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
                 </div>
 
                 {/* Action Hover Overlay */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-4">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleOpenTemplate(tpl)}
-                    className="w-36 text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md"
-                  >
-                    <Pencil className="w-3.5 h-3.5 mr-1" />
-                    打开编辑
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPreviewTemplate(tpl)}
-                    className="w-36 text-xs font-bold bg-white/90 hover:bg-white text-slate-900 shadow-md"
-                  >
-                    <Eye className="w-3.5 h-3.5 mr-1 text-purple-600" />
-                    预览海报细节
-                  </Button>
+                <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-3 p-4 backdrop-blur-[2px]">
                   <Button
                     variant="default"
                     size="sm"
                     onClick={() => handleApplyTemplate(tpl)}
-                    className="w-36 text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-md"
+                    className="w-40 text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-md"
                   >
                     <Sparkles className="w-3.5 h-3.5 mr-1" />
-                    转换二次编辑
+                    {tr('template.useTemplate', '使用模板')}
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleOpenTemplate(tpl)}
+                    className="w-40 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-100 border border-slate-600/60 shadow-md"
+                  >
+                    <Pencil className="w-3.5 h-3.5 mr-1 text-blue-400" />
+                    {tr('template.openEdit', '打开编辑')}
                   </Button>
                 </div>
               </div>
@@ -208,52 +199,6 @@ export function TemplateModal({ open, onClose }: TemplateModalProps) {
           ))}
         </div>
       </div>
-
-      {/* Template Detail Preview Modal */}
-      {previewTemplate && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in-0">
-          <div className="relative w-full max-w-lg bg-card border border-border rounded-xl shadow-2xl p-6 overflow-hidden flex flex-col gap-4">
-            <div className="flex items-center justify-between border-b border-border pb-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-500" />
-                <span className="font-bold text-sm text-foreground">海报模板预览 - {previewTemplate.name}</span>
-              </div>
-              <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={() => setPreviewTemplate(null)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Large Preview Canvas Box */}
-            <div className="w-full max-h-[380px] rounded-lg border border-border shadow-inner relative overflow-hidden">
-              <CanvasThumbnail
-                snapshot={{ canvasConfig: previewTemplate.canvasConfig, elements: previewTemplate.elements }}
-                emptyLabel="空白模板"
-                height={380}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-              <span>画布规格: {previewTemplate.canvasConfig.width} x {previewTemplate.canvasConfig.height} px</span>
-              <span>图元组件: {previewTemplate.elements.length} 个</span>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)} className="text-xs">
-                返回列表
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleOpenTemplate(previewTemplate)}
-                className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md"
-              >
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                打开并编辑模板
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

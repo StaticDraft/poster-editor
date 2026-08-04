@@ -183,7 +183,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-lantern',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=90&w=2000',
+        url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -892,7 +892,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'bg-photo-tea',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=90&w=2000',
+        url: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=90&w=2000',
         x: 0,
         y: 0,
         width: 800,
@@ -996,7 +996,7 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
       {
         id: 'porcelain-img',
         type: 'Image',
-        url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=90&w=1600',
+        url: 'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?q=90&w=1600',
         x: 100,
         y: 280,
         width: 600,

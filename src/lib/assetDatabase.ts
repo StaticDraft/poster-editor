@@ -27,7 +27,7 @@ export const PRESET_POSTER_FOLDER_ID = 'folder-preset-poster-hd'
 export const PRESET_POSTER_HD_IMAGES = [
   { id: 'img-hd-qingming-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '清明 · 春绿竹风', url: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?q=80&w=400', width: 800, height: 1200, createdAt: 1000 },
   { id: 'img-hd-qingming-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '清明 · 踏青风光', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=400', width: 600, height: 480, createdAt: 2000 },
-  { id: 'img-hd-yuanxiao-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '元宵 · 红灯笼海报', url: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1543783232-f72f06aa02bd?q=80&w=400', width: 800, height: 1200, createdAt: 3000 },
+  { id: 'img-hd-yuanxiao-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '元宵 · 红灯笼海报', url: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1514565131-fce0801e5785?q=80&w=400', width: 800, height: 1200, createdAt: 3000 },
   { id: 'img-hd-yuanxiao-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '元宵 · 吉祥汤圆', url: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=400', width: 600, height: 480, createdAt: 4000 },
   { id: 'img-hd-midautumn-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '中秋 · 金色明月', url: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1532693322450-2cb5c511067d?q=80&w=400', width: 800, height: 1200, createdAt: 5000 },
   { id: 'img-hd-midautumn-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '中秋 · 月饼大图', url: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=80&w=400', width: 600, height: 480, createdAt: 6000 },
@@ -41,10 +41,10 @@ export const PRESET_POSTER_HD_IMAGES = [
   { id: 'img-hd-sneaker-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '618 · 爆款潮流球鞋', url: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400', width: 600, height: 480, createdAt: 14000 },
   { id: 'img-hd-cyberpunk-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '新品 · 赛博夜景背景', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?q=80&w=400', width: 800, height: 1200, createdAt: 15000 },
   { id: 'img-hd-headphone-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '新品 · 无线概念耳机', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=400', width: 600, height: 480, createdAt: 16000 },
-  { id: 'img-hd-tea-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 水墨禅茶', url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400', width: 800, height: 1200, createdAt: 17000 },
+  { id: 'img-hd-tea-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 水墨禅茶', url: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?q=80&w=400', width: 800, height: 1200, createdAt: 17000 },
   { id: 'img-hd-teapot-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 紫砂茶器', url: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?q=80&w=400', width: 600, height: 480, createdAt: 18000 },
   { id: 'img-hd-temple-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 宫殿原图', url: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1508804185872-d7badad00f7d?q=80&w=400', width: 800, height: 1200, createdAt: 19000 },
-  { id: 'img-hd-porcelain-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 青花瓷器', url: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?q=80&w=400', width: 600, height: 480, createdAt: 20000 },
+  { id: 'img-hd-porcelain-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '国潮 · 青花瓷器', url: 'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1528459801416-a9e53bbf4e17?q=80&w=400', width: 600, height: 480, createdAt: 20000 },
   { id: 'img-hd-studio-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 工作室办公台', url: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=400', width: 800, height: 1200, createdAt: 21000 },
   { id: 'img-hd-designer-hero', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 设计师工作区', url: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?q=90&w=1600', thumbnailUrl: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?q=80&w=400', width: 680, height: 420, createdAt: 22000 },
   { id: 'img-hd-server-bg', folderId: PRESET_POSTER_FOLDER_ID, name: '招聘 · 极客科技机房', url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=90&w=2000', thumbnailUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=400', width: 800, height: 1200, createdAt: 23000 },
@@ -211,6 +211,24 @@ export async function deleteAssetFolder(folderId: string): Promise<void> {
       if (cursor) {
         cursor.delete()
         cursor.continue()
+      }
+    }
+    tx.oncomplete = () => resolve()
+    tx.onerror = (e) => reject(e)
+  })
+}
+
+export async function renameAssetFolder(folderId: string, name: string): Promise<void> {
+  const db = await openDB()
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FOLDERS, 'readwrite')
+    const store = tx.objectStore(STORE_FOLDERS)
+    const req = store.get(folderId)
+    req.onsuccess = (e: any) => {
+      const folder = e.target.result as AssetFolder | undefined
+      if (folder) {
+        folder.name = name.trim()
+        store.put(folder)
       }
     }
     tx.oncomplete = () => resolve()

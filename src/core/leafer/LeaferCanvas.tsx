@@ -389,6 +389,50 @@ export function LeaferCanvas() {
     ensureBrandWatermark(app)
     useEditorStore.getState().setLeaferApp(app)
 
+    // ── 手动 Wheel 缩放/平移 ──
+    // Leafer 内部 interaction.wheel 管道存在兼容性问题（wheel 事件到达了
+    // interaction 但从未触发 zoom/move），此处用原生 DOM 事件操作 zoomLayer 绕过。
+    const WHEEL_ZOOM_SPEED = 0.0015
+    const WHEEL_ZOOM_MIN = 0.05
+    const WHEEL_ZOOM_MAX = 20
+    const WHEEL_PAN_SPEED = 1.5
+
+    const onCanvasWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const tree = (app as any).tree
+      const zoomLayer = tree?.zoomLayer
+      if (!zoomLayer) return
+
+      if (!e.shiftKey) {
+        // 缩放：默认滚轮行为，以鼠标位置为中心
+        const delta = e.deltaY
+        const currentScale = zoomLayer.scaleX || 1
+        const scaleFactor = Math.max(
+          WHEEL_ZOOM_MIN / currentScale,
+          Math.min(1 - delta * WHEEL_ZOOM_SPEED, WHEEL_ZOOM_MAX / currentScale),
+        )
+        const rect = containerRef.current!.getBoundingClientRect()
+        const screenX = e.clientX - rect.left
+        const screenY = e.clientY - rect.top
+        const pointX = (screenX - (zoomLayer.x || 0)) / currentScale
+        const pointY = (screenY - (zoomLayer.y || 0)) / currentScale
+        const newScale = Math.max(WHEEL_ZOOM_MIN, Math.min(currentScale * scaleFactor, WHEEL_ZOOM_MAX))
+        zoomLayer.set({
+          scaleX: newScale,
+          scaleY: newScale,
+          x: screenX - pointX * newScale,
+          y: screenY - pointY * newScale,
+        })
+      } else {
+        // 平移：Shift + 滚轮（横向滚动）
+        zoomLayer.set({
+          x: (zoomLayer.x || 0) - e.deltaY * WHEEL_PAN_SPEED,
+        })
+      }
+      app.forceRender?.(undefined, true)
+    }
+    containerRef.current!.addEventListener('wheel', onCanvasWheel, { passive: false })
+
     // Auto-fit artboard to viewport on first load & layout settle
     const autoFit = () => {
       useEditorStore.getState().zoomFit()
@@ -477,6 +521,7 @@ export function LeaferCanvas() {
      })
 
     return () => {
+      containerRef.current?.removeEventListener('wheel', onCanvasWheel)
       ro.disconnect()
       boardRef.current = null
       brandWatermarkRef.current = null
@@ -645,17 +690,62 @@ export function LeaferCanvas() {
   }
 
   const lastMiddleClickRef = useRef<number>(0)
+  const middleDragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
+  const MIDDLE_DBLCLICK_THRESHOLD_MS = 350
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 1) {
       e.preventDefault()
+
+      // 中键双击：适应画布
       const now = Date.now()
-      if (now - lastMiddleClickRef.current < 350) {
+      if (now - lastMiddleClickRef.current < MIDDLE_DBLCLICK_THRESHOLD_MS) {
         useEditorStore.getState().zoomFit()
         lastMiddleClickRef.current = 0
-      } else {
-        lastMiddleClickRef.current = now
+        return
       }
+      lastMiddleClickRef.current = now
+
+      // 中键拖拽：平移画布
+      const tree = (appRef.current as any)?.tree
+      const zoomLayer = tree?.zoomLayer
+      if (!zoomLayer) return
+
+      middleDragRef.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        origX: zoomLayer.x || 0,
+        origY: zoomLayer.y || 0,
+      }
+
+      let rafId = 0
+
+      const onMouseMove = (ev: MouseEvent) => {
+        const drag = middleDragRef.current
+        if (!drag) return
+        const dx = ev.clientX - drag.startX
+        const dy = ev.clientY - drag.startY
+
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(() => {
+          zoomLayer.set({
+            x: drag.origX + dx,
+            y: drag.origY + dy,
+          })
+          appRef.current?.forceRender?.(undefined, true)
+          rafId = 0
+        })
+      }
+
+      const onMouseUp = () => {
+        middleDragRef.current = null
+        if (rafId) cancelAnimationFrame(rafId)
+        window.removeEventListener('mousemove', onMouseMove)
+        window.removeEventListener('mouseup', onMouseUp)
+      }
+
+      window.addEventListener('mousemove', onMouseMove)
+      window.addEventListener('mouseup', onMouseUp)
     }
   }
 

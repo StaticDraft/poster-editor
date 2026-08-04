@@ -44,6 +44,23 @@
     "clearCanvasDesc": "All nodes, edges and variables in the current scene will be removed and cannot be recovered.",
     "clearCanvasSuccess": "Canvas cleared"
   },
+  "template": {
+    "title": "Poster Templates",
+    "folderGallery": "Template Directory",
+    "allCategories": "All Templates",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "noMatch": "No templates found",
+    "noMatchInFolder": "No matching templates in this category",
+    "copyrightNotice": "Sample template assets for demo. Verify licensing before commercial use.",
+    "previewEmpty": "Empty Template",
+    "useTemplate": "Use Template",
+    "openEdit": "Edit Template",
+    "rename": "Rename Template",
+    "delete": "Delete Template",
+    "dimensions": "Dimensions",
+    "elements": "Elements"
+  },
   "topToolbar": {
     "exportToast": "Canvas schema exported"
   },

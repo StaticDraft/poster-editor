@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Sparkles, Folder, FolderPlus, FolderOpen, Grid, Pencil } from 'lucide-react'
+import { Type, Upload, ChevronDown, ChevronRight, Image as ImageIcon, QrCode, Barcode, Trash2, Folder, FolderPlus, FolderOpen, Grid, Pencil } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import {
   getAssetFolders,
   createAssetFolder,
   deleteAssetFolder,
+  renameAssetFolder,
   getUserAssetsPaged,
   saveUserAsset,
   deleteUserAsset,
@@ -24,7 +25,7 @@ const PATHS = {
   diamond:       'M50 2 L98 50 L50 98 L2 50 Z',
   pentagon:      'M50 2 L97 35 L79 94 L21 94 L3 35 Z',
   hexagon:       'M25 3 L75 3 L98 46 L75 93 L25 93 L2 46 Z',
-  retroStar:     'M50 5 Q50 50 5 50 Q50 50 50 95 Q50 50 95 50 Q50 50 50 5 Z', // 4-point star
+  retroStar:     'M50 5 Q50 50 5 50 Q50 50 50 95 Q50 50 95 50 Q50 50 50 5 Z',
   blob1:         'M25 20 Q10 40 25 60 T75 60 T85 30 T50 15 Z',
   blob2:         'M20 30 Q30 5 60 15 T85 45 T75 85 T35 75 Z',
   badge:         'M50 2 L60 38 L98 38 L67 60 L79 96 L50 75 L21 96 L33 60 L2 38 L40 38 Z',
@@ -108,9 +109,6 @@ const CATEGORIES = [
   }
 ]
 
-// ─────────────────────────────────────────────────
-// Inline SVG previews for shapes (replaces icon)
-// ─────────────────────────────────────────────────
 function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius }: any) {
   if (type === 'Mosaic') {
     return <Grid className="w-7 h-7 text-indigo-400 mb-0.5" />
@@ -155,7 +153,6 @@ function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius
   if (type === 'Image') {
     return <ImageIcon className="w-7 h-7 text-pink-400 mb-0.5" />
   }
-  // Rect
   return (
     <svg viewBox="0 0 100 60" className="w-7 h-5 mb-0.5">
       <rect x="3" y="3" width="94" height="54" rx={cornerRadius ? 10 : 2} fill={fill || '#3b82f6'} />
@@ -165,28 +162,56 @@ function ShapePreview({ type, fill, unitPath, corners, innerRadius, cornerRadius
 
 export function MaterialPanel({ searchFilter = '', mode = 'components' }: { searchFilter?: string; mode?: 'components' | 'assets' }) {
   const { t } = useTranslation()
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({ 'user-assets': true, 'text-nodes': true, 'basic-shapes': true, stickers: true, backgrounds: true, qrcodes: true })
   const feedback = useFeedback()
   const [folders, setFolders] = useState<AssetFolder[]>([])
-  const [activeFolderId, setActiveFolderId] = useState<string>('folder-default')
   const [showFolderInput, setShowFolderInput] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
 
-  const [userAssets, setUserAssets] = useState<UserAsset[]>([])
-  const [page, setPage] = useState(1)
-  const [totalCount, setTotalCount] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  // Map of assets for each folder ID (independent per-folder caching)
+  const [folderAssetsMap, setFolderAssetsMap] = useState<Record<string, { items: UserAsset[]; total: number }>>({})
+
+  // Multi-folder expansion state (all folders expanded by default)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+
   const [isUploading, setIsUploading] = useState(false)
   const [assetContextMenu, setAssetContextMenu] = useState<{ x: number; y: number; asset: UserAsset } | null>(null)
+
+  const tr = (key: string, fallback: string) => {
+    const value = t(key)
+    return value === key ? fallback : value
+  }
+
+  const loadFolderAssets = async (folderId: string) => {
+    try {
+      const res = await getUserAssetsPaged(folderId, 1, 100)
+      setFolderAssetsMap((prev) => ({
+        ...prev,
+        [folderId]: { items: res.items, total: res.total },
+      }))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const reloadAllFolderAssets = async (list: AssetFolder[]) => {
+    for (const f of list) {
+      await loadFolderAssets(f.id)
+    }
+  }
 
   const reloadFolders = async () => {
     try {
       const list = await getAssetFolders()
       setFolders(list)
-      if (list.length > 0 && !list.some((f) => f.id === activeFolderId)) {
-        setActiveFolderId(list[0].id)
-      }
+      // Initialize expanded state for new folders (default expanded)
+      setExpanded((prev) => {
+        const next = { ...prev }
+        list.forEach((f) => {
+          if (next[f.id] === undefined) next[f.id] = true
+        })
+        return next
+      })
+      await reloadAllFolderAssets(list)
     } catch (e) {
       console.error(e)
     }
@@ -196,28 +221,28 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     reloadFolders()
   }, [])
 
-  const loadPageData = async (folderId: string, targetPage: number, replace = false) => {
-    try {
-      setIsLoadingMore(true)
-      const res = await getUserAssetsPaged(folderId, targetPage, 8)
-      setTotalCount(res.total)
-      setHasMore(res.hasMore)
-      setPage(targetPage)
-      if (replace) {
-        setUserAssets(res.items)
-      } else {
-        setUserAssets((prev) => [...prev, ...res.items])
-      }
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setIsLoadingMore(false)
-    }
+  const isAllExpanded = useMemo(() => {
+    return folders.length > 0 && folders.every((f) => expanded[f.id] !== false)
+  }, [folders, expanded])
+
+  const toggleAllFolders = () => {
+    const nextState = !isAllExpanded
+    const updated: Record<string, boolean> = {}
+    folders.forEach((f) => {
+      updated[f.id] = nextState
+    })
+    setExpanded((prev) => ({ ...prev, ...updated }))
   }
 
-  useEffect(() => {
-    loadPageData(activeFolderId, 1, true)
-  }, [activeFolderId])
+  const toggleFolder = (folderId: string) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [folderId]: !prev[folderId],
+    }))
+    if (!folderAssetsMap[folderId]) {
+      loadFolderAssets(folderId)
+    }
+  }
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim()) return
@@ -226,7 +251,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
       setNewFolderName('')
       setShowFolderInput(false)
       await reloadFolders()
-      setActiveFolderId(folder.id)
+      setExpanded((prev) => ({ ...prev, [folder.id]: true }))
       feedback.notify({
         title: '目录创建成功',
         description: `已新建素材分类目录「${folder.name}」`,
@@ -234,6 +259,33 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
       })
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const handleRenameFolder = async (folder: AssetFolder, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    const nextName = await feedback.prompt({
+      title: '重命名素材目录',
+      description: '请输入新的素材目录名称。',
+      defaultValue: folder.name,
+      placeholder: '目录名称',
+      confirmLabel: '保存',
+      cancelLabel: '取消',
+      tone: 'info',
+      validate: (value) => (value.trim() ? null : '名称不能为空'),
+    })
+    if (!nextName || nextName.trim() === folder.name) return
+    try {
+      await renameAssetFolder(folder.id, nextName.trim())
+      await reloadFolders()
+      feedback.notify({
+        title: '目录重命名成功',
+        description: `素材目录已更名为「${nextName.trim()}」`,
+        tone: 'success',
+      })
+    } catch (err) {
+      console.error(err)
+      feedback.notify({ title: '目录重命名失败', tone: 'error' })
     }
   }
 
@@ -259,27 +311,18 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     }
   }
 
-  const handleScrollWaterfall = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, clientHeight, scrollHeight } = e.currentTarget
-    if (scrollHeight - scrollTop - clientHeight < 40 && hasMore && !isLoadingMore) {
-      loadPageData(activeFolderId, page + 1, false)
-    }
-  }
-
-  const handleUploadAsset = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadAssetToFolder = async (folderId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    const folderId = activeFolderId || folders[0]?.id || 'folder-default'
     setIsUploading(true)
     try {
       for (let i = 0; i < files.length; i++) {
         await saveUserAsset(files[i], folderId)
       }
-      setActiveFolderId(folderId)
-      await loadPageData(folderId, 1, true)
+      await loadFolderAssets(folderId)
       feedback.notify({
         title: tr('material.uploadSuccess', '素材已导入'),
-        description: tr('material.uploadSuccessDesc', '已保存到当前素材目录，可拖拽到画布使用。'),
+        description: tr('material.uploadSuccessDesc', '已保存到素材目录，可拖拽到画布使用。'),
         tone: 'success',
       })
     } catch (err) {
@@ -307,7 +350,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     if (!confirmed) return
     try {
       await deleteUserAsset(asset.id)
-      await loadPageData(activeFolderId, 1, true)
+      await loadFolderAssets(asset.folderId)
       feedback.notify({
         title: '素材已移除',
         tone: 'success',
@@ -331,7 +374,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     if (!nextName || nextName.trim() === asset.name) return
     try {
       await renameUserAsset(asset.id, nextName)
-      await loadPageData(activeFolderId, 1, true)
+      await loadFolderAssets(asset.folderId)
       feedback.notify({ title: '素材名称已更新', description: nextName.trim(), tone: 'success' })
     } catch (error) {
       console.error(error)
@@ -339,12 +382,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     }
   }
 
-  const tr = (key: string, fallback: string) => {
-    const value = t(key)
-    return value === key ? fallback : value
-  }
-
-  const filtered = useMemo(() => {
+  const filteredPresetCategories = useMemo(() => {
     if (mode === 'assets') return []
     let cats = CATEGORIES
     if (!searchFilter.trim()) return cats
@@ -362,33 +400,40 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
     e.dataTransfer.setData('application/json', JSON.stringify({ ...material, isMaterial: true }))
   }
 
-  const toggle = (id: string) => setExpanded(prev => ({ ...prev, [id]: !prev[id] }))
-  const activeFolderName = folders.find((folder) => folder.id === activeFolderId)?.name || tr('material.defaultFolder', '默认素材目录')
-
   return (
     <div className="flex flex-col w-full h-full min-h-0">
-      {/* IndexedDB User Asset Gallery Section with Folder Directories */}
+      {/* IndexedDB User Asset Gallery Section with Multi-Folder Directory List */}
       {(mode === 'assets' || !mode) && (
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Header & Create Folder */}
-          <div className="flex items-center justify-between px-3 py-1.5 mb-1.5 shrink-0">
+          {/* Header & Directory Actions */}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20 shrink-0">
             <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>{tr('material.folderGallery', '素材目录库')}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setShowFolderInput((prev) => !prev)}
-              className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors"
-            >
-              <FolderPlus className="w-3 h-3" />
-              {tr('material.newDirectory', '新建目录')}
-            </button>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={toggleAllFolders}
+                className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded border border-border/60 bg-card hover:bg-muted cursor-pointer select-none"
+              >
+                {isAllExpanded ? tr('template.collapseAll', '全部折叠') : tr('template.expandAll', '全部展开')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowFolderInput((prev) => !prev)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded transition-colors cursor-pointer select-none"
+              >
+                <FolderPlus className="w-3 h-3" />
+                {tr('material.newDirectory', '新建目录')}
+              </button>
+            </div>
           </div>
 
           {/* New Folder Inline Form */}
           {showFolderInput && (
-            <div className="mx-2 mb-2 p-2 bg-muted/40 border border-border rounded-md flex items-center gap-1.5 animate-in fade-in-0 shrink-0">
+            <div className="mx-2 my-2 p-2 bg-muted/40 border border-border rounded-md flex items-center gap-1.5 animate-in fade-in-0 shrink-0">
               <input
                 type="text"
                 value={newFolderName}
@@ -400,161 +445,157 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
               <button
                 type="button"
                 onClick={handleCreateFolder}
-                className="px-2.5 h-7 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded"
+                className="px-2.5 h-7 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded cursor-pointer"
               >
                 {tr('common.save', '确定')}
               </button>
             </div>
           )}
 
-          <div className="mx-2 mb-2 flex items-center gap-2 rounded-md border border-border/60 bg-editor-deep/70 px-2 py-1.5 shrink-0">
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-[11px] font-bold text-editor-text">
-                {tr('material.currentFolder', '当前目录')}: {activeFolderName}
-              </div>
-              <div className="truncate text-[10px] text-editor-text-dim">
-                {tr('material.uploadHint', '先选择目录，再导入 Logo、商品图或贴纸。')}
-              </div>
-            </div>
-            <label
-              className={`inline-flex h-7 shrink-0 items-center gap-1 rounded border px-2 text-[11px] font-bold transition-colors ${
-                isUploading
-                  ? 'cursor-wait border-blue-500/30 bg-blue-500/10 text-blue-300'
-                  : 'cursor-pointer border-blue-500/40 bg-blue-600/20 text-blue-300 hover:bg-blue-600/30 hover:text-blue-200'
-              }`}
-            >
-              <Upload className="h-3 w-3" />
-              {isUploading ? tr('material.uploading', '导入中') : tr('material.uploadToCurrent', '导入素材')}
-              <input
-                type="file"
-                accept="image/*,.svg"
-                multiple
-                className="hidden"
-                onChange={handleUploadAsset}
-                disabled={isUploading || folders.length === 0}
-              />
-            </label>
-          </div>
-
-          {/* Foldable Folder Directories - Stretch to Fill Height */}
-          <div className="flex-1 flex flex-col min-h-0 space-y-1.5 px-1 pb-2 overflow-y-auto">
+          {/* Multi-Folder Directory Item List (Matches Template Panel Sticky Header & Independent Expansion) */}
+          <div className="flex-1 px-1.5 pb-2 pt-0 overflow-y-auto space-y-2">
             {folders.map((folder) => {
-              const isExpanded = expanded[folder.id] ?? (folder.id === activeFolderId)
-              const isActive = folder.id === activeFolderId
+              const isExpanded = expanded[folder.id] !== false
+              const folderData = folderAssetsMap[folder.id] || { items: [], total: 0 }
+              const items = folderData.items
 
               return (
-                <div key={folder.id} className={`border border-border/60 rounded-md overflow-hidden bg-card/60 flex flex-col ${isActive && isExpanded ? 'flex-1 min-h-0' : 'shrink-0'}`}>
-                  {/* Folder Header Bar */}
+                <div key={folder.id} className="border border-border/70 rounded-lg bg-card/60 shadow-2xs flex flex-col">
+                  {/* Category Directory Sticky Header */}
                   <div
-                    onClick={() => {
-                      setActiveFolderId(folder.id)
-                      toggle(folder.id)
-                    }}
-                    className={`flex items-center justify-between px-2.5 py-1.5 text-xs font-bold cursor-pointer transition-colors shrink-0 ${
-                      isActive ? 'bg-blue-600/10 text-blue-400 border-b border-blue-500/20' : 'text-foreground hover:bg-muted'
-                    }`}
+                    onClick={() => toggleFolder(folder.id)}
+                    className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 text-xs font-bold cursor-pointer transition-colors select-none bg-card hover:bg-muted/80 border-b border-border/40 rounded-t-lg shadow-sm"
                   >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="text-[10px] text-muted-foreground">{isExpanded ? '▼' : '▶'}</span>
-                      {isExpanded ? <FolderOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" /> : <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
-                      <span className="truncate max-w-[110px]">{folder.name}</span>
-                      {isActive && <span className="text-[10px] font-mono text-muted-foreground">({totalCount})</span>}
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="text-muted-foreground text-[11px] shrink-0">
+                        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                      </span>
+                      {isExpanded ? (
+                        <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                      ) : (
+                        <Folder className="w-4 h-4 text-amber-400 shrink-0" />
+                      )}
+                      <span className="text-foreground text-xs font-bold truncate max-w-[110px]">{folder.name}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded-full border border-border/40">
+                        {folderData.total}
+                      </span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      {/* Upload button inside folder header */}
+                      <label
+                        className="p-1 text-muted-foreground hover:text-emerald-400 transition-colors cursor-pointer"
+                        title={tr('material.uploadToCurrent', '导入素材到该目录')}
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <input
+                          type="file"
+                          accept="image/*,.svg"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => handleUploadAssetToFolder(folder.id, e)}
+                          disabled={isUploading}
+                        />
+                      </label>
+
+                      {/* Rename folder button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleRenameFolder(folder, e)}
+                        className="p-1 text-muted-foreground hover:text-blue-400 transition-colors cursor-pointer"
+                        title={tr('material.renameFolder', '重命名素材目录')}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+
                       {folder.id !== 'folder-default' && (
                         <button
                           type="button"
                           onClick={(e) => handleDeleteFolder(folder, e)}
-                          className="p-1 text-muted-foreground hover:text-red-400 transition-colors"
+                          className="p-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer"
                           title={tr('material.deleteDirHint', '删除目录及其全部素材')}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {/* Folder Asset Grid (Expanded View - Stretches to Fill Panel Bottom) */}
-                  {isExpanded && isActive && (
-                    <div className="flex-1 flex flex-col min-h-0 p-2 bg-muted/10">
-                      {userAssets.length > 0 && (
-                        <div
-                          onScroll={handleScrollWaterfall}
-                          className="flex-1 overflow-y-auto pr-0.5 flex flex-col gap-1.5 min-h-0"
-                        >
-                          {/* Masonry Waterfall Grid */}
-                          <div className="columns-2 gap-1.5 space-y-1.5">
-                            {userAssets.map((asset) => (
-                              <div
-                                key={asset.id}
-                                draggable
-                                onDragStart={(e) => {
-                                  e.dataTransfer.setData(
-                                    'application/json',
-                                    JSON.stringify({
-                                      type: 'Image',
-                                      url: asset.url,
-                                      width: asset.width || 300,
-                                      height: asset.height || 300,
-                                      isMaterial: true,
-                                    })
-                                  )
-                                }}
-                                onClick={() => {
-                                  useEditorStore.getState().addNode({
-                                    id: `image-${Date.now()}`,
+                  {/* Directory Asset Grid (Expanded View) */}
+                  {isExpanded && (
+                    <div className="p-2 bg-muted/10 rounded-b-lg">
+                      {items.length === 0 ? (
+                        <div className="text-center text-muted-foreground text-[11px] py-4 italic">
+                          {tr('material.emptyFolderHint', '暂无素材，点击右上角图标导入')}
+                        </div>
+                      ) : (
+                        <div className="columns-2 gap-1.5 space-y-1.5">
+                          {items.map((asset) => (
+                            <div
+                              key={asset.id}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData(
+                                  'application/json',
+                                  JSON.stringify({
                                     type: 'Image',
                                     url: asset.url,
-                                    x: 100,
-                                    y: 100,
                                     width: asset.width || 300,
                                     height: asset.height || 300,
+                                    isMaterial: true,
                                   })
-                                  feedback.notify({
-                                    title: tr('material.addSuccess', '添加素材成功'),
-                                    tone: 'success',
-                                  })
+                                )
+                              }}
+                              onClick={() => {
+                                useEditorStore.getState().addNode({
+                                  id: `image-${Date.now()}`,
+                                  type: 'Image',
+                                  url: asset.url,
+                                  x: 100,
+                                  y: 100,
+                                  width: asset.width || 300,
+                                  height: asset.height || 300,
+                                })
+                                feedback.notify({
+                                  title: tr('material.addSuccess', '添加素材成功'),
+                                  tone: 'success',
+                                })
+                              }}
+                              onContextMenu={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                setAssetContextMenu({ x: event.clientX, y: event.clientY, asset })
+                              }}
+                              className="group relative break-inside-avoid bg-card border border-border hover:border-emerald-500 rounded-md overflow-hidden p-1 shadow-2xs hover:shadow-md transition-all cursor-pointer"
+                              title={`${asset.name} (${asset.width}x${asset.height}) - ${tr('material.dragToUse', '拖拽至画布使用')}`}
+                            >
+                              <img
+                                src={asset.thumbnailUrl}
+                                alt={asset.name}
+                                onError={(e) => {
+                                  const img = e.currentTarget
+                                  if (asset.url && img.src !== asset.url) {
+                                    img.src = asset.url
+                                  } else {
+                                    const card = img.closest('.group') as HTMLElement
+                                    if (card) card.style.display = 'none'
+                                  }
                                 }}
-                                onContextMenu={(event) => {
-                                  event.preventDefault()
-                                  event.stopPropagation()
-                                  setAssetContextMenu({ x: event.clientX, y: event.clientY, asset })
-                                }}
-                                className="group relative break-inside-avoid flex flex-col items-center justify-center p-1 bg-card border border-border hover:border-blue-500 rounded cursor-grab active:cursor-grabbing hover:shadow-md transition-all overflow-hidden mb-1.5"
-                                title={`${asset.name} (${asset.width}x${asset.height}) - ${tr('material.dragToUse', '拖拽至画布使用')}`}
-                              >
-                                <img
-                                  src={asset.thumbnailUrl}
-                                  alt={asset.name}
-                                  className="block w-full h-auto object-cover rounded"
-                                />
-                                <div className="w-full min-w-0 px-0.5 pt-1 text-left">
-                                  <div
-                                    className="truncate text-[10px] font-medium leading-4 text-foreground"
-                                    title={asset.name}
-                                  >
-                                    {asset.name}
-                                  </div>
-                                  <div className="truncate text-[9px] font-mono leading-3 text-muted-foreground" title={`${asset.width}x${asset.height}`}>
-                                    {asset.width}x{asset.height}
-                                  </div>
+                                className="block w-full h-auto object-cover rounded"
+                              />
+                              <div className="w-full min-w-0 px-0.5 pt-1 text-left">
+                                <div
+                                  className="truncate text-[10px] font-medium leading-4 text-foreground"
+                                  title={asset.name}
+                                >
+                                  {asset.name}
+                                </div>
+                                <div className="truncate text-[9px] font-mono leading-3 text-muted-foreground" title={`${asset.width}x${asset.height}`}>
+                                  {asset.width}x{asset.height}
                                 </div>
                               </div>
-                            ))}
-                          </div>
-
-                          {/* Pagination Status */}
-                          {isLoadingMore && (
-                            <div className="text-center text-[10px] text-blue-400 py-1 font-mono animate-pulse">
-                              正在加载下一页...
                             </div>
-                          )}
-                          {!hasMore && userAssets.length > 0 && (
-                            <div className="text-center text-[9px] text-muted-foreground/60 py-0.5 font-mono">
-                              已加载全部 {totalCount} 个素材
-                            </div>
-                          )}
+                          ))}
                         </div>
                       )}
                     </div>
@@ -566,7 +607,7 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
         </div>
       )}
 
-      {mode === 'components' && filtered.map(cat => {
+      {mode === 'components' && filteredPresetCategories.map(cat => {
         const isCatExpanded = expanded[cat.id] ?? true
         return (
           <div key={cat.id} className="mb-0.5">
@@ -579,40 +620,40 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
             </button>
             {(isCatExpanded || searchFilter) && (
               <div className="grid grid-cols-3 gap-1 px-2 pb-2">
-              {cat.items.map((mat: any, i: number) => (
-                <div
-                  key={i}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, mat)}
-                  onClick={() => {
-                    useEditorStore.getState().addNode({
-                      id: `${mat.type.toLowerCase()}-${Date.now()}`,
-                      type: mat.type,
-                      x: 100 + Math.random() * 200,
-                      y: 100 + Math.random() * 200,
-                      width: mat.width || 100,
-                      height: mat.height || 100,
-                      fill: mat.fill,
-                      text: mat.text,
-                      url: mat.url,
-                      unitPath: mat.unitPath,
-                      corners: mat.corners,
-                      innerRadius: mat.innerRadius,
-                      cornerRadius: mat.cornerRadius,
-                      animation: mat.animation,
-                      props: mat.props,
-                    } as any)
-                  }}
-                  className="flex flex-col items-center justify-center h-[66px] cursor-pointer text-center rounded bg-editor-deep hover:bg-editor-surface hover:border hover:border-blue-600/60 border border-transparent transition-all"
-                >
-                  <ShapePreview {...mat} />
-                  <span className="text-[9px] text-editor-text-label leading-tight px-0.5 w-full text-center overflow-hidden text-ellipsis whitespace-nowrap">{tr(mat.nameKey, mat.fallbackName)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )
+                {cat.items.map((mat: any, i: number) => (
+                  <div
+                    key={i}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, mat)}
+                    onClick={() => {
+                      useEditorStore.getState().addNode({
+                        id: `${mat.type.toLowerCase()}-${Date.now()}`,
+                        type: mat.type,
+                        x: 100 + Math.random() * 200,
+                        y: 100 + Math.random() * 200,
+                        width: mat.width || 100,
+                        height: mat.height || 100,
+                        fill: mat.fill,
+                        text: mat.text,
+                        url: mat.url,
+                        unitPath: mat.unitPath,
+                        corners: mat.corners,
+                        innerRadius: mat.innerRadius,
+                        cornerRadius: mat.cornerRadius,
+                        animation: mat.animation,
+                        props: mat.props,
+                      } as any)
+                    }}
+                    className="flex flex-col items-center justify-center h-[66px] cursor-pointer text-center rounded bg-editor-deep hover:bg-editor-surface hover:border hover:border-blue-600/60 border border-transparent transition-all"
+                  >
+                    <ShapePreview {...mat} />
+                    <span className="text-[9px] text-editor-text-label leading-tight px-0.5 w-full text-center overflow-hidden text-ellipsis whitespace-nowrap">{tr(mat.nameKey, mat.fallbackName)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
       })}
 
       {assetContextMenu && (
@@ -634,7 +675,6 @@ export function MaterialPanel({ searchFilter = '', mode = 'components' }: { sear
           ]}
         />
       )}
-
     </div>
   )
 }

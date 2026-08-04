@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Eye, Sparkles, X, CheckCircle2, Pencil, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Sparkles, Pencil, Trash2, Folder, FolderOpen, ChevronDown, ChevronRight } from 'lucide-react'
 import {
   TEMPLATE_CATEGORIES,
   type PresetTemplate,
@@ -20,10 +19,19 @@ import {
 
 export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) {
   const { t } = useTranslation()
-  const [activeCategory, setActiveCategory] = useState<string>('all')
-  const [previewTemplate, setPreviewTemplate] = useState<PresetTemplate | null>(null)
   const [templatePreferences, setTemplatePreferences] = useState<TemplatePreferences>(() => loadTemplatePreferences())
   const [templateContextMenu, setTemplateContextMenu] = useState<{ x: number; y: number; template: PresetTemplate } | null>(null)
+  
+  // Track expanded state for each folder directory (default: expanded)
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({
+    festival: true,
+    ecommerce: true,
+    guochao: true,
+    recruitment: true,
+    food: true,
+    other: true,
+  })
+
   const feedback = useFeedback()
   const setCanvasConfig = useEditorStore((state) => state.setCanvasConfig)
   const setElements = useEditorStore((state) => state.setElements)
@@ -40,11 +48,20 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     return val === key ? fallback : val
   }
 
-  const filteredTemplates = useMemo(() => {
-    let list = getVisibleTemplates(templatePreferences)
-    if (activeCategory !== 'all') {
-      list = list.filter((t) => t.categoryId === activeCategory)
-    }
+  const toggleFolder = (folderId: string) => {
+    setExpandedFolders((prev) => ({
+      ...prev,
+      [folderId]: !prev[folderId],
+    }))
+  }
+
+  const visibleTemplates = useMemo(
+    () => getVisibleTemplates(templatePreferences),
+    [templatePreferences],
+  )
+
+  const categorizedTemplates = useMemo(() => {
+    let list = visibleTemplates
     if (searchFilter.trim()) {
       const q = searchFilter.toLowerCase()
       list = list.filter(
@@ -54,13 +71,45 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
           t.description.toLowerCase().includes(q)
       )
     }
-    return list
-  }, [activeCategory, searchFilter, templatePreferences])
 
-  const visibleTemplates = useMemo(
-    () => getVisibleTemplates(templatePreferences),
-    [templatePreferences],
-  )
+    const result = TEMPLATE_CATEGORIES.map((cat) => {
+      const items = list.filter((t) => t.categoryId === cat.id)
+      return {
+        id: cat.id,
+        name: cat.name,
+        items,
+      }
+    })
+
+    const knownCatIds = new Set(TEMPLATE_CATEGORIES.map((c) => c.id))
+    const uncategorized = list.filter((t) => !knownCatIds.has(t.categoryId))
+    if (uncategorized.length > 0) {
+      result.push({
+        id: 'other',
+        name: tr('template.otherCategory', '其他模板'),
+        items: uncategorized,
+      })
+    }
+
+    return result
+  }, [searchFilter, visibleTemplates, t])
+
+  const totalFilteredCount = useMemo(() => {
+    return categorizedTemplates.reduce((acc, cat) => acc + cat.items.length, 0)
+  }, [categorizedTemplates])
+
+  const isAllExpanded = useMemo(() => {
+    return categorizedTemplates.every((cat) => expandedFolders[cat.id] !== false)
+  }, [categorizedTemplates, expandedFolders])
+
+  const toggleAllFolders = () => {
+    const nextState = !isAllExpanded
+    const updated: Record<string, boolean> = {}
+    categorizedTemplates.forEach((cat) => {
+      updated[cat.id] = nextState
+    })
+    setExpandedFolders((prev) => ({ ...prev, ...updated }))
+  }
 
   const updateTemplatePreferences = (next: TemplatePreferences) => {
     setTemplatePreferences(next)
@@ -78,12 +127,15 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     setCanvasConfig(tpl.canvasConfig)
     setProjectName(tpl.name)
     setElements(cloneTemplateElements(tpl))
-    setPreviewTemplate(null)
+    feedback.notify({
+      title: tr('template.appliedTitle', '使用模板成功'),
+      description: `已载入「${tpl.name}」画布预设与图元`,
+      tone: 'success',
+    })
   }
 
   const handleOpenTemplate = (tpl: PresetTemplate) => {
     const store = useEditorStore.getState()
-    // Template editing is a separate draft and must not create or overwrite a scene.
     store.setCurrentSceneId(null)
     store.setEditingTemplateId(tpl.id)
     store.setCanvasConfig({ ...tpl.canvasConfig, lockPan: false, lockZoom: false })
@@ -93,7 +145,6 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
     store.setActiveIds([])
     cmdManager.clear()
     window.history.pushState(null, '', `?template=${encodeURIComponent(tpl.id)}`)
-    setPreviewTemplate(null)
     feedback.notify({
       title: '模板已打开',
       description: `已载入「${tpl.name}」，现在可以继续编辑。`,
@@ -133,169 +184,134 @@ export function TemplatePanel({ searchFilter = '' }: { searchFilter?: string }) 
       ...templatePreferences,
       deletedIds: [...new Set([...templatePreferences.deletedIds, tpl.id])],
     })
-    if (previewTemplate?.id === tpl.id) setPreviewTemplate(null)
     feedback.notify({ title: '模板已删除', description: tpl.name, tone: 'success' })
   }
 
   return (
-    <div className="flex flex-col w-full h-full pb-4">
-      {/* Template asset usage notice */}
-      <div className="flex items-center justify-between px-3 py-1.5 bg-emerald-950/40 border-b border-emerald-800/40 text-[10px] text-emerald-400 font-bold shrink-0">
-        <span className="flex items-center gap-1 truncate">
-          <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-          {tr('template.copyrightNotice', '示例模板素材用于演示，正式商用前请核验授权')}
-        </span>
-      </div>
-      {/* Category Folders Filter */}
-      <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto border-b border-border/60 bg-muted/20 shrink-0">
+    <div className="flex flex-col w-full h-full pb-2">
+      {/* Directory Folders Header Bar */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60 bg-muted/20 shrink-0">
+        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+          <Folder className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>{tr('template.folderGallery', '模板目录库')}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">({totalFilteredCount})</span>
+        </div>
         <button
           type="button"
-          onClick={() => setActiveCategory('all')}
-          className={`px-2.5 py-1 text-[11px] font-bold rounded-md whitespace-nowrap transition-colors ${
-            activeCategory === 'all'
-              ? 'bg-purple-600 text-white shadow-xs'
-              : 'bg-card text-muted-foreground hover:bg-muted border border-border'
-          }`}
+          onClick={toggleAllFolders}
+          className="text-[10px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2 py-0.5 rounded border border-border/60 bg-card hover:bg-muted cursor-pointer select-none"
         >
-          {tr('template.allCategories', '全部')} ({visibleTemplates.length})
+          {isAllExpanded ? tr('template.collapseAll', '全部折叠') : tr('template.expandAll', '全部展开')}
         </button>
-        {TEMPLATE_CATEGORIES.map((cat) => {
-          const count = visibleTemplates.filter((t) => t.categoryId === cat.id).length
-          return (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-2.5 py-1 text-[11px] font-bold rounded-md whitespace-nowrap transition-colors ${
-                activeCategory === cat.id
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'bg-card text-muted-foreground hover:bg-muted border border-border'
-              }`}
-            >
-              {cat.name} ({count})
-            </button>
-          )
-        })}
       </div>
 
-      {/* Template Cards List */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-3">
-        {filteredTemplates.length === 0 ? (
-          <div className="text-center text-editor-text-dim text-xs py-8">{tr('template.noMatch', '未找到相关海报模板')}</div>
+      {/* Template Directory Folders List */}
+      <div className="flex-1 px-2 pb-2 pt-0 overflow-y-auto space-y-2">
+        {totalFilteredCount === 0 ? (
+          <div className="text-center text-editor-text-dim text-xs py-8">
+            {tr('template.noMatch', '未找到相关海报模板')}
+          </div>
         ) : (
-          filteredTemplates.map((tpl) => (
-            <div
-              key={tpl.id}
-              onDoubleClick={() => handleOpenTemplate(tpl)}
-              onContextMenu={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                setTemplateContextMenu({ x: event.clientX, y: event.clientY, template: tpl })
-              }}
-              className="group relative bg-card border border-border hover:border-purple-500 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
-            >
-              {/* Real Leafer template preview, shared with scene thumbnails */}
-              <div className="relative w-full overflow-hidden bg-slate-950">
-                <CanvasThumbnail
-                  snapshot={{ canvasConfig: tpl.canvasConfig, elements: tpl.elements }}
-                  emptyLabel={tr('template.previewEmpty', '空白模板')}
-                  height={180}
-                />
-                <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/55 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
-                  {tpl.categoryName}
+          categorizedTemplates.map((cat) => {
+            const isExpanded = expandedFolders[cat.id] !== false
+            const hasItems = cat.items.length > 0
+
+            if (!hasItems && searchFilter.trim()) return null
+
+            return (
+              <div key={cat.id} className="border border-border/70 rounded-lg bg-card/60 shadow-2xs flex flex-col">
+                {/* Category Directory Header */}
+                <div
+                  onClick={() => toggleFolder(cat.id)}
+                  className="sticky top-0 z-20 flex items-center justify-between px-3 py-2 text-xs font-bold cursor-pointer transition-colors select-none bg-card hover:bg-muted/80 border-b border-border/40 rounded-t-lg shadow-sm"
+                >
+                  <div className="flex items-center gap-2 truncate">
+                    <span className="text-muted-foreground text-[11px] shrink-0">
+                      {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    </span>
+                    {isExpanded ? (
+                      <FolderOpen className="w-4 h-4 text-amber-400 shrink-0" />
+                    ) : (
+                      <Folder className="w-4 h-4 text-amber-400 shrink-0" />
+                    )}
+                    <span className="text-foreground text-xs font-bold truncate">{cat.name}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground bg-muted px-1.5 py-0.2 rounded-full border border-border/40">
+                      {cat.items.length}
+                    </span>
+                  </div>
                 </div>
 
-                {/* Hover Quick Action Buttons */}
-                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenTemplate(tpl)}
-                    className="px-2.5 py-1 text-[11px] font-bold bg-blue-600 text-white rounded shadow hover:bg-blue-500 flex items-center gap-1"
-                  >
-                    <Pencil className="w-3 h-3" />
-                    打开编辑
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPreviewTemplate(tpl)}
-                    className="px-2.5 py-1 text-[11px] font-bold bg-white text-slate-900 rounded shadow hover:bg-slate-100 flex items-center gap-1"
-                  >
-                    <Eye className="w-3 h-3 text-purple-600" />
-                    {tr('template.previewBtn', '预览')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyTemplate(tpl)}
-                    className="px-2.5 py-1 text-[11px] font-bold bg-purple-600 text-white rounded shadow hover:bg-purple-500 flex items-center gap-1"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    {tr('template.useTemplate', '使用模板')}
-                  </button>
-                </div>
-              </div>
+                {/* Directory Template Item Cards (Expanded) */}
+                {isExpanded && (
+                  <div className="p-2 space-y-3 bg-muted/10 rounded-b-lg">
+                    {!hasItems ? (
+                      <div className="text-center text-muted-foreground text-[11px] py-3 italic">
+                        {tr('template.noMatchInFolder', '此目录下暂无匹配模板')}
+                      </div>
+                    ) : (
+                      cat.items.map((tpl) => (
+                        <div
+                          key={tpl.id}
+                          onDoubleClick={() => handleOpenTemplate(tpl)}
+                          onContextMenu={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            setTemplateContextMenu({ x: event.clientX, y: event.clientY, template: tpl })
+                          }}
+                          className="group relative bg-card border border-border hover:border-purple-500 rounded-lg overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col"
+                        >
+                          {/* Thumbnail */}
+                          <div className="relative w-full overflow-hidden bg-slate-950">
+                            <CanvasThumbnail
+                              snapshot={{ canvasConfig: tpl.canvasConfig, elements: tpl.elements }}
+                              emptyLabel={tr('template.previewEmpty', '空白模板')}
+                              height={170}
+                            />
+                            <div className="pointer-events-none absolute left-2 top-2 z-10 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
+                              {tpl.categoryName}
+                            </div>
 
-              {/* Info Footer */}
-              <div className="p-2 bg-card flex flex-col gap-0.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-foreground truncate">{tpl.name}</span>
-                  <span className="text-[9px] text-muted-foreground font-mono">
-                    {tpl.canvasConfig.width}x{tpl.canvasConfig.height}
-                  </span>
-                </div>
-                <span className="text-[10px] text-muted-foreground truncate">{tpl.description}</span>
+                            {/* Hover Quick Action Buttons (2 buttons vertical stack) */}
+                            <div className="absolute inset-0 bg-slate-950/75 opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col items-center justify-center gap-2.5 p-3 backdrop-blur-[2px]">
+                              <button
+                                type="button"
+                                onClick={() => handleApplyTemplate(tpl)}
+                                className="w-full max-w-[150px] py-1.5 px-3 text-xs font-bold bg-purple-600 hover:bg-purple-500 active:bg-purple-700 text-white rounded-md shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 select-none cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span className="whitespace-nowrap">{tr('template.useTemplate', '使用模板')}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenTemplate(tpl)}
+                                className="w-full max-w-[150px] py-1.5 px-3 text-xs font-bold bg-slate-800/90 hover:bg-slate-700 active:bg-slate-900 text-slate-100 border border-slate-600/60 rounded-md shadow-md transition-all flex items-center justify-center gap-1.5 shrink-0 select-none cursor-pointer"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-blue-400" />
+                                <span className="whitespace-nowrap">{tr('template.openEdit', '打开编辑')}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Info Footer */}
+                          <div className="p-2 bg-card flex flex-col gap-0.5 border-t border-border/40">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-foreground truncate">{tpl.name}</span>
+                              <span className="text-[9px] text-muted-foreground font-mono shrink-0 ml-1">
+                                {tpl.canvasConfig.width}x{tpl.canvasConfig.height}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground truncate">{tpl.description}</span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
-
-      {/* Template Detail Preview Modal */}
-      {previewTemplate && (
-        <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in-0">
-          <div className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl p-5 overflow-hidden flex flex-col gap-3">
-            <div className="flex items-center justify-between border-b border-border pb-2.5">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-purple-500" />
-                <span className="font-bold text-xs text-foreground">{tr('template.previewTitle', '海报模板预览')} - {previewTemplate.name}</span>
-              </div>
-              <Button variant="ghost" size="icon" className="w-6 h-6 rounded-full" onClick={() => setPreviewTemplate(null)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Preview Box */}
-            <div
-              className="w-full max-h-[320px] rounded-lg border border-border shadow-inner relative overflow-hidden"
-            >
-              <CanvasThumbnail
-                snapshot={{ canvasConfig: previewTemplate.canvasConfig, elements: previewTemplate.elements }}
-                emptyLabel={tr('template.previewEmpty', '空白模板')}
-                height={320}
-              />
-            </div>
-
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>{tr('template.dimensions', '规格')}: {previewTemplate.canvasConfig.width} x {previewTemplate.canvasConfig.height} px</span>
-              <span>{tr('template.elements', '图元')}: {previewTemplate.elements.length}</span>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2 border-t border-border">
-              <Button variant="outline" size="sm" onClick={() => setPreviewTemplate(null)} className="text-xs">
-                {tr('common.cancel', '返回')}
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => handleOpenTemplate(previewTemplate)}
-                className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md"
-              >
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                打开并编辑模板
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {templateContextMenu && (
         <ListContextMenu

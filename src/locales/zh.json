@@ -106,6 +106,23 @@
     "showRuleOfThirds": "显示三分构图辅助网格",
     "quickSaveHint": "Ctrl+S 快速存档"
   },
+  "template": {
+    "title": "海报模板",
+    "folderGallery": "模板目录库",
+    "allCategories": "全部模板",
+    "expandAll": "全部展开",
+    "collapseAll": "全部折叠",
+    "noMatch": "未找到相关海报模板",
+    "noMatchInFolder": "此目录下暂无匹配模板",
+    "copyrightNotice": "示例模板素材用于演示，正式商用前请核验授权",
+    "previewEmpty": "空白模板",
+    "useTemplate": "使用模板",
+    "openEdit": "打开编辑",
+    "rename": "重命名模板",
+    "delete": "删除模板",
+    "dimensions": "规格",
+    "elements": "图元"
+  },
   "sidebar": {
     "nav": {
       "scenes": "页面",
