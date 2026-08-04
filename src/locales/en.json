@@ -549,5 +549,36 @@
       "appearance": "Appearance",
       "animation": "Animation"
     }
+  },
+  "shortcuts": {
+    "title": "Poster Editor - Full Keyboard & Mouse Shortcuts Guide",
+    "gotIt": "Got It",
+    "altDrag": "Hold Alt key to quickly duplicate selected element",
+    "selectAll": "Select all unlocked elements on current canvas",
+    "group": "Group selected elements together (Group)",
+    "ungroup": "Ungroup selected element group (Ungroup)",
+    "lock": "Quickly lock or unlock selected element",
+    "layerUpDown": "Move element backward / forward one layer",
+    "layerTopBottom": "Send element to back / bring to front",
+    "shiftClick": "Multi-select element components continuously",
+    "undo": "Undo last action",
+    "redo": "Redo last undone action",
+    "copyPaste": "Copy / Paste element components",
+    "save": "Quickly save poster project",
+    "delete": "Delete selected elements",
+    "arrowMove": "Nudge selected element position (1px)",
+    "shiftArrowMove": "Fast move element position (10px)",
+    "wheelZoom": "Zoom canvas viewport in or out",
+    "middleDragPan": "Pan canvas viewport",
+    "shiftWheelPan": "Horizontal pan canvas viewport",
+    "middleClickCenter": "Double-click middle button to fit canvas viewport",
+    "keyAltDrag": "Alt + Drag/Click",
+    "keyShiftClick": "Shift + Click",
+    "keyArrowMove": "Arrow keys (↑ ↓ ← →)",
+    "keyShiftArrowMove": "Shift + Arrow keys",
+    "keyWheelZoom": "Mouse Wheel",
+    "keyMiddleDragPan": "Hold Middle Button + Drag",
+    "keyShiftWheelPan": "Shift + Wheel",
+    "keyMiddleClickCenter": "Double Click Middle Button"
   }
 }

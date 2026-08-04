@@ -515,5 +515,36 @@
       "appearance": "外观",
       "animation": "动画"
     }
+  },
+  "shortcuts": {
+    "title": "海报编辑器 - 全快捷键指南全集",
+    "gotIt": "知道了",
+    "altDrag": "按住 Alt 键快速复制当前选中图元",
+    "selectAll": "全选画布当前所有未锁定图元",
+    "group": "一键将选中的多个图元编组 (Group)",
+    "ungroup": "解开选中的图元编组 (Ungroup)",
+    "lock": "快速锁定或解锁当前选中图元",
+    "layerUpDown": "下移一层 / 上移一层图元遮挡",
+    "layerTopBottom": "置底 / 置顶图元遮挡层级",
+    "shiftClick": "连续选择/多选多个图元组件",
+    "undo": "撤销上一步操作",
+    "redo": "重做上一步撤销",
+    "copyPaste": "复制 / 粘贴图元组件",
+    "save": "快速保存海报工程",
+    "delete": "物理删除当前选中的图元",
+    "arrowMove": "微调选中图元坐标 (1px)",
+    "shiftArrowMove": "快速步进移动图元 (10px)",
+    "wheelZoom": "画布视口放大或缩小",
+    "middleDragPan": "平移海报画布视口",
+    "shiftWheelPan": "横向平移海报画布",
+    "middleClickCenter": "画布视口自动自适应居中",
+    "keyAltDrag": "Alt + 拖拽/点击",
+    "keyShiftClick": "Shift + 点击",
+    "keyArrowMove": "方向键 (↑ ↓ ← →)",
+    "keyShiftArrowMove": "Shift + 方向键",
+    "keyWheelZoom": "鼠标滚轮",
+    "keyMiddleDragPan": "按住鼠标中键拖拽",
+    "keyShiftWheelPan": "Shift + 滚轮",
+    "keyMiddleClickCenter": "双击鼠标中键"
   }
 }

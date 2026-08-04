@@ -8,24 +8,25 @@ interface ShortcutsDialogProps {
 }
 
 const SHORTCUT_KEYS = [
-  { key: 'Alt + 拖拽/点击', id: 'altDrag', fallback: '按住 Alt 键快速复制当前选中图元' },
+  { key: 'Alt + 拖拽/点击', keyId: 'keyAltDrag', id: 'altDrag', fallbackKey: 'Alt + Drag/Click', fallback: '按住 Alt 键快速复制当前选中图元' },
   { key: 'Ctrl + A', id: 'selectAll', fallback: '全选画布当前所有未锁定图元' },
   { key: 'Ctrl + G', id: 'group', fallback: '一键将选中的多个图元编组 (Group)' },
   { key: 'Ctrl + Shift + G', id: 'ungroup', fallback: '解开选中的图元编组 (Ungroup)' },
   { key: 'Ctrl + L', id: 'lock', fallback: '快速锁定或解锁当前选中图元' },
   { key: 'Ctrl + [ / Ctrl + ]', id: 'layerUpDown', fallback: '下移一层 / 上移一层图元遮挡' },
   { key: 'Ctrl + Shift + [ / ]', id: 'layerTopBottom', fallback: '置底 / 置顶图元遮挡层级' },
-  { key: 'Shift + 点击', id: 'shiftClick', fallback: '连续选择/多选多个图元组件' },
+  { key: 'Shift + 点击', keyId: 'keyShiftClick', id: 'shiftClick', fallbackKey: 'Shift + Click', fallback: '连续选择/多选多个图元组件' },
   { key: 'Ctrl + Z', id: 'undo', fallback: '撤销上一步操作' },
   { key: 'Ctrl + Y / Ctrl + Shift + Z', id: 'redo', fallback: '重做上一步撤销' },
   { key: 'Ctrl + C / Ctrl + V', id: 'copyPaste', fallback: '复制 / 粘贴图元组件' },
   { key: 'Ctrl + S', id: 'save', fallback: '快速保存海报工程' },
   { key: 'Delete / Backspace', id: 'delete', fallback: '物理删除当前选中的图元' },
-  { key: '方向键 (↑ ↓ ← →)', id: 'arrowMove', fallback: '微调选中图元坐标 (1px)' },
-  { key: 'Shift + 方向键', id: 'shiftArrowMove', fallback: '快速步进移动图元 (10px)' },
-  { key: '双击鼠标中键', id: 'middleClickCenter', fallback: '画布视口自动自适应居中' },
-  { key: 'Space + 鼠标拖拽', id: 'spacePan', fallback: '抓手工具平移海报画布' },
-  { key: '滚轮 (Wheel)', id: 'wheelZoom', fallback: '画布视口细致放大或缩小' },
+  { key: '方向键 (↑ ↓ ← →)', keyId: 'keyArrowMove', id: 'arrowMove', fallbackKey: 'Arrow keys (↑ ↓ ← →)', fallback: '微调选中图元坐标 (1px)' },
+  { key: 'Shift + 方向键', keyId: 'keyShiftArrowMove', id: 'shiftArrowMove', fallbackKey: 'Shift + Arrow keys', fallback: '快速步进移动图元 (10px)' },
+  { key: '鼠标滚轮', keyId: 'keyWheelZoom', id: 'wheelZoom', fallbackKey: 'Mouse Wheel', fallback: '画布视口放大或缩小' },
+  { key: '按住鼠标中键拖拽', keyId: 'keyMiddleDragPan', id: 'middleDragPan', fallbackKey: 'Hold Middle Button + Drag', fallback: '平移海报画布视口' },
+  { key: 'Shift + 滚轮', keyId: 'keyShiftWheelPan', id: 'shiftWheelPan', fallbackKey: 'Shift + Wheel', fallback: '横向平移海报画布' },
+  { key: '双击鼠标中键', keyId: 'keyMiddleClickCenter', id: 'middleClickCenter', fallbackKey: 'Double Click Middle Button', fallback: '画布视口自动自适应居中' },
 ]
 
 export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
@@ -56,7 +57,7 @@ export function ShortcutsDialog({ open, onClose }: ShortcutsDialogProps) {
             <div key={idx} className="flex items-center justify-between py-1.5 px-2.5 rounded bg-muted/40 text-xs">
               <span className="text-muted-foreground">{tr(`shortcuts.${s.id}`, s.fallback)}</span>
               <kbd className="px-2 py-0.5 text-[11px] font-mono font-bold text-foreground bg-background border border-border rounded shadow-sm">
-                {s.key}
+                {s.keyId ? tr(`shortcuts.${s.keyId}`, s.fallbackKey || s.key) : s.key}
               </kbd>
             </div>
           ))}
