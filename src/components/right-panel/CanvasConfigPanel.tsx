@@ -1,12 +1,7 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEditorStore, CanvasConfig } from '@/store/useEditorStore'
-import { useFeedback } from '@/lib/feedback'
-import { buildEditorSaveFingerprint, markSaved } from '@/lib/saveStatus'
-import { Save, CheckCircle, Upload } from 'lucide-react'
 import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
-
-const STORAGE_KEY = 'poster_project'
 
 function Section({ title, children }: { title: string, children: React.ReactNode }) {
   return (
@@ -49,52 +44,22 @@ function Toggle({ checked, onChange }: { checked: boolean, onChange: (v: boolean
 
 export function CanvasConfigPanel() {
   const { t } = useTranslation()
-  const feedback = useFeedback()
   const config = useEditorStore(s => s.canvasConfig)
   const setCanvasConfig = useEditorStore(s => s.setCanvasConfig)
   const activeIds = useEditorStore(s => s.activeIds)
   const elements = useEditorStore(s => s.elements)
   const projectName = useEditorStore(s => s.projectName)
-  const projectCategory = useEditorStore(s => s.projectCategory)
   const setProjectName = useEditorStore(s => s.setProjectName)
-  const setProjectCategory = useEditorStore(s => s.setProjectCategory)
   const tr = (key: string, fallback: string) => {
     const text = t(key)
     return text === key ? fallback : text
   }
-
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
 
   // If a node is selected, this panel shouldn't render
   const activeNode = activeIds.length === 1 ? elements.find(e => e.id === activeIds[0]) : null
   if (activeNode) return null
 
   const set = (key: keyof CanvasConfig, val: any) => setCanvasConfig({ [key]: val })
-
-  const handleSave = () => {
-    const snapshot = {
-      projectName,
-      projectCategory,
-      canvasConfig: config,
-      elements,
-      savedAt: new Date().toISOString(),
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
-    setSaveStatus('saved')
-    setTimeout(() => setSaveStatus('idle'), 2000)
-    markSaved(buildEditorSaveFingerprint({
-      currentSceneId: useEditorStore.getState().currentSceneId,
-      projectName,
-      projectCategory,
-      canvasConfig: config,
-      elements,
-    }))
-    feedback.notify({
-      title: tr('canvasConfig.saved', '海报工程已保存'),
-      description: tr('canvasConfig.quickSaveHint', '海报样式设置已存储在本地。'),
-      tone: 'success',
-    })
-  }
 
   return (
     <div className="flex flex-col text-editor-text w-full overflow-x-hidden">
@@ -109,25 +74,6 @@ export function CanvasConfigPanel() {
             className="w-full min-w-0 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text focus:outline-none focus:border-blue-500"
           />
         </Row>
-        <Row label={tr('canvasConfig.category', '文档项目组')}>
-          <input
-            value={projectCategory}
-            onChange={e => setProjectCategory(e.target.value)}
-            className="w-full min-w-0 text-xs bg-editor-deep border border-border rounded px-2 h-7 text-editor-text-label focus:outline-none focus:border-blue-500"
-          />
-        </Row>
-        {/* Save button */}
-        <div className="flex gap-1.5 mt-2">
-          <button
-            onClick={handleSave}
-            className={`flex-1 flex items-center justify-center gap-1 h-7 text-[11px] rounded transition-all ${saveStatus === 'saved' ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-          >
-            {saveStatus === 'saved'
-              ? <><CheckCircle className="w-3 h-3" /> {t('canvasConfig.saved')}</>
-              : <><Save className="w-3 h-3" /> {tr('canvasConfig.save', '本地保存')}</>}
-          </button>
-        </div>
-        <div className="text-[9px] text-editor-text-dim mt-1 text-center">{tr('canvasConfig.quickSaveHint', 'Ctrl+S 快速存档')}</div>
       </Section>
 
       <Section title={tr('canvasConfig.canvasSize', '海报像素尺寸')}>
