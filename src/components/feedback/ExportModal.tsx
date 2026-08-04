@@ -8,6 +8,7 @@ import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
 import { bgColorToFill, createLeaferNode, applyAnimation } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
+import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 import { createAnimatedGifBlob } from '@/lib/gifEncoder'
 import { createExportWatermark } from '@/core/branding'
 
@@ -187,13 +188,12 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
 
     if (dataUrl) {
       if (dataUrl !== 'saved') {
-        const link = document.createElement('a')
-        link.href = dataUrl
-        link.download = fileName
-        link.style.display = 'none'
-        document.body.appendChild(link)
-        link.click()
-        setTimeout(() => document.body.removeChild(link), 500)
+        await saveFileNativeOrBrowser({
+          filename: fileName,
+          data: dataUrl,
+          mimeType: format === 'png' ? 'image/png' : format === 'jpeg' ? 'image/jpeg' : 'image/webp',
+          filters: [{ name: `${format.toUpperCase()} Image`, extensions: [format] }],
+        })
       }
 
       try {

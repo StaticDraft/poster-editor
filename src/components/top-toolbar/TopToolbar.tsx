@@ -21,6 +21,7 @@ import {
   Settings2,
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
+import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useFeedback } from '@/lib/feedback'
@@ -98,7 +99,10 @@ export function TopToolbar() {
       elements: state.elements,
       canvasConfig: state.canvasConfig,
     }))
-    const previewWindow = window.open('/preview', '_blank', 'width=800,height=900,menubar=no,toolbar=no,location=no,status=no')
+    const isElectron = Boolean((window as any).electronAPI)
+    const baseLocation = window.location.href.split('#')[0].split('?')[0]
+    const previewUrl = isElectron ? `${baseLocation}?preview=1` : '/preview'
+    const previewWindow = window.open(previewUrl, '_blank', 'width=800,height=900,menubar=no,toolbar=no,location=no,status=no')
     if (previewWindow) {
       feedback.notify({
         title: tr('toolbar.startPreview', '启动预览'),
@@ -114,17 +118,22 @@ export function TopToolbar() {
     }
   }
 
-  const handleExportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(elements))
-    const a = document.createElement("a")
-    a.href = dataStr
-    a.download = `${useEditorStore.getState().projectName || 'poster'}_schema.json`
-    a.click()
-    feedback.notify({
-      title: tr('toolbar.export', '导出 JSON'),
-      description: tr('topToolbar.exportToast', '工程数据包已下载'),
-      tone: 'success',
+  const handleExportJSON = async () => {
+    const fileName = `${useEditorStore.getState().projectName || 'poster'}_schema.json`
+    const jsonText = JSON.stringify(elements, null, 2)
+    const success = await saveFileNativeOrBrowser({
+      filename: fileName,
+      data: jsonText,
+      mimeType: 'application/json',
+      filters: [{ name: 'JSON Project File', extensions: ['json'] }],
     })
+    if (success) {
+      feedback.notify({
+        title: tr('toolbar.export', '导出 JSON'),
+        description: tr('topToolbar.exportToast', '工程数据包已完成保存'),
+        tone: 'success',
+      })
+    }
   }
 
   const handleApplyPalette = (palette: ColorPalette) => {

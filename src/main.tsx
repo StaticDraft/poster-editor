@@ -9,7 +9,10 @@ import { FeedbackHost } from './components/feedback/FeedbackHost.tsx'
 
 // Comprehensive Bootloader
 function Main() {
-  const isPreview = window.location.pathname === '/preview'
+  const isPreview =
+    window.location.pathname.endsWith('/preview') ||
+    window.location.hash.includes('preview') ||
+    window.location.search.includes('preview=1')
   const initScenes = useEditorStore(s => s.initScenes)
   const loadScene = useEditorStore(s => s.loadScene)
 

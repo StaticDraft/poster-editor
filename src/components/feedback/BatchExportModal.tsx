@@ -7,6 +7,7 @@ import { useFeedback } from '@/lib/feedback'
 import { Leafer } from 'leafer-ui'
 import { bgColorToFill, createLeaferNode } from '@/core/leafer/runtime'
 import { resolveExportDataUrl } from '@/core/export/ExportResultAdapter'
+import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 import { createExportWatermark } from '@/core/branding'
 
 interface BatchRow {
@@ -135,14 +136,14 @@ export function BatchExportModal({ open, onClose }: BatchExportModalProps) {
         const dataUrl = resolveExportDataUrl(exportResult, 'image/png', 0.95)
 
         if (dataUrl && dataUrl !== 'saved') {
-          const link = document.createElement('a')
-          link.href = dataUrl
-          link.download = `${projectName || 'poster'}_batch_${i + 1}.png`
-          link.style.display = 'none'
-          document.body.appendChild(link)
-          link.click()
-          setTimeout(() => document.body.removeChild(link), 300)
-          successCount++
+          const fileName = `${projectName || 'poster'}_batch_${i + 1}.png`
+          const saved = await saveFileNativeOrBrowser({
+            filename: fileName,
+            data: dataUrl,
+            mimeType: 'image/png',
+            filters: [{ name: 'PNG Image', extensions: ['png'] }],
+          })
+          if (saved) successCount++
         }
       } catch (err) {
         console.error('Batch export item error:', err)

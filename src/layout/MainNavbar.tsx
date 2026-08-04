@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { useFeedback } from '@/lib/feedback'
+import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 import { SaveStatusBadge } from '@/components/feedback/SaveStatusBadge'
 import { ShortcutsDialog } from '@/components/feedback/ShortcutsDialog'
 import { TemplateModal } from '@/components/feedback/TemplateModal'
@@ -95,21 +96,22 @@ export function MainNavbar() {
     setActiveMenu(null)
   }
 
-  const handleExportGraphJSON = () => {
+  const handleExportGraphJSON = async () => {
     const state = useEditorStore.getState()
     const data = JSON.stringify({ elements: state.elements }, null, 2)
-    const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${projectName}.json`
-    anchor.click()
-    URL.revokeObjectURL(url)
-    feedback.notify({
-      title: tr('navbar.exportGraphSuccess', '海报JSON数据已导出'),
-      description: `${projectName}.json`,
-      tone: 'success',
+    const success = await saveFileNativeOrBrowser({
+      filename: `${projectName}.json`,
+      data,
+      mimeType: 'application/json',
+      filters: [{ name: 'JSON Project File', extensions: ['json'] }],
     })
+    if (success) {
+      feedback.notify({
+        title: tr('navbar.exportGraphSuccess', '海报JSON数据已导出'),
+        description: `${projectName}.json`,
+        tone: 'success',
+      })
+    }
     setActiveMenu(null)
   }
 

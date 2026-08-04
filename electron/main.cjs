@@ -74,6 +74,29 @@ ipcMain.handle('show-open-dialog', async (event, options) => {
   return result
 })
 
+ipcMain.handle('save-file', async (event, { defaultPath, filters, base64Data, textData }) => {
+  if (!mainWindow) return { canceled: true }
+  const fs = require('fs')
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    defaultPath,
+    filters: filters || [{ name: 'All Files', extensions: ['*'] }],
+  })
+  if (canceled || !filePath) return { canceled: true }
+
+  try {
+    if (base64Data) {
+      const buffer = Buffer.from(base64Data.replace(/^data:.*?;base64,/, ''), 'base64')
+      fs.writeFileSync(filePath, buffer)
+    } else if (textData !== undefined) {
+      fs.writeFileSync(filePath, textData, 'utf-8')
+    }
+    return { canceled: false, filePath }
+  } catch (err) {
+    console.error('Failed to write file natively:', err)
+    return { canceled: true, error: String(err) }
+  }
+})
+
 app.whenReady().then(() => {
   createWindow()
 

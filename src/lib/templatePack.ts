@@ -1,4 +1,5 @@
 import { useEditorStore, type EditorNode, type CanvasConfig } from '@/store/useEditorStore'
+import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 
 export interface PosterTemplatePackage {
   version: string
@@ -33,17 +34,13 @@ export function exportTemplatePackage(): void {
   }
 
   const jsonStr = JSON.stringify(pkg, null, 2)
-  const blob = new Blob([jsonStr], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-
-  const a = document.createElement('a')
-  a.href = url
   const safeName = (state.projectName || 'Poster_Template').replace(/[\\/:*?"<>|]/g, '_')
-  a.download = `${safeName}.poster`
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
-  URL.revokeObjectURL(url)
+  await saveFileNativeOrBrowser({
+    filename: `${safeName}.poster`,
+    data: jsonStr,
+    mimeType: 'application/json',
+    filters: [{ name: 'Poster Template Package', extensions: ['poster', 'json'] }],
+  })
 }
 
 /**
