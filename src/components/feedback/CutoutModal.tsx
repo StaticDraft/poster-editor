@@ -27,6 +27,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
   const [invert, setInvert] = useState<boolean>(false)
   const [targetColor, setTargetColor] = useState<{ r: number; g: number; b: number }>({ r: 255, g: 255, b: 255 })
   const [isEyedropperActive, setIsEyedropperActive] = useState<boolean>(false)
+  const [hoverColor, setHoverColor] = useState<{ r: number; g: number; b: number } | null>(null)
 
   const [previewUrl, setPreviewUrl] = useState<string>('')
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
@@ -38,21 +39,26 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
     return text === key ? fallback : text
   }
 
-  // Draw original image on internal picking canvas
+  // Draw original image on internal canvas whenever modal opens or originalUrl changes
   useEffect(() => {
     if (!open || !originalUrl) return
     let isCancelled = false
 
     loadImageWithCorsFallback(originalUrl)
       .then((img) => {
-        if (isCancelled || !canvasRef.current) return
-        const cvs = canvasRef.current
-        cvs.width = img.naturalWidth || img.width
-        cvs.height = img.naturalHeight || img.height
-        const ctx = cvs.getContext('2d')
-        if (ctx) {
-          ctx.drawImage(img, 0, 0)
+        if (isCancelled) return
+        const drawOnCanvas = () => {
+          const cvs = canvasRef.current
+          if (!cvs) return
+          cvs.width = img.naturalWidth || img.width
+          cvs.height = img.naturalHeight || img.height
+          const ctx = cvs.getContext('2d')
+          if (ctx) {
+            ctx.drawImage(img, 0, 0)
+          }
         }
+        drawOnCanvas()
+        setTimeout(drawOnCanvas, 50)
       })
       .catch((err) => console.error('Failed to render picker canvas', err))
 
@@ -84,7 +90,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
         .finally(() => {
           if (!isCancelled) setIsProcessing(false)
         })
-    }, 180)
+    }, 120)
 
     return () => {
       isCancelled = true
@@ -92,16 +98,42 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
     }
   }, [open, originalUrl, mode, targetColor, tolerance, feather, invert])
 
+  // Mouse move handler for live color inspector
+  const handleCanvasMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
+    if (!isEyedropperActive || !canvasRef.current) return
+    const cvs = canvasRef.current
+    const rect = cvs.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+
+    const scaleX = cvs.width / rect.width
+    const scaleY = cvs.height / rect.height
+
+    const x = Math.min(cvs.width - 1, Math.max(0, Math.floor((e.clientX - rect.left) * scaleX)))
+    const y = Math.min(cvs.height - 1, Math.max(0, Math.floor((e.clientY - rect.top) * scaleY)))
+
+    const ctx = cvs.getContext('2d')
+    if (!ctx) return
+
+    try {
+      const pixel = ctx.getImageData(x, y, 1, 1).data
+      setHoverColor({ r: pixel[0], g: pixel[1], b: pixel[2] })
+    } catch {
+      // Ignore
+    }
+  }
+
   // Canvas Eyedropper click handler
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!isEyedropperActive || !canvasRef.current) return
     const cvs = canvasRef.current
     const rect = cvs.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return
+
     const scaleX = cvs.width / rect.width
     const scaleY = cvs.height / rect.height
 
-    const x = Math.floor((e.clientX - rect.left) * scaleX)
-    const y = Math.floor((e.clientY - rect.top) * scaleY)
+    const x = Math.min(cvs.width - 1, Math.max(0, Math.floor((e.clientX - rect.left) * scaleX)))
+    const y = Math.min(cvs.height - 1, Math.max(0, Math.floor((e.clientY - rect.top) * scaleY)))
 
     const ctx = cvs.getContext('2d')
     if (!ctx) return
@@ -120,11 +152,11 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
       const picked = { r: pixel[0], g: pixel[1], b: pixel[2] }
       setTargetColor(picked)
       setMode('color')
-      setTolerance(15) // Set optimal precision tolerance for color keying
+      setTolerance(12) // Optimal default precision tolerance for color keying
       setIsEyedropperActive(false)
       feedback.notify({
-        title: tr('cutout.colorPicked', '已拾取目标背景色'),
-        description: `RGB(${picked.r}, ${picked.g}, ${picked.b}) · 默认容差设定为 15%`,
+        title: tr('cutout.colorPicked', '已精准拾取目标背景色'),
+        description: `RGB(${picked.r}, ${picked.g}, ${picked.b}) · 已自动调整容差为 12%`,
         tone: 'success',
       })
     } catch (err) {
@@ -156,6 +188,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
   }
 
   const hexColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`
+  const hoverHexColor = hoverColor ? `rgb(${hoverColor.r}, ${hoverColor.g}, ${hoverColor.b})` : ''
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -172,14 +205,28 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
           <div className="md:col-span-8 bg-editor-darker p-4 flex flex-col items-center justify-center relative overflow-hidden group">
             <div className="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-20 pointer-events-none" />
 
+            {/* Live Hover Inspector Badge */}
+            {isEyedropperActive && hoverColor && (
+              <div className="absolute top-4 left-4 z-20 bg-background/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-blue-500/50 shadow-xl flex items-center gap-2 text-xs font-mono animate-fade-in pointer-events-none">
+                <span className="w-4 h-4 rounded-full border border-white/40 shadow-inner" style={{ backgroundColor: hoverHexColor }} />
+                <span className="font-bold text-blue-400">{hoverHexColor}</span>
+              </div>
+            )}
+
             <div className="relative max-w-full max-h-full flex items-center justify-center p-2 border border-border/40 rounded-lg shadow-xl bg-[linear-gradient(45deg,#1e293b_25%,transparent_25%),linear-gradient(-45deg,#1e293b_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#1e293b_75%),linear-gradient(-45deg,transparent_75%,#1e293b_75%)] bg-[size:20px_20px] bg-[position:0_0,0_10px,10px_-10px,-10px_0px]">
-              {isEyedropperActive ? (
-                <canvas
-                  ref={canvasRef}
-                  onClick={handleCanvasClick}
-                  className="max-h-[55vh] max-w-full object-contain cursor-crosshair border-2 border-dashed border-blue-500 animate-pulse rounded"
-                />
-              ) : (
+              {/* Canvas is ALWAYS present in DOM for accurate pixel sampling */}
+              <canvas
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                onMouseMove={handleCanvasMouseMove}
+                className={`max-h-[55vh] max-w-full object-contain transition-all ${
+                  isEyedropperActive
+                    ? 'cursor-crosshair border-2 border-dashed border-blue-500 animate-pulse rounded block z-10'
+                    : 'hidden'
+                }`}
+              />
+
+              {!isEyedropperActive && (
                 <img
                   src={previewUrl || originalUrl}
                   alt="Cutout Preview"
@@ -188,17 +235,17 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
               )}
 
               {isProcessing && (
-                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center gap-2 text-xs font-bold text-blue-400 rounded">
+                <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center gap-2 text-xs font-bold text-blue-400 rounded z-20">
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>{tr('cutout.processing', '智能算力抠图计算中...')}</span>
                 </div>
               )}
             </div>
 
-            <div className="absolute bottom-3 left-4 text-[10px] text-muted-foreground bg-background/80 backdrop-blur px-2.5 py-1 rounded border border-border">
+            <div className="absolute bottom-3 left-4 text-[10px] text-muted-foreground bg-background/80 backdrop-blur px-2.5 py-1 rounded border border-border z-20">
               {isEyedropperActive
                 ? tr('cutout.eyedropperHint', '🎯 请在左侧图片上直接点击要扣除的目标色彩')
-                : tr('cutout.viewportHint', '🏁 棋盘格区域代表已扣除的透明透明像素')}
+                : tr('cutout.viewportHint', '🏁 棋盘格区域代表已扣除的透明像素')}
             </div>
           </div>
 
@@ -225,7 +272,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
                       setMode(item.id as any)
                       if (item.id === 'color') {
                         setIsEyedropperActive(true)
-                        setTolerance(15)
+                        setTolerance(12)
                       } else {
                         setIsEyedropperActive(false)
                         setTolerance(35)

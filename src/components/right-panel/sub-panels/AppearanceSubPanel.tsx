@@ -38,8 +38,10 @@ export function AppearanceSubPanel({ node }: { node: any }) {
     setIsProcessingCutout(true)
     try {
       const transparentUrl = await removeImageBackground(pristineUrl, mode, threshold)
-      u('url', transparentUrl)
-      u('props', { ...currentProps, originalUrl: pristineUrl, lastCutoutMode: mode, lastCutoutTolerance: threshold })
+      updateNode(node.id, {
+        url: transparentUrl,
+        props: { ...currentProps, originalUrl: pristineUrl, lastCutoutMode: mode, lastCutoutTolerance: threshold },
+      } as any)
     } catch (err) {
       console.error(err)
     } finally {
