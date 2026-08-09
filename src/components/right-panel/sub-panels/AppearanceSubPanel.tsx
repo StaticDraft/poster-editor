@@ -12,6 +12,7 @@ import {
   Lock, Unlock, Wand2, Target
 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { CutoutModal } from '@/components/feedback/CutoutModal'
 import { Row, NumInput, ToggleCheck, Section } from './PanelCommon'
 
 export function AppearanceSubPanel({ node }: { node: any }) {
@@ -24,28 +25,23 @@ export function AppearanceSubPanel({ node }: { node: any }) {
   const up = (k: string, v: any) => u('props', { ...p, [k]: v })
   const [lockRatio, setLockRatio] = useState(false)
   const [isProcessingCutout, setIsProcessingCutout] = useState(false)
+  const [isCutoutModalOpen, setIsCutoutModalOpen] = useState(false)
 
-  const handleCutout = async (mode: 'white' | 'chroma' = 'white') => {
-    if (!node.url) {
+  const handleCutout = async (mode: 'white' | 'chroma' = 'white', threshold = 35) => {
+    const storeNode = useEditorStore.getState().elements.find((el) => el.id === node.id) || node
+    const currentProps = storeNode.props || node.props || {}
+    const pristineUrl = currentProps.originalUrl || storeNode.url || node.url
+    if (!pristineUrl) {
       feedback.notify({ title: '没有可抠图的图片 URL', tone: 'warning' })
       return
     }
     setIsProcessingCutout(true)
     try {
-      const transparentUrl = await removeImageBackground(node.url, mode)
+      const transparentUrl = await removeImageBackground(pristineUrl, mode, threshold)
       u('url', transparentUrl)
-      feedback.notify({
-        title: '抠图成功',
-        description: mode === 'white' ? '已成功消除纯浅背景' : '已成功消除绿幕背景',
-        tone: 'success',
-      })
+      u('props', { ...currentProps, originalUrl: pristineUrl, lastCutoutMode: mode, lastCutoutTolerance: threshold })
     } catch (err) {
       console.error(err)
-      feedback.notify({
-        title: '抠图失败',
-        description: '请确保图片允许跨域加载',
-        tone: 'error',
-      })
     } finally {
       setIsProcessingCutout(false)
     }
@@ -451,29 +447,56 @@ export function AppearanceSubPanel({ node }: { node: any }) {
 
           {/* 1. Smart Cutout / Background Removal */}
           <Section title={tr('config.appearance.aiMattingTitle', '✨ 智能 P 图抠图 (背景消除)')}>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <button
                 type="button"
-                disabled={isProcessingCutout}
-                onClick={() => handleCutout('white')}
-                className="w-full py-1.5 px-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded text-xs font-bold flex items-center justify-center gap-1.5 shadow transition-all disabled:opacity-50"
+                onClick={() => setIsCutoutModalOpen(true)}
+                className="w-full py-2 px-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-md text-xs font-bold flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/25 transition-all transform hover:-translate-y-0.5"
               >
-                <Wand2 className="w-3.5 h-3.5" />
-                <span>
-                  {isProcessingCutout
-                    ? tr('config.appearance.processingCutout', '正在智能抠图处理中...')
-                    : tr('config.appearance.cutoutWhite', '一键消除纯浅白背景')}
-                </span>
+                <Wand2 className="w-4 h-4" />
+                <span>{tr('config.appearance.openCutoutStudio', '打开专业抠图与背景工坊')}</span>
               </button>
 
-              <button
-                type="button"
-                disabled={isProcessingCutout}
-                onClick={() => handleCutout('chroma')}
-                className="w-full py-1 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
-              >
-                <span>{tr('config.appearance.cutoutChroma', '🟢 绿幕 / 单色抠图')}</span>
-              </button>
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <button
+                  type="button"
+                  disabled={isProcessingCutout}
+                  onClick={() => handleCutout('white')}
+                  className="py-1 px-2 bg-editor-deep hover:bg-muted border border-border text-editor-text text-[11px] font-semibold rounded flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  <span>{tr('config.appearance.cutoutWhite', '⚪ 消除浅白背景')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isProcessingCutout}
+                  onClick={() => handleCutout('chroma')}
+                  className="py-1 px-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold rounded flex items-center justify-center gap-1 transition-colors disabled:opacity-50"
+                >
+                  <span>{tr('config.appearance.cutoutChroma', '🟢 绿幕抠图')}</span>
+                </button>
+              </div>
+
+              {/* Quick Cutout Tolerance & Feathering controls in panel */}
+              <div className="p-2.5 bg-editor-deep rounded border border-border/70 space-y-2 text-xs">
+                <Row label={tr('config.appearance.cutoutTolerance', '抠图容差')}>
+                  <div className="flex items-center gap-2 flex-1">
+                    <input
+                      type="range"
+                      min="5"
+                      max="85"
+                      value={p.lastCutoutTolerance || 35}
+                      onChange={(e) => {
+                        const val = Number(e.target.value)
+                        up('lastCutoutTolerance', val)
+                        handleCutout(p.lastCutoutMode || 'white', val)
+                      }}
+                      className="flex-1 accent-blue-500 h-1.5"
+                    />
+                    <span className="text-[11px] font-mono text-editor-text w-7 text-right">{p.lastCutoutTolerance || 35}%</span>
+                  </div>
+                </Row>
+              </div>
             </div>
           </Section>
 
@@ -596,6 +619,8 @@ export function AppearanceSubPanel({ node }: { node: any }) {
           <ToggleCheck checked={!!node.hidden} onChange={(v) => u('hidden', v)} label={tr('config.appearance.hidden', '隐藏')} />
         </div>
       </Section>
+
+      <CutoutModal open={isCutoutModalOpen} onOpenChange={setIsCutoutModalOpen} nodeId={node.id} />
     </div>
   )
 }

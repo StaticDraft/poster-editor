@@ -22,3 +22,11 @@ describe('cn utility', () => {
     expect(cn('')).toBe('')
   })
 })
+
+describe('processProfessionalCutout', () => {
+  it('returns original url if input is empty or invalid', async () => {
+    const { processProfessionalCutout } = await import('./imageProcess')
+    const result = await processProfessionalCutout('')
+    expect(result).toBe('')
+  })
+})

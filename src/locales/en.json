@@ -580,5 +580,26 @@
     "keyMiddleDragPan": "Hold Middle Button + Drag",
     "keyShiftWheelPan": "Shift + Wheel",
     "keyMiddleClickCenter": "Double Click Middle Button"
+  },
+  "cutout": {
+    "modalTitle": "✨ Cutout Studio & Background Removal",
+    "modeSelect": "Cutout Algorithm Mode",
+    "modeWhite": "⚪ Light / White BG",
+    "modeChroma": "🟢 Chroma Key",
+    "modeDark": "🔴 Dark Background",
+    "modeColor": "🎯 Color Eyedropper",
+    "targetColor": "Target Color",
+    "activateEyedropper": "Activate Eyedropper",
+    "clickImageToPick": "Click image to pick color",
+    "tolerance": "Color Tolerance",
+    "feather": "Edge Feathering",
+    "invertSelection": "Invert Mask (Keep Selected Area)",
+    "reset": "Reset Original",
+    "applyToCanvas": "Apply to Canvas",
+    "colorPicked": "Target Color Picked",
+    "appliedSuccess": "Cutout saved and applied to canvas",
+    "processing": "Processing Cutout...",
+    "eyedropperHint": "🎯 Click anywhere on left image to sample target background color",
+    "viewportHint": "🏁 Checkerboard pattern represents transparent alpha"
   }
 }

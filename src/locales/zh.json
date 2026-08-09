@@ -546,5 +546,26 @@
     "keyMiddleDragPan": "按住鼠标中键拖拽",
     "keyShiftWheelPan": "Shift + 滚轮",
     "keyMiddleClickCenter": "双击鼠标中键"
+  },
+  "cutout": {
+    "modalTitle": "✨ 专业智能抠图与背景消除工坊",
+    "modeSelect": "抠图算法模式",
+    "modeWhite": "⚪ 浅白背景",
+    "modeChroma": "🟢 绿幕/蓝幕",
+    "modeDark": "🔴 暗黑背景",
+    "modeColor": "🎯 吸管指定色",
+    "targetColor": "选定目标色彩",
+    "activateEyedropper": "开启吸管取色",
+    "clickImageToPick": "点击图片拾取色彩",
+    "tolerance": "抠图颜色容差",
+    "feather": "边缘平滑与羽化",
+    "invertSelection": "一键反选 (保留指定区域)",
+    "reset": "重置原图",
+    "applyToCanvas": "应用并覆盖到画布",
+    "colorPicked": "已拾取目标背景色",
+    "appliedSuccess": "抠图已保存并应用到画布",
+    "processing": "智能算力抠图计算中...",
+    "eyedropperHint": "🎯 请在左侧图片上直接点击要扣除的目标色彩",
+    "viewportHint": "🏁 棋盘格区域代表已扣除的透明像素"
   }
 }

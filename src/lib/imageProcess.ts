@@ -69,11 +69,26 @@ export function loadImageWithCorsFallback(url: string): Promise<HTMLImageElement
   })
 }
 
-export async function removeImageBackground(
+export interface CutoutOptions {
+  mode?: 'white' | 'chroma' | 'dark' | 'color'
+  targetColor?: { r: number; g: number; b: number }
+  tolerance?: number // 1 to 100
+  feather?: number // 0 to 10
+  invertSelection?: boolean
+}
+
+export async function processProfessionalCutout(
   imageUrl: string,
-  mode: 'white' | 'chroma' | 'auto' = 'white',
-  threshold = 35
+  options: CutoutOptions = {}
 ): Promise<string> {
+  const {
+    mode = 'white',
+    targetColor = { r: 255, g: 255, b: 255 },
+    tolerance = 35,
+    feather = 0,
+    invertSelection = false,
+  } = options
+
   try {
     const img = await loadImageWithCorsFallback(imageUrl)
     const w = img.naturalWidth || img.width
@@ -87,21 +102,84 @@ export async function removeImageBackground(
     if (!ctx) throw new Error('Canvas 2D context unavailable')
 
     ctx.drawImage(img, 0, 0)
-    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const imgData = ctx.getImageData(0, 0, w, h)
     const data = imgData.data
+
+    const tol = Math.max(1, Math.min(100, tolerance))
+    const smoothRange = Math.min(tol * 0.35, 6)
 
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i]
       const g = data[i + 1]
       const b = data[i + 2]
+      const origAlpha = data[i + 3]
 
-      if (mode === 'white' || mode === 'auto') {
-        if (r > 255 - threshold && g > 255 - threshold && b > 255 - threshold) {
-          data[i + 3] = 0 // Transparent alpha
-        }
+      if (origAlpha === 0) continue
+
+      let matchDist = 100
+
+      if (mode === 'white') {
+        const avgBright = (r + g + b) / 3
+        matchDist = ((255 - avgBright) / 2.55)
+      } else if (mode === 'dark') {
+        const avgBright = (r + g + b) / 3
+        matchDist = (avgBright / 2.55)
       } else if (mode === 'chroma') {
-        if (g > 100 && g > r * 1.25 && g > b * 1.25) {
-          data[i + 3] = 0
+        const isGreen = g > 85 && g > r * 1.12 && g > b * 1.12
+        const isBlue = b > 85 && b > r * 1.12 && b > g * 1.12
+        matchDist = isGreen || isBlue ? 0 : 100
+      } else if (mode === 'color') {
+        const dr = r - targetColor.r
+        const dg = g - targetColor.g
+        const db = b - targetColor.b
+        // Weighted perceptual color distance formula for accurate eyedropper keying
+        const rMean = (r + targetColor.r) / 2
+        const weightR = 2 + rMean / 256
+        const weightG = 4.0
+        const weightB = 2 + (255 - rMean) / 256
+        const distSq = weightR * dr * dr + weightG * dg * dg + weightB * db * db
+        matchDist = (Math.sqrt(distSq) / 765) * 100
+      }
+
+      let alphaMult = 1
+      if (matchDist <= tol - smoothRange) {
+        alphaMult = 0
+      } else if (matchDist >= tol) {
+        alphaMult = 1
+      } else {
+        alphaMult = (matchDist - (tol - smoothRange)) / smoothRange
+      }
+
+      if (invertSelection) {
+        alphaMult = 1 - alphaMult
+      }
+
+      data[i + 3] = Math.round(origAlpha * alphaMult)
+    }
+
+    // Process edge feathering if requested
+    if (feather > 0 && feather <= 10) {
+      const alphaBuffer = new Uint8ClampedArray(w * h)
+      for (let i = 0; i < w * h; i++) {
+        alphaBuffer[i] = data[i * 4 + 3]
+      }
+
+      const radius = Math.round(feather)
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let sum = 0
+          let count = 0
+          for (let dy = -radius; dy <= radius; dy++) {
+            for (let dx = -radius; dx <= radius; dx++) {
+              const nx = x + dx
+              const ny = y + dy
+              if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                sum += alphaBuffer[ny * w + nx]
+                count++
+              }
+            }
+          }
+          data[(y * w + x) * 4 + 3] = Math.round(sum / count)
         }
       }
     }
@@ -113,9 +191,21 @@ export async function removeImageBackground(
     }
     return resultUrl
   } catch (err) {
-    console.error('removeImageBackground error:', err)
+    console.error('processProfessionalCutout error:', err)
     return imageUrl
   }
+}
+
+export async function removeImageBackground(
+  imageUrl: string,
+  mode: 'white' | 'chroma' | 'auto' = 'white',
+  threshold = 35
+): Promise<string> {
+  const actualMode = mode === 'auto' ? 'white' : mode
+  return processProfessionalCutout(imageUrl, {
+    mode: actualMode,
+    tolerance: threshold,
+  })
 }
 
 export interface ImageEffectOptions {
