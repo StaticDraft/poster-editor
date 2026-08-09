@@ -72,6 +72,7 @@ export function loadImageWithCorsFallback(url: string): Promise<HTMLImageElement
 export interface CutoutOptions {
   mode?: 'white' | 'chroma' | 'dark' | 'color'
   targetColor?: { r: number; g: number; b: number }
+  targetColors?: Array<{ r: number; g: number; b: number }>
   tolerance?: number // 1 to 100
   feather?: number // 0 to 10
   invertSelection?: boolean
@@ -84,10 +85,13 @@ export async function processProfessionalCutout(
   const {
     mode = 'white',
     targetColor = { r: 255, g: 255, b: 255 },
+    targetColors = [],
     tolerance = 35,
     feather = 0,
     invertSelection = false,
   } = options
+
+  const colorTargets = targetColors.length > 0 ? targetColors : [targetColor]
 
   try {
     const img = await loadImageWithCorsFallback(imageUrl)
@@ -120,25 +124,30 @@ export async function processProfessionalCutout(
 
       if (mode === 'white') {
         const avgBright = (r + g + b) / 3
-        matchDist = ((255 - avgBright) / 2.55)
+        matchDist = (255 - avgBright) / 2.55
       } else if (mode === 'dark') {
         const avgBright = (r + g + b) / 3
-        matchDist = (avgBright / 2.55)
+        matchDist = avgBright / 2.55
       } else if (mode === 'chroma') {
         const isGreen = g > 85 && g > r * 1.12 && g > b * 1.12
         const isBlue = b > 85 && b > r * 1.12 && b > g * 1.12
         matchDist = isGreen || isBlue ? 0 : 100
       } else if (mode === 'color') {
-        const dr = r - targetColor.r
-        const dg = g - targetColor.g
-        const db = b - targetColor.b
-        // Weighted perceptual color distance formula for accurate eyedropper keying
-        const rMean = (r + targetColor.r) / 2
-        const weightR = 2 + rMean / 256
-        const weightG = 4.0
-        const weightB = 2 + (255 - rMean) / 256
-        const distSq = weightR * dr * dr + weightG * dg * dg + weightB * db * db
-        matchDist = (Math.sqrt(distSq) / 765) * 100
+        let minDist = 100
+        for (let j = 0; j < colorTargets.length; j++) {
+          const tc = colorTargets[j]
+          const dr = r - tc.r
+          const dg = g - tc.g
+          const db = b - tc.b
+          const rMean = (r + tc.r) / 2
+          const weightR = 2 + rMean / 256
+          const weightG = 4.0
+          const weightB = 2 + (255 - rMean) / 256
+          const distSq = weightR * dr * dr + weightG * dg * dg + weightB * db * db
+          const d = (Math.sqrt(distSq) / 765) * 100
+          if (d < minDist) minDist = d
+        }
+        matchDist = minDist
       }
 
       let alphaMult = 1

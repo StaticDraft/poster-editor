@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { useEditorStore } from '@/store/useEditorStore'
 import { processProfessionalCutout, loadImageWithCorsFallback, type CutoutOptions } from '@/lib/imageProcess'
 import { useFeedback } from '@/lib/feedback'
-import { Wand2, Pipette, RefreshCw, Check, SlidersHorizontal } from 'lucide-react'
+import { Wand2, Pipette, RefreshCw, Check, SlidersHorizontal, X, Trash2 } from 'lucide-react'
 
 interface CutoutModalProps {
   open: boolean
@@ -25,7 +25,9 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
   const [tolerance, setTolerance] = useState<number>(35)
   const [feather, setFeather] = useState<number>(1)
   const [invert, setInvert] = useState<boolean>(false)
-  const [targetColor, setTargetColor] = useState<{ r: number; g: number; b: number }>({ r: 255, g: 255, b: 255 })
+
+  // Continuous Multi-point Color Keying Array
+  const [targetColors, setTargetColors] = useState<Array<{ r: number; g: number; b: number }>>([])
   const [isEyedropperActive, setIsEyedropperActive] = useState<boolean>(false)
   const [hoverColor, setHoverColor] = useState<{ r: number; g: number; b: number } | null>(null)
 
@@ -76,7 +78,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
     const timer = setTimeout(() => {
       processProfessionalCutout(originalUrl, {
         mode,
-        targetColor,
+        targetColors,
         tolerance,
         feather,
         invertSelection: invert,
@@ -96,7 +98,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
       isCancelled = true
       clearTimeout(timer)
     }
-  }, [open, originalUrl, mode, targetColor, tolerance, feather, invert])
+  }, [open, originalUrl, mode, targetColors, tolerance, feather, invert])
 
   // Mouse move handler for live color inspector
   const handleCanvasMouseMove = (e: MouseEvent<HTMLCanvasElement>) => {
@@ -122,7 +124,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
     }
   }
 
-  // Canvas Eyedropper click handler
+  // Continuous Canvas Eyedropper click handler
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!isEyedropperActive || !canvasRef.current) return
     const cvs = canvasRef.current
@@ -150,18 +152,29 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
       }
 
       const picked = { r: pixel[0], g: pixel[1], b: pixel[2] }
-      setTargetColor(picked)
+
+      setTargetColors((prev) => {
+        const exists = prev.some((c) => Math.abs(c.r - picked.r) < 3 && Math.abs(c.g - picked.g) < 3 && Math.abs(c.b - picked.b) < 3)
+        return exists ? prev : [...prev, picked]
+      })
       setMode('color')
-      setTolerance(12) // Optimal default precision tolerance for color keying
-      setIsEyedropperActive(false)
+      setTolerance(12) // Optimal default precision tolerance for continuous keying
+
+      // KEEP EYEDROPPER ACTIVE FOR CONTINUOUS CLICKING!
+      setIsEyedropperActive(true)
+
       feedback.notify({
-        title: tr('cutout.colorPicked', '已精准拾取目标背景色'),
-        description: `RGB(${picked.r}, ${picked.g}, ${picked.b}) · 已自动调整容差为 12%`,
+        title: tr('cutout.colorPickedContinuous', '已追加背景采样色 (连续取色模式生效)'),
+        description: `RGB(${picked.r}, ${picked.g}, ${picked.b}) · 吸管保持激活，可继续点击图片其他背景区域`,
         tone: 'success',
       })
     } catch (err) {
       console.error('Failed to pick color from canvas', err)
     }
+  }
+
+  const removeTargetColor = (index: number) => {
+    setTargetColors((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleApply = () => {
@@ -187,7 +200,6 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
     onOpenChange(false)
   }
 
-  const hexColor = `rgb(${targetColor.r}, ${targetColor.g}, ${targetColor.b})`
   const hoverHexColor = hoverColor ? `rgb(${hoverColor.r}, ${hoverColor.g}, ${hoverColor.b})` : ''
 
   return (
@@ -242,10 +254,12 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
               )}
             </div>
 
-            <div className="absolute bottom-3 left-4 text-[10px] text-muted-foreground bg-background/80 backdrop-blur px-2.5 py-1 rounded border border-border z-20">
-              {isEyedropperActive
-                ? tr('cutout.eyedropperHint', '🎯 请在左侧图片上直接点击要扣除的目标色彩')
-                : tr('cutout.viewportHint', '🏁 棋盘格区域代表已扣除的透明像素')}
+            <div className="absolute bottom-3 left-4 text-[10px] text-muted-foreground bg-background/80 backdrop-blur px-2.5 py-1 rounded border border-border z-20 flex items-center gap-2">
+              <span>
+                {isEyedropperActive
+                  ? tr('cutout.eyedropperContinuousHint', '🎯 连续取色中：直接在图片上连续点击多个不同背景位置，即可一次性干干脆脆完全剔除渐变/杂色背景！')
+                  : tr('cutout.viewportHint', '🏁 棋盘格区域代表已扣除的透明像素')}
+              </span>
             </div>
           </div>
 
@@ -263,7 +277,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
                   { id: 'white', label: tr('cutout.modeWhite', '⚪ 浅白背景') },
                   { id: 'chroma', label: tr('cutout.modeChroma', '🟢 绿幕/蓝幕') },
                   { id: 'dark', label: tr('cutout.modeDark', '🔴 暗黑背景') },
-                  { id: 'color', label: tr('cutout.modeColor', '🎯 吸管指定色') },
+                  { id: 'color', label: tr('cutout.modeColor', '🎯 连续吸管抠图') },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -289,27 +303,70 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
                 ))}
               </div>
 
-              {/* Custom Eyedropper Section */}
+              {/* Custom Continuous Eyedropper Section */}
               {mode === 'color' && (
-                <div className="p-3 bg-muted/30 rounded border border-border space-y-2">
+                <div className="p-3 bg-muted/30 rounded-lg border border-border space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{tr('cutout.targetColor', '选定目标色彩')}</span>
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-4 h-4 rounded-full border border-border shadow-inner" style={{ backgroundColor: hexColor }} />
-                      <span className="font-mono text-[10px] text-muted-foreground">{hexColor}</span>
-                    </div>
+                    <span className="font-semibold text-foreground flex items-center gap-1">
+                      <Pipette className="w-3.5 h-3.5 text-blue-400" />
+                      <span>{tr('cutout.targetColors', '已采样背景色点')} ({targetColors.length})</span>
+                    </span>
+                    {targetColors.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setTargetColors([])}
+                        className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-0.5"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>清空采样</span>
+                      </button>
+                    )}
                   </div>
+
+                  {/* Picked Colors Badges */}
+                  {targetColors.length > 0 ? (
+                    <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                      {targetColors.map((col, idx) => {
+                        const colStr = `rgb(${col.r},${col.g},${col.b})`
+                        return (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-1.5 px-2 py-0.5 bg-background border border-border rounded-full text-[10px] font-mono shadow-sm group"
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full border border-white/30" style={{ backgroundColor: colStr }} />
+                            <span>{colStr}</span>
+                            <button
+                              type="button"
+                              onClick={() => removeTargetColor(idx)}
+                              className="text-muted-foreground hover:text-rose-400 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground text-center py-1">
+                      {tr('cutout.noColorsPicked', '点击下方按钮后在图片上连续多点采样取色')}
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setIsEyedropperActive(!isEyedropperActive)}
-                    className={`w-full py-1.5 px-3 rounded text-xs font-bold flex items-center justify-center gap-1.5 border transition-colors ${
+                    className={`w-full py-1.5 px-3 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 border transition-all shadow ${
                       isEyedropperActive
-                        ? 'bg-blue-600 text-white border-blue-500 animate-pulse'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-500 animate-pulse'
                         : 'bg-card border-border text-foreground hover:bg-muted'
                     }`}
                   >
                     <Pipette className="w-3.5 h-3.5" />
-                    <span>{isEyedropperActive ? tr('cutout.clickImageToPick', '点击图片拾取色彩') : tr('cutout.activateEyedropper', '开启吸管取色')}</span>
+                    <span>
+                      {isEyedropperActive
+                        ? tr('cutout.continuousActiveState', '🎯 连续取色激活中 (直接连续点击图片多处)')
+                        : tr('cutout.activateContinuousEyedropper', '开启连续吸管取色')}
+                    </span>
                   </button>
                 </div>
               )}
@@ -369,6 +426,7 @@ export function CutoutModal({ open, onOpenChange, nodeId }: CutoutModalProps) {
                   setTolerance(35)
                   setFeather(1)
                   setInvert(false)
+                  setTargetColors([])
                   setPreviewUrl(originalUrl)
                 }}
                 className="flex-1 py-2 px-3 bg-muted border border-border hover:bg-muted/80 text-foreground text-xs font-semibold rounded transition-colors flex items-center justify-center gap-1"
