@@ -191,7 +191,7 @@ export function ExportModal({ open, onClose }: ExportModalProps) {
         await saveFileNativeOrBrowser({
           filename: fileName,
           data: dataUrl,
-          mimeType: format === 'png' ? 'image/png' : format === 'jpeg' ? 'image/jpeg' : 'image/webp',
+          mimeType: format === 'png' ? 'image/png' : format === 'jpg' ? 'image/jpeg' : 'image/webp',
           filters: [{ name: `${format.toUpperCase()} Image`, extensions: [format] }],
         })
       }

@@ -19,7 +19,7 @@ const TEMPLATE_PACK_VERSION = '1.0.0'
 /**
  * Export current scene as a standalone .poster template file
  */
-export function exportTemplatePackage(): void {
+export async function exportTemplatePackage(): Promise<void> {
   const state = useEditorStore.getState()
   const pkg: PosterTemplatePackage = {
     version: TEMPLATE_PACK_VERSION,

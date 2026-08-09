@@ -2,6 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useEditorStore, CanvasConfig } from '@/store/useEditorStore'
 import { ColorPickerWithAlpha } from '@/components/ui/color-picker'
+import { Upload } from 'lucide-react'
 
 function Section({ title, children }: { title: string, children: React.ReactNode }) {
   return (

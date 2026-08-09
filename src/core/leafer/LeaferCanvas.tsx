@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type DragEvent as ReactDragEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { App, PointerEvent, DragEvent, Rect, Group, Line } from 'leafer-ui'
+import { App, Rect, Group, Line } from 'leafer-ui'
 import '@leafer-in/editor'
 import '@leafer-in/animate'
 import '@leafer-in/view'
@@ -14,12 +14,15 @@ import { useFeedback } from '@/lib/feedback'
 import { handleGlobalKeyDown } from './services/KeyboardShortcutManager'
 import { handleNodeDragSnap } from './services/SnapGuideEngine'
 import { createBrandWatermark, syncBrandWatermark } from '@/core/branding'
+import { bgColorToFill } from './hooks/useCanvasBackground'
+import { useCanvasDragDrop } from './hooks/useCanvasDragDrop'
+import { useCanvasZoomWheel } from './hooks/useCanvasZoomWheel'
 
 export function LeaferCanvas() {
   const containerRef = useRef<HTMLDivElement>(null)
   const appRef = useRef<App | null>(null)
   const boardRef = useRef<any>(null)
-  const [menuPos, setMenuPos] = useState<{x: number, y: number} | null>(null)
+  const [menuPos, setMenuPos] = useState<{ x: number; y: number } | null>(null)
   const nodeMapRef = useRef(new Map<string, any>())
   const guideGroupRef = useRef<Group | null>(null)
   const gridOverlayGroupRef = useRef<Group | null>(null)
@@ -31,6 +34,7 @@ export function LeaferCanvas() {
   const deleteNodes = useEditorStore((state) => state.deleteNodes)
   const activeIds = useEditorStore((state) => state.activeIds)
   const canvasConfig = useEditorStore((state) => state.canvasConfig)
+  const rulerGuides = useEditorStore((state) => state.rulerGuides)
   const feedback = useFeedback()
   const runtimeOptions = { editable: !isPreview, draggable: !isPreview }
   const { t } = useTranslation()
@@ -39,6 +43,8 @@ export function LeaferCanvas() {
     return text === key ? fallback : text
   }
 
+  const { handleDragOver, handleDrop } = useCanvasDragDrop(containerRef, appRef)
+  useCanvasZoomWheel(containerRef, appRef)
 
   const getNodeGeometryUpdates = (node: any): { id: string; attrs: Partial<any> } | null => {
     if (!node?.id || node.id === '__scene_board__' || node.id === '__guide_group__') return null
@@ -46,7 +52,6 @@ export function LeaferCanvas() {
     const current = useEditorStore.getState().elements.find((item) => item.id === node.id)
     if (!current) return null
 
-    // Isolate animation preview state from persistent editor store
     const hasAnimation = Boolean(current.animation && current.animation.type && current.animation.type !== 'none')
     const isAnimating = hasAnimation || Boolean(node.__animationRef) || isPreview
 
@@ -87,42 +92,6 @@ export function LeaferCanvas() {
     }
   }
 
-  // ── Convert bgColor config to Leafer fill ──
-  const bgColorToFill = (bgColor: any): any => {
-    if (!bgColor) return '#ffffff'
-    if (typeof bgColor === 'string') return bgColor
-    if (typeof bgColor === 'object') {
-      if (bgColor.type === 'image' && bgColor.url) {
-        return { type: 'image', url: bgColor.url, mode: bgColor.mode || 'cover' }
-      }
-      if ((bgColor.type === 'linear' || bgColor.type === 'radial') && Array.isArray(bgColor.stops)) {
-        const dirMap: Record<string, string> = {
-          'top': 'to bottom', 'bottom': 'to top',
-          'left': 'to right', 'right': 'to left',
-          'top-left': 'to bottom right', 'center': 'to bottom',
-        }
-        if (bgColor.type === 'radial') {
-          return {
-            type: 'radial',
-            stops: bgColor.stops.map((c: string, i: number, arr: string[]) => ({
-              offset: i / Math.max(1, arr.length - 1),
-              color: c,
-            })),
-          }
-        }
-        return {
-          type: 'linear',
-          from: dirMap[bgColor.from] || 'to bottom',
-          stops: bgColor.stops.map((c: string, i: number, arr: string[]) => ({
-            offset: i / Math.max(1, arr.length - 1),
-            color: c,
-          })),
-        }
-      }
-    }
-    return '#ffffff'
-  }
-
   const boardShadowRef = useRef<Rect | null>(null)
 
   const ensureBoardShadow = (app: App) => {
@@ -149,13 +118,11 @@ export function LeaferCanvas() {
   }
 
   const ensureBoard = (app: App) => {
-    // Discard board if it was destroyed or belongs to a different/old App tree
     if (boardRef.current) {
       if (boardRef.current.destroyed) {
         boardRef.current = null
       } else {
         try {
-          // If the board's parent is not the current app's tree, it's stale
           if (boardRef.current.parent && boardRef.current.parent !== app.tree) {
             boardRef.current = null
           }
@@ -222,7 +189,113 @@ export function LeaferCanvas() {
     return gridOverlayGroupRef.current
   }
 
-  // Bind canvas config changes to Leafer
+  // ── Sync Grid & Overlay ──
+  useEffect(() => {
+    const app = appRef.current
+    if (!app || app.destroyed) return
+    try {
+      const gridOverlayGroup = ensureGridOverlayGroup(app)
+      gridOverlayGroup.removeAll()
+
+      const { width: bW, height: bH, showGrid, showSafeMargin, showGridOverlay } = canvasConfig
+
+      if (showGrid) {
+        const gridStep = 50
+        for (let x = gridStep; x < bW; x += gridStep) {
+          gridOverlayGroup.add(
+            new Line({
+              id: `__grid_overlay_mesh_v_${x}__`,
+              points: [x, 0, x, bH],
+              stroke: 'rgba(148, 163, 184, 0.4)',
+              strokeWidth: 1,
+              dashPattern: [3, 3],
+              hittable: false,
+            })
+          )
+        }
+        for (let y = gridStep; y < bH; y += gridStep) {
+          gridOverlayGroup.add(
+            new Line({
+              id: `__grid_overlay_mesh_h_${y}__`,
+              points: [0, y, bW, y],
+              stroke: 'rgba(148, 163, 184, 0.4)',
+              strokeWidth: 1,
+              dashPattern: [3, 3],
+              hittable: false,
+            })
+          )
+        }
+      }
+
+      if (showSafeMargin) {
+        const insetX = bW * 0.05
+        const insetY = bH * 0.05
+        gridOverlayGroup.add(
+          new Rect({
+            id: '__grid_overlay_safe_margin__',
+            x: insetX,
+            y: insetY,
+            width: bW - insetX * 2,
+            height: bH - insetY * 2,
+            stroke: '#0284c7',
+            strokeWidth: 2,
+            dashPattern: [6, 6],
+            hittable: false,
+          })
+        )
+      }
+
+      if (showGridOverlay) {
+        const stepX = bW / 3
+        const stepY = bH / 3
+
+        gridOverlayGroup.add(
+          new Line({
+            id: '__grid_overlay_v1__',
+            points: [stepX, 0, stepX, bH],
+            stroke: '#9333ea',
+            strokeWidth: 2,
+            dashPattern: [4, 4],
+            hittable: false,
+          })
+        )
+        gridOverlayGroup.add(
+          new Line({
+            id: '__grid_overlay_v2__',
+            points: [stepX * 2, 0, stepX * 2, bH],
+            stroke: '#9333ea',
+            strokeWidth: 2,
+            dashPattern: [4, 4],
+            hittable: false,
+          })
+        )
+        gridOverlayGroup.add(
+          new Line({
+            id: '__grid_overlay_h1__',
+            points: [0, stepY, bW, stepY],
+            stroke: '#9333ea',
+            strokeWidth: 2,
+            dashPattern: [4, 4],
+            hittable: false,
+          })
+        )
+        gridOverlayGroup.add(
+          new Line({
+            id: '__grid_overlay_h2__',
+            points: [0, stepY * 2, bW, stepY * 2],
+            stroke: '#9333ea',
+            strokeWidth: 2,
+            dashPattern: [4, 4],
+            hittable: false,
+          })
+        )
+      }
+    } catch (e) {
+      console.error('Grid overlay sync error:', e)
+    }
+  }, [canvasConfig])
+
+  // ── Sync Canvas Background ──
   useEffect(() => {
     const app = appRef.current as any
     if (!app || app.destroyed) return
@@ -241,205 +314,115 @@ export function LeaferCanvas() {
         height: canvasConfig.height,
         zIndex: -100001,
       })
-      syncBrandWatermark(
-        ensureBrandWatermark(app),
-        canvasConfig.width,
-        canvasConfig.height,
-      )
+      syncBrandWatermark(ensureBrandWatermark(app), canvasConfig.width, canvasConfig.height)
     } catch (e) {
       console.error('Board background sync error:', e)
     }
+  }, [canvasConfig.width, canvasConfig.height, canvasConfig.bgColor])
 
-    // Safe Margin, 3x3 Grid Overlay & Mesh Grid Renderer
-    try {
-      const gridOverlayGroup = ensureGridOverlayGroup(app)
-      gridOverlayGroup.removeAll()
-
-      const { width: bW, height: bH, showGrid, showSafeMargin, showGridOverlay } = canvasConfig
-
-      // 1. Base 50px Canvas Grid Mesh (显示网格)
-      if (showGrid) {
-        const gridStep = 50
-        for (let x = gridStep; x < bW; x += gridStep) {
-          gridOverlayGroup.add(new Line({
-            id: `__grid_overlay_mesh_v_${x}__`,
-            points: [x, 0, x, bH],
-            stroke: 'rgba(148, 163, 184, 0.4)',
-            strokeWidth: 1,
-            dashPattern: [3, 3],
-            hittable: false,
-          }))
-        }
-        for (let y = gridStep; y < bH; y += gridStep) {
-          gridOverlayGroup.add(new Line({
-            id: `__grid_overlay_mesh_h_${y}__`,
-            points: [0, y, bW, y],
-            stroke: 'rgba(148, 163, 184, 0.4)',
-            strokeWidth: 1,
-            dashPattern: [3, 3],
-            hittable: false,
-          }))
-        }
-      }
-
-      // 2. Safe Bleed Margin 5% (显示 5% 出血安全边距)
-      if (showSafeMargin) {
-        const insetX = bW * 0.05
-        const insetY = bH * 0.05
-        gridOverlayGroup.add(new Rect({
-          id: '__grid_overlay_safe_margin__',
-          x: insetX,
-          y: insetY,
-          width: bW - insetX * 2,
-          height: bH - insetY * 2,
-          stroke: '#0284c7',
-          strokeWidth: 2,
-          dashPattern: [6, 6],
-          hittable: false,
-        }))
-      }
-
-      // 3. Rule of Thirds 3x3 Grid Overlay (显示三分构图辅助网格)
-      if (showGridOverlay) {
-        const stepX = bW / 3
-        const stepY = bH / 3
-
-        gridOverlayGroup.add(new Line({
-          id: '__grid_overlay_v1__',
-          points: [stepX, 0, stepX, bH],
-          stroke: '#9333ea',
-          strokeWidth: 2,
-          dashPattern: [4, 4],
-          hittable: false,
-        }))
-        gridOverlayGroup.add(new Line({
-          id: '__grid_overlay_v2__',
-          points: [stepX * 2, 0, stepX * 2, bH],
-          stroke: '#9333ea',
-          strokeWidth: 2,
-          dashPattern: [4, 4],
-          hittable: false,
-        }))
-        gridOverlayGroup.add(new Line({
-          id: '__grid_overlay_h1__',
-          points: [0, stepY, bW, stepY],
-          stroke: '#9333ea',
-          strokeWidth: 2,
-          dashPattern: [4, 4],
-          hittable: false,
-        }))
-        gridOverlayGroup.add(new Line({
-          id: '__grid_overlay_h2__',
-          points: [0, stepY * 2, bW, stepY * 2],
-          stroke: '#9333ea',
-          strokeWidth: 2,
-          dashPattern: [4, 4],
-          hittable: false,
-        }))
-      }
-    } catch (e) {
-      console.error('Grid overlay sync error:', e)
-    }
-  }, [canvasConfig])
-
-  // Global keyboard shortcuts
-  const handleKeyboardDelete = async (ids: string[]) => {
-    if (ids.length === 0) return
-    const nodeIds = ids.filter(Boolean)
-    const selectionCount = nodeIds.length
-    if (selectionCount === 0) return
-    const confirmed = await feedback.confirm({
-      title: tr('canvas.deleteConfirm', 'Delete selection?'),
-      description: tr('canvas.deleteDesc', `This will remove ${selectionCount} selected item(s) permanently.`),
-      confirmLabel: tr('common.delete', 'Delete'),
-      cancelLabel: tr('common.cancel', 'Cancel'),
-      tone: 'warning',
-    })
-    if (!confirmed) return
-    if (nodeIds.length > 0) deleteNodes(nodeIds)
-  }
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      handleGlobalKeyDown(e, {
-        feedback,
-        tr,
-        appRef,
-        nodeMapRef,
-        handleKeyboardDelete,
-      })
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
-  // Engine init & event binding
+  // ── Engine Init & Mount ──
   useEffect(() => {
     if (!containerRef.current) return
+
     const app = new App({
       view: containerRef.current,
+      tree: {},
       editor: { rotateAround: 'center' },
-      wheel: { zoomMode: true, zoomSpeed: 0.02 }
+      wheel: { zoomMode: true, zoomSpeed: 0.02 },
+      mobile: false,
     })
+
     appRef.current = app
-    // Force-clear any stale board from a previous App instance (React Strict Mode remount)
-    boardRef.current = null
-    brandWatermarkRef.current = null
-    ensureBoard(app)
-    ensureBrandWatermark(app)
     useEditorStore.getState().setLeaferApp(app)
 
-    // ── 手动 Wheel 缩放/平移 ──
-    // Leafer 内部 interaction.wheel 管道存在兼容性问题（wheel 事件到达了
-    // interaction 但从未触发 zoom/move），此处用原生 DOM 事件操作 zoomLayer 绕过。
-    const WHEEL_ZOOM_SPEED = 0.0015
-    const WHEEL_ZOOM_MIN = 0.05
-    const WHEEL_ZOOM_MAX = 20
-    const WHEEL_PAN_SPEED = 1.5
-
-    const onCanvasWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const tree = (app as any).tree
-      const zoomLayer = tree?.zoomLayer
-      if (!zoomLayer) return
-
-      if (!e.shiftKey) {
-        // 缩放：默认滚轮行为，以鼠标位置为中心
-        const delta = e.deltaY
-        const currentScale = zoomLayer.scaleX || 1
-        const scaleFactor = Math.max(
-          WHEEL_ZOOM_MIN / currentScale,
-          Math.min(1 - delta * WHEEL_ZOOM_SPEED, WHEEL_ZOOM_MAX / currentScale),
-        )
-        const rect = containerRef.current!.getBoundingClientRect()
-        const screenX = e.clientX - rect.left
-        const screenY = e.clientY - rect.top
-        const pointX = (screenX - (zoomLayer.x || 0)) / currentScale
-        const pointY = (screenY - (zoomLayer.y || 0)) / currentScale
-        const newScale = Math.max(WHEEL_ZOOM_MIN, Math.min(currentScale * scaleFactor, WHEEL_ZOOM_MAX))
-        zoomLayer.set({
-          scaleX: newScale,
-          scaleY: newScale,
-          x: screenX - pointX * newScale,
-          y: screenY - pointY * newScale,
-        })
-      } else {
-        // 平移：Shift + 滚轮（横向滚动）
-        zoomLayer.set({
-          x: (zoomLayer.x || 0) - e.deltaY * WHEEL_PAN_SPEED,
-        })
+    try {
+      const tree = app.tree as any
+      if (tree) {
+        tree.scroll = true
+        tree.zoom = true
+        tree.wheelZoom = true
+        tree.zoomLayer.config = {
+          min: 0.05,
+          max: 20,
+        }
       }
-      app.forceRender?.(undefined, true)
-    }
-    containerRef.current!.addEventListener('wheel', onCanvasWheel, { passive: false })
+    } catch {}
 
-    // Auto-fit artboard to viewport on first load & layout settle
+    const editor = (app as any).editor
+    if (editor) {
+      editor.on('select', () => {
+        const list = (editor.list || []) as any[]
+        const ids = list.map((item) => item.id).filter(Boolean)
+        useEditorStore.getState().setActiveIds(ids)
+      })
+
+      editor.on('drag', (e: any) => {
+        const guideGroup = ensureGuideGroup(app)
+        handleNodeDragSnap(e.target || editor.element, app, nodeMapRef.current, guideGroup)
+      })
+
+      editor.on('drag.end', () => {
+        if (guideGroupRef.current) {
+          guideGroupRef.current.clear()
+        }
+        persistEditorSelection(app)
+      })
+
+      editor.on('rotate.end', () => {
+        persistEditorSelection(app)
+      })
+
+      editor.on('scale.end', () => {
+        persistEditorSelection(app)
+      })
+
+      editor.on('resize.end', () => {
+        persistEditorSelection(app)
+      })
+    }
+
+    app.on('pointer.down', (e: any) => {
+      if (e.buttons === 2 || e.button === 2) {
+        setMenuPos({ x: e.clientX, y: e.clientY })
+        return
+      }
+
+      setMenuPos(null)
+
+      const target = e.target
+      if (target && target.id && typeof target.id === 'string' && !target.id.startsWith('__')) {
+        useEditorStore.getState().setActiveIds([target.id])
+      } else if (
+        !target ||
+        (target.id && (target.id === '__scene_board__' || target.id === '__board_shadow__'))
+      ) {
+        useEditorStore.getState().setActiveIds([])
+      }
+    })
+
+    ensureBoard(app)
+    ensureBoardShadow(app)
+    ensureBrandWatermark(app)
+
+    const initialElements = useEditorStore.getState().elements
+    const currentMap = nodeMapRef.current
+    initialElements.forEach((el, index) => {
+      const node = createLeaferNode({ ...el, zIndex: index }, runtimeOptions)
+      node.zIndex = index
+      app.tree.add(node)
+      currentMap.set(el.id, node)
+    })
+
     const autoFit = () => {
-      useEditorStore.getState().zoomFit()
+      try {
+        useEditorStore.getState().zoomFit()
+      } catch {}
     }
 
+    requestAnimationFrame(autoFit)
     setTimeout(autoFit, 50)
-    setTimeout(autoFit, 300)
+    setTimeout(autoFit, 200)
+    setTimeout(autoFit, 500)
 
     const ro = new ResizeObserver(() => {
       autoFit()
@@ -451,85 +434,23 @@ export function LeaferCanvas() {
     ;(window as any).__leaferZoomReset = () => useEditorStore.getState().zoomReset()
     ;(window as any).__leaferZoomFit = () => useEditorStore.getState().zoomFit()
 
-    app.on(DragEvent.DRAG, (e) => {
-      const guideGroup = ensureGuideGroup(app)
-      handleNodeDragSnap(e.target, app, nodeMapRef.current, guideGroup)
-    })
-
-    app.on(DragEvent.START, (e) => {
-      const originEvent = (e.origin as MouseEvent) || (window.event as MouseEvent)
-      const target = e.target
-      if (originEvent && originEvent.altKey && target && target.id && target.id !== '__scene_board__' && target.id !== '__guide_group__') {
-        const state = useEditorStore.getState()
-        const activeIds = state.activeIds
-        const targetsToClone = activeIds.includes(target.id)
-          ? state.elements.filter((el) => activeIds.includes(el.id))
-          : state.elements.filter((el) => el.id === target.id)
-
-        if (targetsToClone.length > 0) {
-          const stayBehindCopies = targetsToClone.map((el) => ({
-            ...JSON.parse(JSON.stringify(el)),
-            id: `${el.type.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          }))
-          stayBehindCopies.forEach((node) => state.addNode(node))
-        }
-      }
-    })
-
-    app.on(DragEvent.END, () => {
-      if (guideGroupRef.current) {
-        guideGroupRef.current.removeAll()
-      }
-      persistEditorSelection(app)
-      setTimeout(() => {
-        if ((app as any).editor?.list) {
-          useEditorStore.getState().setActiveIds((app as any).editor.list.map((n: any) => n.id).filter(Boolean))
-        }
-      }, 0)
-    })
-
-    app.on(PointerEvent.UP, () => {
-      const state = useEditorStore.getState()
-      setTimeout(() => {
-        const editorList = (app as any).editor?.list
-        if (editorList) {
-          let selectedIds = editorList.map((n: any) => n.id).filter(Boolean)
-          const newSelection = new Set<string>(selectedIds)
-          let expanded = false
-          state.elements.forEach(el => {
-             if (el.groupId && selectedIds.includes(el.id)) {
-                 state.elements.filter(x => x.groupId === el.groupId).forEach(x => newSelection.add(x.id))
-                 expanded = true
-             }
-          })
-          const finalIds = Array.from(newSelection)
-          state.setActiveIds(finalIds)
-          if (expanded && appRef.current) {
-              const globalNodes = finalIds.map(id => nodeMapRef.current.get(id)).filter(Boolean)
-              if (globalNodes.length > 0) (appRef.current as any).editor.target = globalNodes
-          }
-        }
-      }, 0)
-    })
-
-    app.on(PointerEvent.MENU, (e) => {
-       (e.origin as MouseEvent).preventDefault()
-       setMenuPos({ x: (e.origin as MouseEvent).clientX, y: (e.origin as MouseEvent).clientY })
-     })
-     app.on(PointerEvent.TAP, () => {
-        setMenuPos(null)
-     })
-
     return () => {
-      containerRef.current?.removeEventListener('wheel', onCanvasWheel)
       ro.disconnect()
+      try {
+        app.destroy()
+      } catch {}
+      appRef.current = null
+      useEditorStore.getState().setLeaferApp(null)
+      nodeMapRef.current.clear()
       boardRef.current = null
+      boardShadowRef.current = null
+      guideGroupRef.current = null
+      gridOverlayGroupRef.current = null
       brandWatermarkRef.current = null
-      app.destroy()
     }
   }, [])
 
-  // Preview mode & editor visibility
+  // ── Preview Mode Sync ──
   useEffect(() => {
     const app = appRef.current
     if (!app) return
@@ -544,21 +465,17 @@ export function LeaferCanvas() {
     }
   }, [mode, isPreview, elements])
 
-  // Selection sync
+  // ── Selection Sync ──
   useEffect(() => {
     const app = appRef.current as any
     if (!app?.editor || isPreview) return
 
-    const selectedNodes = activeIds
-      .map((id) => nodeMapRef.current.get(id))
-      .filter(Boolean)
-
+    const selectedNodes = activeIds.map((id) => nodeMapRef.current.get(id)).filter(Boolean)
     const nextTarget = selectedNodes.length > 0 ? selectedNodes : null
     app.editor.target = nextTarget
   }, [activeIds, isPreview, elements])
 
-  // Custom Ruler Guides sync
-  const rulerGuides = useEditorStore((state) => state.rulerGuides)
+  // ── Ruler Guides Sync ──
   useEffect(() => {
     const app = appRef.current
     if (!app || app.destroyed) return
@@ -591,10 +508,32 @@ export function LeaferCanvas() {
     })
   }, [rulerGuides])
 
-  // Node sync (pure, static, un-mutated DOM nodes)
+  // ── Global Keyboard Shortcuts ──
   useEffect(() => {
-    if (!appRef.current) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return
+      }
+
+      handleGlobalKeyDown(e, {
+        feedback,
+        tr,
+        appRef,
+        nodeMapRef,
+        handleKeyboardDelete: (ids: string[]) => deleteNodes(ids),
+      })
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [activeIds, elements, deleteNodes, t])
+
+  // ── Node Map & Element Sync ──
+  useEffect(() => {
     const app = appRef.current
+    if (!app || app.destroyed) return
+
     const currentMap = nodeMapRef.current
     const newIds = new Set<string>()
 
@@ -612,83 +551,16 @@ export function LeaferCanvas() {
     })
 
     currentMap.forEach((node, id) => {
-      if (!newIds.has(id)) { node.remove(); currentMap.delete(id) }
+      if (!newIds.has(id)) {
+        node.remove()
+        currentMap.delete(id)
+      }
     })
 
     app.forceRender?.(undefined, true)
   }, [elements])
 
-  const handleDragOver = (e: ReactDragEvent<HTMLDivElement>) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy' }
-  const handleDrop = (e: ReactDragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    try {
-      const data = JSON.parse(e.dataTransfer.getData('application/json'))
-      const rect = containerRef.current?.getBoundingClientRect()
-      const app = appRef.current
-      if (rect && app) {
-        const w = data.width || data.defaultProps?.width || 100
-        const h = data.height || data.defaultProps?.height || 100
-
-        // Convert screen coordinates to canvas logical coordinates
-        // accounting for zoom and pan
-        const screenX = e.clientX - rect.left
-        const screenY = e.clientY - rect.top
-
-        let canvasX = screenX
-        let canvasY = screenY
-
-        // Use Leafer's coordinate system to get the logical position
-        try {
-          const tree = app.tree as any
-          if (tree && typeof tree.getPagePoint === 'function') {
-            // getPagePoint converts screen point to page/canvas point
-            const point = tree.getPagePoint({ x: screenX, y: screenY })
-            canvasX = point.x
-            canvasY = point.y
-          } else if (tree) {
-            // Fallback: manually compute from tree's transform
-            const zoom = tree.scaleX || tree.scale?.x || 1
-            const tx = tree.x || 0
-            const ty = tree.y || 0
-            canvasX = (screenX - tx) / zoom
-            canvasY = (screenY - ty) / zoom
-          }
-        } catch {}
-
-        // Check if dropping image over an existing Image node to REPLACE it
-        if ((data.type === 'Image' || data.url) && data.url) {
-          const state = useEditorStore.getState()
-          const targetImage = state.elements.slice().reverse().find(el => {
-            if (el.type !== 'Image') return false
-            const ex = el.x
-            const ey = el.y
-            const ew = el.width || 100
-            const eh = el.height || 100
-            return canvasX >= ex && canvasX <= ex + ew && canvasY >= ey && canvasY <= ey + eh
-          })
-
-          if (targetImage) {
-            state.updateNode(targetImage.id, { url: data.url })
-            feedback.notify({
-              title: '图片替换成功',
-              description: '已成功将新图片替换至已有图片图层',
-              tone: 'success',
-            })
-            return
-          }
-        }
-
-        useEditorStore.getState().addNode({
-          ...(data.defaultProps || {}),
-          ...data,
-          id: `${(data.type || 'rect').toLowerCase()}-${Date.now()}`,
-          x: Math.round((canvasX - w / 2) / 16) * 16,
-          y: Math.round((canvasY - h / 2) / 16) * 16,
-        })
-      }
-    } catch (e) {}
-  }
-
+  // ── Middle Click Drag & Double Click Zoom Fit ──
   const lastMiddleClickRef = useRef<number>(0)
   const middleDragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null)
   const MIDDLE_DBLCLICK_THRESHOLD_MS = 350
@@ -697,7 +569,6 @@ export function LeaferCanvas() {
     if (e.button === 1) {
       e.preventDefault()
 
-      // 中键双击：适应画布
       const now = Date.now()
       if (now - lastMiddleClickRef.current < MIDDLE_DBLCLICK_THRESHOLD_MS) {
         useEditorStore.getState().zoomFit()
@@ -706,7 +577,6 @@ export function LeaferCanvas() {
       }
       lastMiddleClickRef.current = now
 
-      // 中键拖拽：平移画布
       const tree = (appRef.current as any)?.tree
       const zoomLayer = tree?.zoomLayer
       if (!zoomLayer) return
@@ -749,18 +619,29 @@ export function LeaferCanvas() {
     }
   }
 
+  const handleDoubleClick = () => {
+    useEditorStore.getState().zoomFit()
+  }
+
+  const currentSceneId = useEditorStore((state) => state.currentSceneId)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      useEditorStore.getState().zoomFit()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [currentSceneId, canvasConfig.width, canvasConfig.height])
+
   return (
-    <div
-      className="flex-1 w-full h-full bg-editor-deep overflow-hidden relative shadow-inner flex items-center justify-center"
-    >
+    <div className="flex-1 w-full h-full bg-editor-deep overflow-hidden relative shadow-inner flex items-center justify-center">
       <div
         ref={containerRef}
         className="w-full h-full absolute inset-0 cursor-crosshair"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onMouseDown={handleMouseDown}
+        onDoubleClick={handleDoubleClick}
         onAuxClick={(e) => e.button === 1 && e.preventDefault()}
-        onContextMenu={e => e.preventDefault()}
+        onContextMenu={(e) => e.preventDefault()}
       />
 
       {menuPos && <CanvasContextMenu pos={menuPos} onClose={() => setMenuPos(null)} />}
