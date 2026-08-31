@@ -19,7 +19,9 @@ import {
   Palette,
   Scaling,
   Settings2,
+  ShieldCheck,
 } from 'lucide-react'
+import { useLicenseStore } from '@/store/useLicenseStore'
 import { useEditorStore } from '@/store/useEditorStore'
 import { saveFileNativeOrBrowser } from '@/lib/fileSave'
 import { Button } from '@/components/ui/button'
@@ -45,6 +47,8 @@ export function TopToolbar() {
   const redo = useEditorStore((state) => state.redo)
   const canUndo = useEditorStore((state) => state.canUndo)
   const canRedo = useEditorStore((state) => state.canRedo)
+  const isLicensed = useLicenseStore((state) => state.isLicensed)
+  const openLicenseModal = useLicenseStore((state) => state.openModal)
   const elements = useEditorStore((state) => state.elements)
   const feedback = useFeedback()
 
@@ -414,6 +418,21 @@ export function TopToolbar() {
           title={tr('toolbar.batchExport', '批量套打')}
         >
           <Scaling className="w-3.5 h-3.5 mr-1 text-indigo-400" /> {tr('toolbar.batchExport', '批量套打')}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={openLicenseModal}
+          className={`h-7 text-xs px-2.5 font-semibold shrink-0 border ${
+            isLicensed
+              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+              : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+          }`}
+          title={isLicensed ? tr('license.badgeLicensed', 'PRO 商业授权') : tr('license.badgeUnlicensed', '未激活 试用版')}
+        >
+          <ShieldCheck className={`w-3.5 h-3.5 mr-1 ${isLicensed ? 'text-emerald-400' : 'text-amber-400'}`} />
+          {isLicensed ? 'PRO' : tr('license.badgeUnlicensed', '激活授权')}
         </Button>
 
         {/* Secondary Operations Popover / More Menu */}

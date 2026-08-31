@@ -14,7 +14,7 @@
     "test": "vitest run",
     "electron:dev": "concurrently \"vite\" \"electron .\"",
     "electron:build": "node -e \"try{require('fs').rmSync('dist-electron',{recursive:true,force:true})}catch(e){}\" && tsc && vite build && electron-packager . 画成 --platform=win32 --arch=x64 --out=dist-electron --overwrite",
-    "electron:build:portable": "node -e \"try{require('fs').rmSync('dist-electron',{recursive:true,force:true})}catch(e){}\" && tsc && vite build && electron-builder --win --portable"
+    "electron:build:portable": "node -e \"try{require('fs').rmSync('dist-electron',{recursive:true,force:true})}catch(e){}\" && tsc && vite build && electron-builder --win"
   },
   "build": {
     "appId": "com.postercraft.editor",

@@ -10,6 +10,9 @@ import { useEffect, useMemo, useRef } from 'react'
 import { PreviewModal } from './components/feedback/PreviewModal'
 import { useAppSettingsStore } from './store/useAppSettingsStore'
 
+import { LicenseModal } from './components/feedback/LicenseModal'
+import { useLicenseStore } from './store/useLicenseStore'
+
 function RightPanel() {
   const activeIds = useEditorStore(s => s.activeIds)
   
@@ -32,7 +35,12 @@ function App() {
   const editingTemplateId = useEditorStore(s => s.editingTemplateId)
   const autoSaveEnabled = useAppSettingsStore(s => s.autoSave)
   const lastSavedFingerprint = useSaveStatusStore(s => s.lastFingerprint)
+  const initLicense = useLicenseStore(s => s.initLicense)
   const didInitRef = useRef(false)
+
+  useEffect(() => {
+    void initLicense()
+  }, [initLicense])
 
   const saveFingerprint = useMemo(() => buildEditorSaveFingerprint({
     currentSceneId,
@@ -88,6 +96,7 @@ function App() {
         rightPanel={<RightPanel />}
       />
       <PreviewModal />
+      <LicenseModal />
     </>
   )
 }

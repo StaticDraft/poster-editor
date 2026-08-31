@@ -47,6 +47,27 @@ function createWindow() {
 
 // IPC Handlers for system / file dialogs
 ipcMain.handle('get-machine-code', () => {
+  const childProcess = require('child_process')
+  let hardwareSn = ''
+  
+  // Try querying Windows BIOS serial number via powershell or wmic
+  if (process.platform === 'win32') {
+    try {
+      const stdout = childProcess.execSync('powershell "(Get-CimInstance Win32_BIOS).SerialNumber"', { timeout: 1500, encoding: 'utf-8' })
+      if (stdout && stdout.trim() && !stdout.includes('To be filled') && !stdout.includes('Default string')) {
+        hardwareSn = stdout.trim()
+      }
+    } catch (_e) {
+      try {
+        const stdout = childProcess.execSync('wmic bios get serialnumber', { timeout: 1500, encoding: 'utf-8' })
+        const lines = stdout.split('\n').map(s => s.trim()).filter(Boolean)
+        if (lines.length >= 2 && lines[1] && !lines[1].includes('To be filled')) {
+          hardwareSn = lines[1]
+        }
+      } catch (_e2) {}
+    }
+  }
+
   const networkInterfaces = os.networkInterfaces()
   let macAddress = ''
   for (const name of Object.keys(networkInterfaces)) {
@@ -58,8 +79,16 @@ ipcMain.handle('get-machine-code', () => {
     }
     if (macAddress) break
   }
+
+  if (hardwareSn) {
+    const cleanSn = hardwareSn.replace(/[^A-Z0-9]/gi, '').toUpperCase()
+    return `SN-${cleanSn}`
+  }
+
   const rawId = `${os.hostname()}-${os.platform()}-${os.arch()}-${macAddress}`
-  return Buffer.from(rawId).toString('base64').replace(/=/g, '').toUpperCase().slice(0, 24)
+  const base64Str = Buffer.from(rawId).toString('base64').replace(/[^A-Z0-9]/gi, '').toUpperCase()
+  const padded = (base64Str + 'POSTERCRAFT2026').slice(0, 16)
+  return `SN-${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`
 })
 
 ipcMain.handle('show-save-dialog', async (event, options) => {

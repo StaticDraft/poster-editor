@@ -1,4 +1,5 @@
 import { Group, Rect, Text } from 'leafer-ui'
+import { useLicenseStore } from '@/store/useLicenseStore'
 
 export const BRAND_NAME = '画成试用版'
 export const BRAND_WATERMARK_ID = '__postercraft_watermark__'
@@ -33,13 +34,14 @@ export function syncBrandWatermark(watermark: Group, canvasWidth: number, canvas
 }
 
 export function createBrandWatermark(canvasWidth: number, canvasHeight: number) {
+  const isLicensed = useLicenseStore.getState().isLicensed
   const watermark = new Group({
     id: BRAND_WATERMARK_ID,
     zIndex: 1000000,
     editable: false,
     draggable: false,
     hittable: false,
-    visible: true,
+    visible: !isLicensed,
   })
 
   watermark.add(new Rect({
@@ -77,13 +79,14 @@ export function createBrandWatermark(canvasWidth: number, canvasHeight: number) 
 }
 
 export function createExportWatermark(canvasWidth: number, canvasHeight: number) {
+  const isLicensed = useLicenseStore.getState().isLicensed
   const watermark = new Group({
     id: BRAND_EXPORT_WATERMARK_ID,
     zIndex: 1000000,
     editable: false,
     draggable: false,
     hittable: false,
-    visible: true,
+    visible: !isLicensed,
   })
 
   const baseTileWidth = 250
