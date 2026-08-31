@@ -4,6 +4,17 @@ const os = require('os')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
+// 在打包生产环境下，将 userData 强制存储在软件同级目录下的 userData 文件夹中（实现绿色便携免污染）
+if (!isDev) {
+  try {
+    const exeDir = path.dirname(app.getPath('exe'))
+    const portableUserData = path.join(exeDir, 'userData')
+    app.setPath('userData', portableUserData)
+  } catch (err) {
+    console.warn('Failed to set portable userData path:', err)
+  }
+}
+
 let mainWindow = null
 
 function createWindow() {

@@ -8,6 +8,16 @@ export const BRAND_EXPORT_WATERMARK_ID = '__postercraft_export_watermark__'
 const WATERMARK_HEIGHT = 56
 const WATERMARK_MARGIN = 16
 
+/**
+ * 实时刷新画布上已存在的品牌水印可见性（激活/解绑授权后立即生效）
+ * @param watermarkGroup 画布上的水印 Group 引用（如果有）
+ */
+export function updateWatermarkVisibility(watermarkGroup: Group | null | undefined) {
+  if (!watermarkGroup || watermarkGroup.destroyed) return
+  const shouldShow = useLicenseStore.getState().showWatermark
+  watermarkGroup.set({ visible: shouldShow })
+}
+
 function getWatermarkWidth(canvasWidth: number) {
   return Math.max(180, Math.min(210, canvasWidth - WATERMARK_MARGIN * 2))
 }
@@ -34,14 +44,14 @@ export function syncBrandWatermark(watermark: Group, canvasWidth: number, canvas
 }
 
 export function createBrandWatermark(canvasWidth: number, canvasHeight: number) {
-  const isLicensed = useLicenseStore.getState().isLicensed
+  const showWatermark = useLicenseStore.getState().showWatermark
   const watermark = new Group({
     id: BRAND_WATERMARK_ID,
     zIndex: 1000000,
     editable: false,
     draggable: false,
     hittable: false,
-    visible: !isLicensed,
+    visible: showWatermark,
   })
 
   watermark.add(new Rect({
@@ -79,14 +89,14 @@ export function createBrandWatermark(canvasWidth: number, canvasHeight: number) 
 }
 
 export function createExportWatermark(canvasWidth: number, canvasHeight: number) {
-  const isLicensed = useLicenseStore.getState().isLicensed
+  const showWatermark = useLicenseStore.getState().showWatermark
   const watermark = new Group({
     id: BRAND_EXPORT_WATERMARK_ID,
     zIndex: 1000000,
     editable: false,
     draggable: false,
     hittable: false,
-    visible: !isLicensed,
+    visible: showWatermark,
   })
 
   const baseTileWidth = 250

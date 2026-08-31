@@ -36,6 +36,8 @@ function App() {
   const autoSaveEnabled = useAppSettingsStore(s => s.autoSave)
   const lastSavedFingerprint = useSaveStatusStore(s => s.lastFingerprint)
   const initLicense = useLicenseStore(s => s.initLicense)
+  const isLicensed = useLicenseStore(s => s.isLicensed)
+  const isLicenseLoading = useLicenseStore(s => s.isLoading)
   const didInitRef = useRef(false)
 
   useEffect(() => {
@@ -87,6 +89,23 @@ function App() {
     return () => clearTimeout(timer)
   }, [autoSaveEnabled, currentSceneId, editingTemplateId, isPreview, lastSavedFingerprint, saveFingerprint, saveScene, saveTemplate])
 
+  // 未激活时，显示加载中占位页面（阻止编辑器渲染）
+  if (isLicenseLoading) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#0a0e17]">
+        <div className="text-center space-y-3">
+          <div className="w-10 h-10 mx-auto border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <p className="text-sm text-muted-foreground">正在验证授权信息...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 未激活时，只渲染 LicenseModal 强锁弹窗，不渲染编辑器主界面
+  if (!isLicensed) {
+    return <LicenseModal />
+  }
+
   return (
     <>
       <MainLayout
@@ -102,3 +121,4 @@ function App() {
 }
 
 export default App
+

@@ -13,7 +13,8 @@ import { createLeaferNode, syncLeaferNode } from './runtime'
 import { useFeedback } from '@/lib/feedback'
 import { handleGlobalKeyDown } from './services/KeyboardShortcutManager'
 import { handleNodeDragSnap } from './services/SnapGuideEngine'
-import { createBrandWatermark, syncBrandWatermark } from '@/core/branding'
+import { createBrandWatermark, syncBrandWatermark, updateWatermarkVisibility } from '@/core/branding'
+import { useLicenseStore } from '@/store/useLicenseStore'
 import { bgColorToFill } from './hooks/useCanvasBackground'
 import { useCanvasDragDrop } from './hooks/useCanvasDragDrop'
 import { useCanvasZoomWheel } from './hooks/useCanvasZoomWheel'
@@ -43,8 +44,14 @@ export function LeaferCanvas() {
     return text === key ? fallback : text
   }
 
+  const showWatermark = useLicenseStore(s => s.showWatermark)
   const { handleDragOver, handleDrop } = useCanvasDragDrop(containerRef, appRef)
   useCanvasZoomWheel(containerRef, appRef)
+
+  // 当授权状态变化时，实时刷新画布水印可见性（激活正式卡密后水印立即消失）
+  useEffect(() => {
+    updateWatermarkVisibility(brandWatermarkRef.current)
+  }, [showWatermark])
 
   const getNodeGeometryUpdates = (node: any): { id: string; attrs: Partial<any> } | null => {
     if (!node?.id || node.id === '__scene_board__' || node.id === '__guide_group__') return null

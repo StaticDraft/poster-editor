@@ -48,6 +48,7 @@ export function TopToolbar() {
   const canUndo = useEditorStore((state) => state.canUndo)
   const canRedo = useEditorStore((state) => state.canRedo)
   const isLicensed = useLicenseStore((state) => state.isLicensed)
+  const isTrial = useLicenseStore((state) => state.isTrial)
   const openLicenseModal = useLicenseStore((state) => state.openModal)
   const elements = useEditorStore((state) => state.elements)
   const feedback = useFeedback()
@@ -425,14 +426,24 @@ export function TopToolbar() {
           size="sm"
           onClick={openLicenseModal}
           className={`h-7 text-xs px-2.5 font-semibold shrink-0 border ${
-            isLicensed
-              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
-              : 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+            !isLicensed
+              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30 hover:bg-rose-500/20 animate-pulse'
+              : isTrial
+              ? 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
           }`}
-          title={isLicensed ? tr('license.badgeLicensed', 'PRO 商业授权') : tr('license.badgeUnlicensed', '未激活 试用版')}
+          title={
+            !isLicensed
+              ? tr('license.badgeUnlicensed', '未激活/已锁定')
+              : isTrial
+              ? tr('license.badgeTrial', '试用版授权 (带水印)')
+              : tr('license.badgePro', 'PRO 商业授权')
+          }
         >
-          <ShieldCheck className={`w-3.5 h-3.5 mr-1 ${isLicensed ? 'text-emerald-400' : 'text-amber-400'}`} />
-          {isLicensed ? 'PRO' : tr('license.badgeUnlicensed', '激活授权')}
+          <ShieldCheck className={`w-3.5 h-3.5 mr-1 ${
+            !isLicensed ? 'text-rose-400' : isTrial ? 'text-amber-400' : 'text-emerald-400'
+          }`} />
+          {!isLicensed ? tr('license.badgeUnlicensed', '激活授权') : isTrial ? tr('license.badgeTrial', '试用版') : 'PRO'}
         </Button>
 
         {/* Secondary Operations Popover / More Menu */}

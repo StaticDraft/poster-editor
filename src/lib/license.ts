@@ -1,9 +1,11 @@
 /**
- * 软件授权加密与硬件 SN 校验引擎
+ * 软件授权加密与硬件 SN 校验引擎 (支持试用卡密 / 正式卡密)
  */
 
 const LICENSE_SECRET_SALT = 'POSTER_CRAFT_LICENSE_SALT_2026_LEAF'
 const WEB_SN_STORAGE_KEY = 'poster_editor_web_sn'
+
+export type LicenseType = 'UNAUTHORIZED' | 'TRIAL' | 'PRO'
 
 /**
  * 简单字符串哈希算法 (FNV-1a 延伸 32位 16进制)
@@ -15,8 +17,7 @@ function hashString(str: string): string {
     h1 = Math.imul(h1, 0x01000193)
   }
   const hex = (h1 >>> 0).toString(16).toUpperCase().padStart(8, '0')
-  
-  // 第二轮混合翻转
+
   let h2 = 0x12345678
   for (let i = str.length - 1; i >= 0; i--) {
     h2 ^= str.charCodeAt(i)
@@ -35,7 +36,7 @@ export async function getMachineSN(): Promise<string> {
   if (typeof window !== 'undefined' && window.electronAPI?.getMachineCode) {
     try {
       const sn = await window.electronAPI.getMachineCode()
-      if (sn && typeof sn === 'string' && sn.length > 5) {
+      if (sn && typeof sn === 'string' && sn.length > 3) {
         return sn
       }
     } catch (_err) {
@@ -68,33 +69,56 @@ export async function getMachineSN(): Promise<string> {
  */
 export interface LicenseVerifyResult {
   valid: boolean
+  licenseType: LicenseType
   expiryDate: string
+  isTrial: boolean
   isPermanent: boolean
   messageKey: string
   fallbackMessage: string
 }
 
 /**
- * 根据机器码与过期时间 (YYYYMMDD) 生成标准激活码
- * 格式: LIC-XXXX-XXXX-YYYYMMDD
+ * 根据机器码、过期时间 (YYYYMMDD) 与卡密类型生成激活码
+ * 格式:
+ * - 试用卡密: LIC-TRL-XXXX-YYYYMMDD
+ * - 正式卡密: LIC-PRO-XXXX-YYYYMMDD (默认 20991231)
  */
-export function generateLicenseKey(sn: string, expireDateYYYYMMDD: string = '20991231'): string {
+export function generateLicenseKey(
+  sn: string,
+  expireDateYYYYMMDD: string = '20991231',
+  isTrial: boolean = false
+): string {
   const cleanSn = sn.replace(/[^A-Z0-9]/gi, '').toUpperCase()
-  const payload = `${cleanSn}:${expireDateYYYYMMDD}:${LICENSE_SECRET_SALT}`
+  const tag = isTrial ? 'TRL' : 'PRO'
+  const payload = `${tag}:${cleanSn}:${expireDateYYYYMMDD}:${LICENSE_SECRET_SALT}`
   const signature = hashString(payload).toUpperCase().slice(0, 8)
   const part1 = signature.slice(0, 4)
   const part2 = signature.slice(4, 8)
-  return `LIC-${part1}-${part2}-${expireDateYYYYMMDD}`
+  return `LIC-${tag}-${part1}${part2}-${expireDateYYYYMMDD}`
 }
 
 /**
- * 校验激活码合法性
+ * 根据当前日期加上指定天数计算 YYYYMMDD
+ */
+export function getOffsetDateYYYYMMDD(days: number): string {
+  const target = new Date()
+  target.setDate(target.getDate() + days)
+  const yyyy = target.getFullYear()
+  const mm = String(target.getMonth() + 1).padStart(2, '0')
+  const dd = String(target.getDate()).padStart(2, '0')
+  return `${yyyy}${mm}${dd}`
+}
+
+/**
+ * 校验激活码合法性 (兼容试用与正式卡密)
  */
 export function verifyLicenseKey(sn: string, licenseKey: string): LicenseVerifyResult {
   if (!licenseKey || typeof licenseKey !== 'string') {
     return {
       valid: false,
+      licenseType: 'UNAUTHORIZED',
       expiryDate: '',
+      isTrial: false,
       isPermanent: false,
       messageKey: 'license.invalidEmpty',
       fallbackMessage: '请输入有效的授权激活码',
@@ -102,24 +126,43 @@ export function verifyLicenseKey(sn: string, licenseKey: string): LicenseVerifyR
   }
 
   const cleanKey = licenseKey.trim().toUpperCase()
-  const match = /^LIC-([A-Z0-9]{4})-([A-Z0-9]{4})-(\d{8})$/.exec(cleanKey)
+  // 匹配 LIC-TRL-XXXXXXXX-YYYYMMDD 或 LIC-PRO-XXXXXXXX-YYYYMMDD 或旧版 LIC-XXXX-XXXX-YYYYMMDD
+  const match = /^LIC-(TRL|PRO|([A-Z0-9]{4}))-([A-Z0-9]{4,8})-(\d{8})$/.exec(cleanKey)
   if (!match) {
     return {
       valid: false,
+      licenseType: 'UNAUTHORIZED',
       expiryDate: '',
+      isTrial: false,
       isPermanent: false,
       messageKey: 'license.invalidFormat',
-      fallbackMessage: '授权激活码格式不正确 (例: LIC-XXXX-XXXX-20991231)',
+      fallbackMessage: '授权激活码格式不正确 (例: LIC-PRO-XXXX-20991231 或 LIC-TRL-XXXX-20260930)',
     }
   }
 
-  const [, _part1, _part2, expireDateYYYYMMDD] = match
-  const expectedKey = generateLicenseKey(sn, expireDateYYYYMMDD)
+  const [, typeTag, , , expireDateYYYYMMDD] = match
+  const isTrialKey = typeTag === 'TRL'
+
+  // 计算预期匹配的 Key
+  let expectedKey = ''
+  if (typeTag === 'TRL' || typeTag === 'PRO') {
+    expectedKey = generateLicenseKey(sn, expireDateYYYYMMDD, isTrialKey)
+  } else {
+    // 兼容老版本格式 LIC-PART1-PART2-YYYYMMDD
+    const cleanSn = sn.replace(/[^A-Z0-9]/gi, '').toUpperCase()
+    const payload = `${cleanSn}:${expireDateYYYYMMDD}:${LICENSE_SECRET_SALT}`
+    const signature = hashString(payload).toUpperCase().slice(0, 8)
+    const part1 = signature.slice(0, 4)
+    const part2 = signature.slice(4, 8)
+    expectedKey = `LIC-${part1}-${part2}-${expireDateYYYYMMDD}`
+  }
 
   if (expectedKey !== cleanKey) {
     return {
       valid: false,
+      licenseType: 'UNAUTHORIZED',
       expiryDate: '',
+      isTrial: false,
       isPermanent: false,
       messageKey: 'license.mismatchSN',
       fallbackMessage: '该授权码与当前电脑硬件 SN 不匹配',
@@ -138,18 +181,26 @@ export function verifyLicenseKey(sn: string, licenseKey: string): LicenseVerifyR
   if (new Date() > expireDateObj) {
     return {
       valid: false,
+      licenseType: 'UNAUTHORIZED',
       expiryDate: formattedExpireStr,
+      isTrial: isTrialKey,
       isPermanent: false,
       messageKey: 'license.expired',
-      fallbackMessage: `该授权已于 ${formattedExpireStr} 到期`,
+      fallbackMessage: `该授权已于 ${formattedExpireStr} 到期，请重新激活`,
     }
   }
 
+  const resolvedType: LicenseType = isTrialKey ? 'TRIAL' : 'PRO'
+
   return {
     valid: true,
+    licenseType: resolvedType,
     expiryDate: formattedExpireStr,
+    isTrial: isTrialKey,
     isPermanent,
-    messageKey: 'license.verifySuccess',
-    fallbackMessage: '授权激活成功！已解锁 PRO 全功能。',
+    messageKey: isTrialKey ? 'license.trialActivated' : 'license.proActivated',
+    fallbackMessage: isTrialKey
+      ? `试用授权激活成功！有效期至 ${formattedExpireStr}（试用版带水印）。`
+      : '正式商业授权激活成功！全功能已解锁，水印已去除。',
   }
 }

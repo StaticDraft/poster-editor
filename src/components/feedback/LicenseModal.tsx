@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ShieldCheck, Copy, KeyRound, Sparkles, X, Lock, CheckCircle2, AlertCircle, Wrench } from 'lucide-react'
+import { ShieldCheck, Copy, KeyRound, Sparkles, X, Lock, CheckCircle2, AlertCircle, Wrench, Clock, ShieldAlert } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLicenseStore } from '@/store/useLicenseStore'
 import { useFeedback } from '@/lib/feedback'
-import { generateLicenseKey } from '@/lib/license'
+import { generateLicenseKey, getOffsetDateYYYYMMDD } from '@/lib/license'
 
 const SELLER_DEFAULT_PIN = '888888'
 
@@ -15,9 +15,11 @@ export function LicenseModal() {
     machineSN,
     licenseKey,
     isLicensed,
+    isTrial,
     expiryDate,
     isPermanent,
     isModalOpen,
+    isLoading,
     closeModal,
     activateLicense,
     deactivateLicense,
@@ -30,7 +32,8 @@ export function LicenseModal() {
 
   // Seller generator inputs
   const [targetSN, setTargetSN] = useState('')
-  const [targetExpire, setTargetExpire] = useState('20991231')
+  const [targetIsTrial, setTargetIsTrial] = useState(true)
+  const [targetExpire, setTargetExpire] = useState(getOffsetDateYYYYMMDD(7)) // 默认 7 天试用
   const [generatedKey, setGeneratedKey] = useState('')
 
   useEffect(() => {
@@ -39,7 +42,11 @@ export function LicenseModal() {
     }
   }, [machineSN, targetSN])
 
-  if (!isModalOpen) return null
+  // 如果未激活/已到期，强制全屏强锁遮罩（无法关闭/无法绕过）
+  const isMandatoryLocked = !isLicensed
+  const shouldShow = !isLoading && (isMandatoryLocked || isModalOpen)
+
+  if (!shouldShow) return null
 
   const tr = (key: string, fallback: string) => {
     const val = t(key)
@@ -95,9 +102,18 @@ export function LicenseModal() {
     }
   }
 
+  const handlePresetExpire = (days: number | null, isTrialKey: boolean) => {
+    setTargetIsTrial(isTrialKey)
+    if (days === null) {
+      setTargetExpire('20991231')
+    } else {
+      setTargetExpire(getOffsetDateYYYYMMDD(days))
+    }
+  }
+
   const handleGenerateKey = () => {
     if (!targetSN.trim()) return
-    const key = generateLicenseKey(targetSN.trim(), targetExpire.trim() || '20991231')
+    const key = generateLicenseKey(targetSN.trim(), targetExpire.trim() || '20991231', targetIsTrial)
     setGeneratedKey(key)
   }
 
@@ -112,41 +128,68 @@ export function LicenseModal() {
   }
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in-0">
+    <div className="fixed inset-0 z-[500] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in-0">
       <div className="relative w-full max-w-xl bg-card border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/20">
+        <div className={`px-5 py-4 border-b flex items-center justify-between ${
+          !isLicensed
+            ? 'bg-rose-500/10 border-rose-500/30'
+            : isTrial
+            ? 'bg-amber-500/10 border-amber-500/30'
+            : 'bg-emerald-500/10 border-emerald-500/30'
+        }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
-              isLicensed
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+              !isLicensed
+                ? 'bg-rose-500/20 text-rose-400 border-rose-500/30'
+                : isTrial
+                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
             }`}>
-              <ShieldCheck className="w-5 h-5" />
+              {!isLicensed ? <Lock className="w-5 h-5" /> : isTrial ? <Clock className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
             </div>
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2 select-none">
-                {tr('license.title', '🛡️ 软件授权与硬件激活中心')}
+                {!isLicensed ? tr('license.mandatoryLockTitle', '🔒 软件尚未激活，请先输入授权激活码') : tr('license.title', '🛡️ 软件授权与硬件激活中心')}
                 {isLicensed && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                    {tr('license.badgeLicensed', 'PRO 商业授权')}
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                    isTrial
+                      ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                      : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  }`}>
+                    {isTrial ? tr('license.badgeTrial', '试用版授权 (带水印)') : tr('license.badgePro', 'PRO 商业授权')}
                   </span>
                 )}
               </h3>
               <p className="text-[11px] text-muted-foreground">
-                {isLicensed
-                  ? `${tr('license.status', '授权状态')}: ${isPermanent ? tr('license.permanent', '永久商业授权') : expiryDate}`
-                  : tr('license.badgeUnlicensed', '当前电脑尚未激活商业授权（试用状态）')}
+                {!isLicensed
+                  ? tr('license.mandatoryLockDesc', '为确保正版使用，请输入卖家发送给您的授权码解锁编辑器。')
+                  : `${tr('license.status', '授权状态')}: ${isPermanent ? tr('license.permanent', '永久商业授权 (无水印)') : `${expiryDate} (到期)`}`}
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="w-7 h-7 rounded-full" onClick={closeModal}>
-            <X className="w-4 h-4" />
-          </Button>
+
+          {/* 只有已激活的用户才显示关闭按钮，未激活状态下属于强锁定 */}
+          {isLicensed && (
+            <Button variant="ghost" size="icon" className="w-7 h-7 rounded-full" onClick={closeModal}>
+              <X className="w-4 h-4" />
+            </Button>
+          )}
         </div>
 
         {/* Content Body */}
         <div className="p-5 space-y-4 overflow-y-auto">
+          {/* Unlicensed Warning Notification */}
+          {!isLicensed && (
+            <div className="p-3 rounded-lg border border-rose-500/30 bg-rose-500/10 flex items-start gap-2.5 text-xs text-rose-300">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+              <div>
+                <p className="font-bold">软件已受离线硬件锁保护</p>
+                <p className="text-[11px] opacity-90">请复制下方的【机器码 (SN)】发送给闲鱼卖家获取激活码。</p>
+              </div>
+            </div>
+          )}
+
           {/* Machine SN Display Box */}
           <div className="p-3.5 rounded-lg border border-border bg-muted/30 space-y-2">
             <div className="flex items-center justify-between">
@@ -167,25 +210,44 @@ export function LicenseModal() {
             </p>
           </div>
 
-          {/* Activation State or Input */}
+          {/* Status Details / Key Input */}
           {isLicensed ? (
-            <div className="p-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 space-y-3">
-              <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold">
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-                <span>{tr('license.verifySuccess', '授权激活成功！已解锁 PRO 全功能。')}</span>
+            <div className={`p-4 rounded-lg border space-y-3 ${
+              isTrial
+                ? 'border-amber-500/30 bg-amber-500/10'
+                : 'border-emerald-500/30 bg-emerald-500/10'
+            }`}>
+              <div className="flex items-center gap-2 text-xs font-bold">
+                <CheckCircle2 className={`w-4 h-4 shrink-0 ${isTrial ? 'text-amber-400' : 'text-emerald-400'}`} />
+                <span className={isTrial ? 'text-amber-400' : 'text-emerald-400'}>
+                  {isTrial
+                    ? tr('license.trialActivated', '试用卡密激活成功！已解锁编辑器功能。')
+                    : tr('license.proActivated', '正式商业授权激活成功！已解锁 PRO 全功能，水印已消除。')}
+                </span>
               </div>
-              <div className="text-xs text-muted-foreground space-y-1 pl-6">
-                <div>已绑定激活码: <span className="font-mono text-foreground font-semibold">{licenseKey}</span></div>
-                <div>授权有效期: <span className="text-emerald-400 font-bold">{isPermanent ? tr('license.permanent', '永久商业授权') : expiryDate}</span></div>
+
+              <p className="text-[11px] text-muted-foreground pl-6">
+                {isTrial
+                  ? tr('license.trialNotice', '⚠️ 当前为【试用卡密】，海报导出保留水印。升级为【正式卡密】可永久无水印导出。')
+                  : tr('license.proNotice', '✨ 当前为【正式商业授权】，已解锁全部 PRO 功能，导出高清无水印海报。')}
+              </p>
+
+              <div className="text-xs text-muted-foreground space-y-1 pl-6 font-mono">
+                <div>已绑定卡密: <span className="text-foreground font-semibold">{licenseKey}</span></div>
+                <div>授权到期日: <span className={`font-bold ${isTrial ? 'text-amber-400' : 'text-emerald-400'}`}>{isPermanent ? tr('license.permanent', '永久商业授权') : expiryDate}</span></div>
               </div>
+
               <div className="pt-1 flex justify-end">
                 <Button variant="ghost" size="sm" onClick={deactivateLicense} className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 h-7">
                   {tr('license.deactivate', '解除当前授权')}
                 </Button>
               </div>
             </div>
-          ) : (
-            <div className="space-y-3">
+          ) : null}
+
+          {/* Activation Input (Always visible if unlicensed or when upgrading) */}
+          {(!isLicensed || isTrial) && (
+            <div className="space-y-3 p-3.5 rounded-lg border border-border bg-card">
               <label className="text-xs font-bold text-foreground block">
                 {tr('license.enterKey', '输入授权激活码')}
               </label>
@@ -194,12 +256,12 @@ export function LicenseModal() {
                   type="text"
                   value={inputKey}
                   onChange={e => setInputKey(e.target.value)}
-                  placeholder={tr('license.keyPlaceholder', '例: LIC-XXXX-XXXX-20991231')}
+                  placeholder={tr('license.keyPlaceholder', '例: LIC-PRO-XXXX-20991231 或 LIC-TRL-XXXX-20260930')}
                   className="flex-1 h-9 bg-background border border-border rounded-lg px-3 text-xs font-mono text-foreground focus:border-indigo-500 outline-none uppercase"
                 />
                 <Button
                   onClick={handleActivate}
-                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 h-9 gap-1.5 shadow-md"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 h-9 gap-1.5 shadow-md shrink-0"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   {tr('license.activateBtn', '🚀 立即验证激活')}
@@ -243,12 +305,68 @@ export function LicenseModal() {
                   <div className="space-y-3">
                     <div className="text-xs font-bold text-indigo-400 flex items-center gap-1">
                       <Sparkles className="w-3.5 h-3.5" />
-                      卖家算号模式 (生成任意买家的专属激活码)
+                      卖家算号模式 (可生成【试用卡密】与【正式卡密】)
                     </div>
+
+                    {/* Key Type Selection */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-muted-foreground block font-semibold">{tr('license.keyTypeSelect', '生成卡密类型')}</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetIsTrial(true)
+                            setTargetExpire(getOffsetDateYYYYMMDD(7))
+                          }}
+                          className={`px-3 py-1.5 rounded border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                            targetIsTrial
+                              ? 'bg-amber-500/20 border-amber-500 text-amber-400'
+                              : 'bg-background border-border text-muted-foreground hover:bg-muted'
+                          }`}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          {tr('license.keyTypeTrial', '试用卡密 (带水印)')}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetIsTrial(false)
+                            setTargetExpire('20991231')
+                          }}
+                          className={`px-3 py-1.5 rounded border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
+                            !targetIsTrial
+                              ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400'
+                              : 'bg-background border-border text-muted-foreground hover:bg-muted'
+                          }`}
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          {tr('license.keyTypePro', '正式卡密 (无水印)')}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expiration Preset Shortcuts */}
+                    {targetIsTrial && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground block font-semibold">试用时长预设</label>
+                        <div className="flex gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => handlePresetExpire(3, true)} className="h-6 text-[10px] flex-1">
+                            {tr('license.preset3Days', '3天试用')}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handlePresetExpire(7, true)} className="h-6 text-[10px] flex-1">
+                            {tr('license.preset7Days', '7天试用')}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => handlePresetExpire(30, true)} className="h-6 text-[10px] flex-1">
+                            {tr('license.preset30Days', '30天试用')}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       <div>
-                        <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">买家电脑机器码 (SN)</label>
+                        <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('license.targetSN', '买家电脑机器码 (SN)')}</label>
                         <input
                           type="text"
                           value={targetSN}
@@ -258,7 +376,7 @@ export function LicenseModal() {
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">到期时间 (YYYYMMDD)</label>
+                        <label className="text-[10px] text-muted-foreground block mb-0.5 font-semibold">{tr('license.expireYYYYMMDD', '有效截止日期 (YYYYMMDD)')}</label>
                         <input
                           type="text"
                           value={targetExpire}
@@ -270,17 +388,17 @@ export function LicenseModal() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleGenerateKey} className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-1">
-                        ⚡ 生成算号激活码
+                      <Button size="sm" onClick={handleGenerateKey} className="h-7 text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-bold gap-1 w-full">
+                        ⚡ {tr('license.genKeyBtn', '生成算号激活码')}
                       </Button>
                     </div>
 
                     {generatedKey && (
-                      <div className="p-2 bg-background border border-indigo-500/40 rounded flex items-center justify-between">
-                        <span className="font-mono text-xs font-bold text-emerald-400 select-all">{generatedKey}</span>
-                        <Button size="sm" variant="ghost" onClick={handleCopyGeneratedKey} className="h-6 text-[10px] gap-1 text-indigo-400">
+                      <div className="p-2 bg-background border border-indigo-500/40 rounded flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs font-bold text-emerald-400 select-all truncate">{generatedKey}</span>
+                        <Button size="sm" variant="ghost" onClick={handleCopyGeneratedKey} className="h-6 text-[10px] gap-1 text-indigo-400 shrink-0">
                           <Copy className="w-3 h-3" />
-                          复制发送给买家
+                          {tr('license.copyKey', '复制激活码')}
                         </Button>
                       </div>
                     )}
@@ -295,11 +413,13 @@ export function LicenseModal() {
         <div className="p-4 border-t border-border bg-muted/20 flex items-center justify-between">
           <span className="text-[11px] text-muted-foreground flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
-            支持硬件绑定离线激活，无网络即可稳定运行。
+            支持硬件离线算法，无网络环境即可稳定授权。
           </span>
-          <Button variant="outline" size="sm" onClick={closeModal} className="text-xs">
-            {tr('common.close', '关闭')}
-          </Button>
+          {isLicensed && (
+            <Button variant="outline" size="sm" onClick={closeModal} className="text-xs">
+              {tr('common.close', '关闭')}
+            </Button>
+          )}
         </div>
       </div>
     </div>
