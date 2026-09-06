@@ -67,6 +67,7 @@
     "@leafer-in/animate": "^1.0.9",
     "@leafer-in/editor": "^1.0.9",
     "@leafer-in/export": "^1.0.9",
+    "@leafer-in/resize": "^1.0.9",
     "@leafer-in/scroll": "^1.0.9",
     "@leafer-in/view": "^1.0.9",
     "@leafer-in/viewport": "^1.0.9",

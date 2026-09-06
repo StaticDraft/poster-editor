@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { App, Rect, Group, Line } from 'leafer-ui'
 import '@leafer-in/editor'
+import '@leafer-in/resize'
 import '@leafer-in/animate'
 import '@leafer-in/view'
 import '@leafer-in/viewport'
@@ -66,12 +67,36 @@ export function LeaferCanvas() {
       ? (current.rotation ?? 0)
       : Math.round(Number(node.rotation ?? current.rotation ?? 0) * 100) / 100
 
-    const next = {
+    const scaleX = node.scaleX !== undefined ? Math.abs(node.scaleX) : 1
+    const scaleY = node.scaleY !== undefined ? Math.abs(node.scaleY) : 1
+
+    const rawW = Number(node.width ?? current.width ?? 0)
+    const rawH = Number(node.height ?? current.height ?? 0)
+    let targetWidth: number = Math.round(rawW * 100) / 100 || (current.width ?? 100)
+    let targetHeight: number = Math.round(rawH * 100) / 100 || (current.height ?? 100)
+
+    if (scaleX !== 1 && scaleX > 0) {
+      targetWidth = Math.round(targetWidth * scaleX * 100) / 100
+      node.scaleX = node.scaleX < 0 ? -1 : 1
+    }
+    if (scaleY !== 1 && scaleY > 0) {
+      targetHeight = Math.round(targetHeight * scaleY * 100) / 100
+      node.scaleY = node.scaleY < 0 ? -1 : 1
+    }
+
+    const next: Record<string, any> = {
       x: Math.round(Number(node.x ?? current.x) * 100) / 100,
       y: Math.round(Number(node.y ?? current.y) * 100) / 100,
-      width: Math.round(Number(node.width ?? current.width ?? 0) * 100) / 100 || current.width,
-      height: Math.round(Number(node.height ?? current.height ?? 0) * 100) / 100 || current.height,
+      width: targetWidth,
+      height: targetHeight,
       rotation: targetRotation,
+    }
+
+    if (node.fontSize && current.props?.fontSize && Math.abs(node.fontSize - current.props.fontSize) > 0.5) {
+      next.props = {
+        ...current.props,
+        fontSize: Math.round(node.fontSize),
+      }
     }
 
     const unchanged =
@@ -79,7 +104,8 @@ export function LeaferCanvas() {
       Math.abs((current.y ?? 0) - next.y) < 0.01 &&
       Math.abs((current.width ?? 0) - (next.width ?? 0)) < 0.01 &&
       Math.abs((current.height ?? 0) - (next.height ?? 0)) < 0.01 &&
-      Math.abs((current.rotation ?? 0) - (next.rotation ?? 0)) < 0.01
+      Math.abs((current.rotation ?? 0) - (next.rotation ?? 0)) < 0.01 &&
+      !next.props
 
     return unchanged ? null : { id: node.id, attrs: next }
   }
@@ -386,6 +412,10 @@ export function LeaferCanvas() {
       editor.on('resize.end', () => {
         persistEditorSelection(app)
       })
+
+      app.on('drag.end', () => {
+        persistEditorSelection(app)
+      })
     }
 
     app.on('pointer.down', (e: any) => {
@@ -396,6 +426,42 @@ export function LeaferCanvas() {
 
       setMenuPos(null)
 
+      const editor = (app as any).editor
+
+      // 1. 判断是否点击在编辑器控制器（缩放控制手柄、旋转点、边框或多选框）上
+      let isEditorControl = false
+      let check = e.target
+      while (check) {
+        if (
+          check === editor ||
+          check.editor === editor ||
+          check.pointType ||
+          check.direction ||
+          check.name === 'rect' ||
+          check.name === 'circle' ||
+          check.name === 'resize-line' ||
+          (typeof check.name === 'string' && (check.name.startsWith('resize') || check.name.startsWith('rotate')))
+        ) {
+          isEditorControl = true
+          break
+        }
+        if (editor && typeof editor.has === 'function') {
+          try {
+            if (editor.has(check)) {
+              isEditorControl = true
+              break
+            }
+          } catch {}
+        }
+        check = check.parent
+      }
+
+      // 如果点击的是编辑器的缩放点、旋转点或控制边框，保持当前选中态，由 Leafer 编辑器接管变换交互
+      if (isEditorControl) {
+        return
+      }
+
+      // 2. 判断是否点击在画布已有内容图元上
       const currentElements = useEditorStore.getState().elements
       let contentId: string | null = null
 
@@ -414,19 +480,25 @@ export function LeaferCanvas() {
       }
 
       if (contentId) {
+        const currentActive = useEditorStore.getState().activeIds
         if (e.shiftKey || e.ctrlKey || e.metaKey) {
-          const currentActive = useEditorStore.getState().activeIds
           if (currentActive.includes(contentId)) {
             useEditorStore.getState().setActiveIds(currentActive.filter((id) => id !== contentId))
           } else {
             useEditorStore.getState().setActiveIds([...currentActive, contentId])
           }
         } else {
+          // 如果当前仅选中该图元，避免重复触发 setActiveIds 导致 editor.target 重新挂载打断拖拽或缩放手势
+          if (currentActive.length === 1 && currentActive[0] === contentId) {
+            return
+          }
           useEditorStore.getState().setActiveIds([contentId])
         }
       } else {
-        // 点击画布背景、空白区域、遮罩或辅助线条时，立即取消选中，使右侧面板自动返回“海报画布配置”
-        useEditorStore.getState().setActiveIds([])
+        // 点击画布背景、空白区域、底板或辅助线条时，取消选中，使右侧面板自动返回“海报画布配置”
+        if (useEditorStore.getState().activeIds.length > 0) {
+          useEditorStore.getState().setActiveIds([])
+        }
       }
     })
 
