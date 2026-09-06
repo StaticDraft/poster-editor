@@ -4,7 +4,7 @@ import { ShieldCheck, Copy, KeyRound, Sparkles, X, Lock, CheckCircle2, AlertCirc
 import { Button } from '@/components/ui/button'
 import { useLicenseStore } from '@/store/useLicenseStore'
 import { useFeedback } from '@/lib/feedback'
-import { generateLicenseKey, getOffsetDateYYYYMMDD } from '@/lib/license'
+import { generateLicenseKey, getOffsetDateYYYYMMDD, isElectronApp } from '@/lib/license'
 
 const SELLER_DEFAULT_PIN = '888888'
 
@@ -41,6 +41,9 @@ export function LicenseModal() {
       setTargetSN(machineSN)
     }
   }, [machineSN, targetSN])
+
+  // 网页端完全免授权，不渲染任何授权弹窗
+  if (!isElectronApp()) return null
 
   // 如果未激活/已到期，强制全屏强锁遮罩（无法关闭/无法绕过）
   const isMandatoryLocked = !isLicensed

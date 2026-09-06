@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { getMachineSN, verifyLicenseKey, type LicenseType } from '@/lib/license'
+import { getMachineSN, verifyLicenseKey, isElectronApp, type LicenseType } from '@/lib/license'
 
 const LICENSE_STORAGE_KEY = 'poster_editor_license_key'
 
@@ -21,19 +21,39 @@ export interface LicenseState {
   closeModal: () => void
 }
 
+const isDesktop = typeof window !== 'undefined' ? isElectronApp() : false
+
 export const useLicenseStore = create<LicenseState>((set, get) => ({
-  machineSN: '获取中...',
+  machineSN: isDesktop ? '获取中...' : 'WEB-FREE',
   licenseKey: '',
-  licenseType: 'UNAUTHORIZED',
-  isLicensed: false,
+  licenseType: isDesktop ? 'UNAUTHORIZED' : 'PRO',
+  isLicensed: !isDesktop, // 网页端直接默认授权通过
   isTrial: false,
-  isPermanent: false,
-  showWatermark: true,
-  expiryDate: '',
+  isPermanent: !isDesktop,
+  showWatermark: isDesktop, // 网页端默认无水印
+  expiryDate: isDesktop ? '' : '20991231',
   isModalOpen: false,
-  isLoading: true,
+  isLoading: isDesktop, // 网页端无需等待授权检测
 
   initLicense: async () => {
+    // 1. 纯网页端 (Web)：完全免授权，无需卡密，无水印，不锁定
+    if (!isElectronApp()) {
+      set({
+        machineSN: 'WEB-FREE',
+        licenseKey: '',
+        licenseType: 'PRO',
+        isLicensed: true,
+        isTrial: false,
+        isPermanent: true,
+        showWatermark: false,
+        expiryDate: '20991231',
+        isModalOpen: false,
+        isLoading: false,
+      })
+      return
+    }
+
+    // 2. 桌面客户端 (Electron / exe)：必须校验硬件一机一码授权
     set({ isLoading: true })
     try {
       const sn = await getMachineSN()

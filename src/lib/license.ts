@@ -29,6 +29,18 @@ function hashString(str: string): string {
 }
 
 /**
+ * 判断当前是否运行在 Electron 桌面端环境 (.exe)
+ */
+export function isElectronApp(): boolean {
+  if (typeof window === 'undefined') return false
+  return Boolean(
+    window.electronAPI?.isElectron ||
+    (window as any).electronAPI ||
+    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.includes('Electron'))
+  )
+}
+
+/**
  * 获取硬件 SN / 机器码
  */
 export async function getMachineSN(): Promise<string> {
