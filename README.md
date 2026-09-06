@@ -2,6 +2,8 @@
 
 > 基于 **Vite + React 18 + TypeScript + Leafer.js + TailwindCSS + Electron** 的可视化海报编辑器。适合前端毕设/课程设计、源码学习、海报工具二次开发，以及电商促销海报批量生成场景。
 
+![PosterCraft 海报编辑器界面预览](docs/images/preview.png)
+
 ---
 
 ## 核心功能
