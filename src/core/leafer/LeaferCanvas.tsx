@@ -396,13 +396,36 @@ export function LeaferCanvas() {
 
       setMenuPos(null)
 
-      const target = e.target
-      if (target && target.id && typeof target.id === 'string' && !target.id.startsWith('__')) {
-        useEditorStore.getState().setActiveIds([target.id])
-      } else if (
-        !target ||
-        (target.id && (target.id === '__scene_board__' || target.id === '__board_shadow__'))
-      ) {
+      const currentElements = useEditorStore.getState().elements
+      let contentId: string | null = null
+
+      let curr = e.target
+      while (curr) {
+        if (curr.id && typeof curr.id === 'string') {
+          if (currentElements.some((el) => el.id === curr.id)) {
+            contentId = curr.id
+            break
+          }
+          if (curr.id.startsWith('__')) {
+            break
+          }
+        }
+        curr = curr.parent
+      }
+
+      if (contentId) {
+        if (e.shiftKey || e.ctrlKey || e.metaKey) {
+          const currentActive = useEditorStore.getState().activeIds
+          if (currentActive.includes(contentId)) {
+            useEditorStore.getState().setActiveIds(currentActive.filter((id) => id !== contentId))
+          } else {
+            useEditorStore.getState().setActiveIds([...currentActive, contentId])
+          }
+        } else {
+          useEditorStore.getState().setActiveIds([contentId])
+        }
+      } else {
+        // 点击画布背景、空白区域、遮罩或辅助线条时，立即取消选中，使右侧面板自动返回“海报画布配置”
         useEditorStore.getState().setActiveIds([])
       }
     })

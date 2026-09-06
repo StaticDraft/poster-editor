@@ -182,11 +182,8 @@ export function TopToolbar() {
   return (
     <div className="flex w-full h-11 shrink-0 items-center justify-between bg-card text-card-foreground shadow-sm px-3 border-b border-border overflow-x-auto no-scrollbar">
       {/* Brand logo & title */}
-      <div className="font-bold flex items-center gap-2 tracking-tight shrink-0">
-        <div className="flex items-center justify-center bg-gradient-to-tr from-rose-500 via-pink-500 to-violet-600 text-white w-7 h-7 rounded-lg shadow-md shrink-0">
-          <span className="font-extrabold text-xs">Pd</span>
-        </div>
-        <span className="bg-clip-text text-transparent bg-gradient-to-r from-foreground to-muted-foreground mr-2 hidden sm:inline text-xs">
+      <div className="font-bold flex items-center tracking-tight shrink-0">
+        <span className="text-xs font-bold text-foreground mr-2">
           {t('header.title')}
         </span>
       </div>
